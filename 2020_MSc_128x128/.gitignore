@@ -1,0 +1,5 @@
+.ipynb_checkpoints/
+models/
+stats/
+*.zip
+*.tar.gz
