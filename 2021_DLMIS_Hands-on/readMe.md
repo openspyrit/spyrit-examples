@@ -1,62 +1,35 @@
-# A Completion Network for Reconstruction from Compressed Acquisition (ISBI 2020)
-We provide the code that produces the results that we report in 
-
-> Nicolas Ducros, A Lorente Mur, F. Peyrin. A Completion Network for Reconstruction from Compressed Acquisition. 2020 IEEE 17th International Symposium on Biomedical Imaging (ISBI), Apr 2020, Iowa City, United States, pp.619-623, ⟨10.1109/ISBI45749.2020.9098390⟩.
-> [Download PDF](https://hal.archives-ouvertes.fr/hal-02342766/document/).
-
-*License:* The SPIHIM datasets are distributed under the Creative Commons Attribution 4.0 International license ([CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/))
+# Deep neural network under-sampled image reconstruction for X-Ray tomography
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Running the code
-0. Create a virtual environment apt to run this code :
+1. Simply launch JupiterLab from the current folder
 ```
-shell $ python3 -m venv spyrit-env
-shell $ source spyrit-env/bin/activate
+$ jupyter notebook
 ```
-1. Install spyrit (with all it's dependencies) in that virtual environment :
-```
-(spyrit-env) shell $ pip install -e spyrit
-```
-```
-pip install -r extra_requirements.txt
-```
-2. Configure JupyterLab on the virtual environement : 
-Install ipykernel which provides the IPython kernel for Jupyter
-```
-(spyrit-env) shell $ python -m pip install ipykernel
-```
-Next you can add your virtual environment to Jupyter :
-```
-(spyrit-env) shell $ ipython kernel install --user --name=spyrit-env
-```
+and run `main.ipynb`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_Radon_CNet.zip). 
 
-3. Create a symbolic link to a repository containing stl-10
+2. Alternatively, we provide `train.py` to train the network. In a terminal:
 ```
-(spyrit-env) shell $ ln -s <name of parent folder of stl-10> /data/
-```
-If you do not have stl-10 downloaded in your computer, then the dataset will automatically be downloaded. 
-
-4. Simply launch JupiterLab from the current folder
-```
-(spyrit-env) shell $ jupyter Lab
-```
-and run `main.ipynb` on the kernel named `spyrit-env`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). 
-
-5. Alternatively, we provide `train.py` to train the different variants of the network. In a terminal:
-```
-(spyrit-env) shell $ train 
-(spyrit-env) shell $ train --net_arch 1
-(spyrit-env) shell $ train --net_arch 2
+$ train 
 ```
 Note that 
 * the models are saved in the default folder `.\models\`. To save them at another location consider
 ```
-(spyrit-env) shell $ python train --model_root myfolder
+$ train --model_root myfolder
 ```
 * The defaults training parameters can be changed. For instance, run 
 ```
-(spyrit-env) shell $ train --num_epochs 10 --batch_size 512 --lr 1e-8
+$ train --num_epochs 10 --batch_size 512 --lr 1e-8
 ```
 to train your network for 10 epochs, with a batch size of 512, and a learning rate of 1e-8. 
-* you can keep `Average_64x64.npy`, `Cov_64x64.npy` and `Var_64x64.npy` in `.\stats\`, if you have downloaded them, to avoid their computation that can be time-consumming.
+* you can keep `Mean_Q64D64.pt` and `Mean_Q64D64.pt`, if you have downloaded them, to avoid their computation that can be time-consumming.
+
+## Generate more forward matrix with matlab
+We provide code to compute various forward matrix with diferent number of measurement angles or different image resolution.
+
+1. Go to the matlab folder and run main.m
+
+2. The function compute_radon_matrix and compute_pinv_radon_matrix compute and export respectively the forward and backpropagation matrixes.
+
+3. verify_radon_matrix let you compare results between the forward operator and the matlab function radon. compare_backprojection let you observe reconstruction for different numbers of acquisition angles and see the influence of receptor's pixel number.

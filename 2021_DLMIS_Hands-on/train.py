@@ -10,19 +10,25 @@ import argparse
 import sys
 from pathlib import Path
 import scipy.io as sio
-from spyrit.learning.model_Had_DCAN import compNet, Stat_had, Weight_Decay_Loss
-from spyrit.learning.nets import *
-from spyrit.misc.disp import *
+
+spyritfolder = 'D:/Creatis/Programmes/Python/spyrit'
+
+sys.path.insert(1, spyritfolder);
+from function.learning.model_Had_DCAN import compNet, Stat_had, Weight_Decay_Loss
+from function.learning.nets import *
+from function.misc.disp import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    spyritfolder = Path(spyritfolder)
+
     # Acquisition
     parser.add_argument("--img_size",   type=int,   default=64,     help="Height / width dimension")
     parser.add_argument("--CR",         type=int,   default=333,    help="Number of patterns")
     # Network and training
-    parser.add_argument("--data_root",  type=str,   default='./data/', help="Path to SLT-10 dataset")
+    parser.add_argument("--data_root",  type=str,   default=spyritfolder/'data', help="Path to SLT-10 dataset")
     parser.add_argument("--net_arch",   type=int,   default=0,      help="Network architecture (variants for the FCL)")
-    parser.add_argument("--precompute_root", type=str, default='./stats/', help="Path to precomputed data")
+    parser.add_argument("--precompute_root", type=str, default='./models/', help="Path to precomputed data")
     parser.add_argument("--precompute", type=bool,  default=False,  help="Tells if the precomputed data is available")
     parser.add_argument("--model_root", type=str,   default='./models/', help="Path to model saving files")
     # Optimisation
