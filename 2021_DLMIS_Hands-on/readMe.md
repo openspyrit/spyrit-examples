@@ -42,7 +42,7 @@ This code was used for a hands-on session during the [Deep Learning for Medical 
         
         pip install -e spyrit
         
-1. Go into `/spyritexamples_github/2021_DLMIS_Hands-on/`
+1. Go into `/spyritexamples/2021_DLMIS_Hands-on/`
 
 1. Open jupyter notebook    
 
