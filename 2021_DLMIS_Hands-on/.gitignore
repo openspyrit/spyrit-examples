@@ -2,4 +2,6 @@
 models/
 stats/
 data/
+datasets-dlmis21/
 *.zip
+*.tar
