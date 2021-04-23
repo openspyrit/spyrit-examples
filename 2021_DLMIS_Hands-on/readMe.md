@@ -1,6 +1,9 @@
 # Hands-on session 3.1: image reconstruction using the PyTorch and Spyrit packages
 
-This code was used for a hands-on session during the [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
+This code was used for a hands-on session given at the [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
+
+The purpose of the session was to practice image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. Answers and solution code are given in `main_with_answers.ipynb`
+
 
 *Authors:* N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux, T. Grenier
 
