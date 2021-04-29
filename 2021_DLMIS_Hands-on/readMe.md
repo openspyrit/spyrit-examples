@@ -1,35 +1,56 @@
-# Deep neural network under-sampled image reconstruction for X-Ray tomography
+# Hands-on session 3.1: image reconstruction using the PyTorch and Spyrit packages
+
+This code was used for a hands-on session given at the [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
+
+The purpose of the session was to practice image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. Answers and solution code are given in `main_with_answers.ipynb`
+
+
+*Authors:* N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux, T. Grenier
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
-## Running the code
-1. Simply launch JupiterLab from the current folder
-```
-$ jupyter notebook
-```
-and run `main.ipynb`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_Radon_CNet.zip). 
+## Running the code on floyhub
+1. Create a new workspace in your personal project:
+* Press the ’Create Workspace’ button
+* Select ’Start from scratch’
+* Set ’Environment’ to ’Pytorch 1.7’ and ’Machine’ to ’GPU’
+* Press the ’Create environment’ button
 
-2. Alternatively, we provide `train.py` to train the network. In a terminal:
-```
-$ train 
-```
-Note that 
-* the models are saved in the default folder `.\models\`. To save them at another location consider
-```
-$ train --model_root myfolder
-```
-* The defaults training parameters can be changed. For instance, run 
-```
-$ train --num_epochs 10 --batch_size 512 --lr 1e-8
-```
-to train your network for 10 epochs, with a batch size of 512, and a learning rate of 1e-8. 
-* you can keep `Mean_Q64D64.pt` and `Mean_Q64D64.pt`, if you have downloaded them, to avoid their computation that can be time-consumming.
+2. Enter in the new workspace (Warning: this step can take several minutes)
 
-## Generate more forward matrix with matlab
-We provide code to compute various forward matrix with diferent number of measurement angles or different image resolution.
+3. Add dataset using the right-hand panel:
+* Type `dlmis21_dataset`
+* Click on the ’Attach dataset’ button
 
-1. Go to the matlab folder and run main.m
+4. In a ’New Launcher’ (directly accessible, if not, via File > New Launcher) choose’Terminal’ and run the following command lines
 
-2. The function compute_radon_matrix and compute_pinv_radon_matrix compute and export respectively the forward and backpropagation matrixes.
+        wget https://www.creatis.insa-lyon.fr/~ducros/hands_on/start.sh
+        bash ./start.sh
+        rm start.sh
 
-3. verify_radon_matrix let you compare results between the forward operator and the matlab function radon. compare_backprojection let you observe reconstruction for different numbers of acquisition angles and see the influence of receptor's pixel number.
+    NB: The downloads and installation typically take two minutes
+
+5. Launch the jupyter notebook     `/floyd/home/spyritexamples-master/2021_DLMIS_Hands-on/main.ipyn`
+
+## Runing the code on a local installation (not tested yet)
+1. Create a new environnement with pytorch > 1.7
+1. Download https://www.creatis.insa-lyon.fr/~ducros/hands_on/spyrit-master.zip
+1. Unzip an rename
+
+        unzip spyrit-master.zip
+        rm spyrit-master.zip
+        mv spyrit-master spyrit
+        
+1. Install spyrit
+        
+        pip install -e spyrit
+        
+1. Go into `/spyritexamples/2021_DLMIS_Hands-on/`
+
+1. Open jupyter notebook    
+
+        jupyter notebook
+        
+1.  Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+
+1. Update the dataset path in the notebooks
