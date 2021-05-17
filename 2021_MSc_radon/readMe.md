@@ -1,4 +1,4 @@
-# Deep neural network under-sampled image reconstruction for X-Ray tomography
+# Deep neural network for limited view X-ray tomography
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
