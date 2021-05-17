@@ -43,3 +43,9 @@ Some projects of last year MSc students, INSA-Lyon, Electrical Engineering Depar
 
 > Jules Dartois, Valentin Bérisset
 
+### 2020-21 S1
+
+* [Single-pixel reconstruction of 128 x 128 images](./2020_MSc_128x128/)
+
+> Marc Chanet, Juliette Coumert
+
