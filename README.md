@@ -9,7 +9,7 @@ This repository hosts codes that are based on the spyrit package, which includes
 
 ##  List of research contributions
 
-Here are some of research contributions based on the spyrit. All of them target computational optics image reconstruction problems, with a focus on single-pixel acquisition.
+Here are some of research contributions based on the SPYRIT toolbox. All of them address computational optics image reconstruction problems, with a focus on single-pixel acquisition.
 
 ### 2021
 
