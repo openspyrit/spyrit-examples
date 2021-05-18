@@ -4,6 +4,7 @@ This code was used for a hands-on session given at the [Deep Learning for Medica
 
 The purpose of the session was to practice image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. Answers and solution code are given in `main_with_answers.ipynb`
 
+The hands-on session followed a scientific presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2021_Ducros_DLMIS.pdf) or watch the [video](https://www.youtube.com/watch?v=Q5s5P3luqOE).
 
 *Authors:* N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux, T. Grenier
 
