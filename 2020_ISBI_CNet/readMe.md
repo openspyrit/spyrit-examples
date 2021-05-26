@@ -8,55 +8,44 @@ We provide the code that produces the results that we report in
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
-## Running the code
-0. Create a virtual environment apt to run this code :
+## Running the main notebook
+1. Install SPyRiT and all dependencies
+
+```shell
+pip install -e spyrit
 ```
-shell $ python3 -m venv spyrit-env
-shell $ source spyrit-env/bin/activate
-```
-1. Install spyrit (with all it's dependencies) in that virtual environment :
-```
-(spyrit-env) shell $ pip install -e spyrit
-```
-```
+```shell
 pip install -r extra_requirements.txt
 ```
-2. Configure JupyterLab on the virtual environement : 
-Install ipykernel which provides the IPython kernel for Jupyter
-```
-(spyrit-env) shell $ python -m pip install ipykernel
-```
-Next you can add your virtual environment to Jupyter :
-```
-(spyrit-env) shell $ ipython kernel install --user --name=spyrit-env
-```
+2. The STL-10 dataset will automatically be downloaded.  If you already have it on you computer, you can create a symbolic link to the repository containing STL-10
 
-3. Create a symbolic link to a repository containing stl-10
 ```
-(spyrit-env) shell $ ln -s <name of parent folder of stl-10> /data/
+ln -s <name of parent folder of stl-10> /data/
 ```
-If you do not have stl-10 downloaded in your computer, then the dataset will automatically be downloaded. 
+3. Launch JupiterLab from the current folder
 
-4. Simply launch JupiterLab from the current folder
+```shell
+jupyter lab
 ```
-(spyrit-env) shell $ jupyter Lab
-```
-and run `main.ipynb` on the kernel named `spyrit-env`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). 
+and run `main.ipynb`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). 
 
-5. Alternatively, we provide `train.py` to train the different variants of the network. In a terminal:
-```
-(spyrit-env) shell $ train 
-(spyrit-env) shell $ train --net_arch 1
-(spyrit-env) shell $ train --net_arch 2
+## Re-training the networks
+
+1. Alternatively, we provide `train.py` to train the different variants of the network. In a terminal:
+```shell
+python train 
+python train --net_arch 1
+python train --net_arch 2
 ```
 Note that 
 * the models are saved in the default folder `.\models\`. To save them at another location consider
 ```
-(spyrit-env) shell $ python train --model_root myfolder
+python train --model_root myfolder
 ```
 * The defaults training parameters can be changed. For instance, run 
 ```
-(spyrit-env) shell $ train --num_epochs 10 --batch_size 512 --lr 1e-8
+python train --num_epochs 10 --batch_size 512 --lr 1e-8
 ```
 to train your network for 10 epochs, with a batch size of 512, and a learning rate of 1e-8. 
 * you can keep `Average_64x64.npy`, `Cov_64x64.npy` and `Var_64x64.npy` in `.\stats\`, if you have downloaded them, to avoid their computation that can be time-consumming.
+
