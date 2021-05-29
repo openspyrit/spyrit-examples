@@ -6,30 +6,42 @@ We provide the code that produces the results that we report in
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
+
+
 ## Running the main notebook
-1. Install SPyRiT and all dependencies
+1. Install SPyRiT and all dependencies. On Windows, you need first to install [torch](https://pytorch.org/get-started/locally/) first (see the SPyRiT [installation guide](https://github.com/openspyrit/spyrit)).
 
 ```shell
-pip install -e spyrit
+pip install -e spyrit .
 ```
 ```shell
 pip install -r extra_requirements.txt
 ```
-2. The STL-10 dataset will automatically be downloaded.  If you already have it on you computer, you can create a symbolic link to the repository containing STL-10
+2. (optional) If you already have the STL-10 dataset on your computer, create a symbolic link.  Otherwise the STL-10 dataset will be downloaded.
 
+* Linux:
+
+```shell
+ln -s <stl-10 parent folder> /data/ 
 ```
-ln -s <name of parent folder of stl-10> /data/
+   * Windows Powershell:
+
+``` powershell
+New-Item -ItemType SymbolicLink -Name \data\ -Target <stl-10 parent folder>
 ```
+
 3. Launch JupiterLab from the current folder
 
 ```shell
 jupyter lab
 ```
-and run `main.ipynb`. Note that this notebook downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). 
+and run `main.ipynb`. 
+
+
 
 ## Re-training the networks
 
-We provide `train.py` to train the different variants of the network.
+The notebook `main.ipynb` downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). We also  provide `train.py` to train the different variants of the network, from a single command line.
 
 1. Completion network
 
