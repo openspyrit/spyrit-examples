@@ -43,7 +43,7 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         
         pip install spyrit
         
-1. Go into `/spyritexamples/2021_DLMIS_Hands-on/`
+1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
 
 1. Open jupyter notebook    
 
