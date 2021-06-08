@@ -45,7 +45,7 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         git clone https://github.com/openspyrit/spyrit-examples.git        
         
 1. Create a `data` folder and go into it.
-2. 
+
 3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
 
 1. Extract the dataset :    
