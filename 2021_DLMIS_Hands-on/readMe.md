@@ -48,7 +48,7 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 
 3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
 
-1. Extract the dataset :    
+1. Extract the dataset (there is an error in `tar: Unexpected EOF in archive`, even if the files appear with the good size (1.5Go = 860Mo + 586Mo)) :    
 
         tar xvf datasets-dlmis21.tar 
 
