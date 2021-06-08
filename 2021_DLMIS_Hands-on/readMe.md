@@ -46,7 +46,11 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         
 1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
 
-1.  Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+1. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+
+1. Extract the dataset :    
+
+        tar xvf datasets-dlmis21.tar 
 
 1. Open jupyter notebook    
 
