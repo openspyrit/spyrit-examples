@@ -44,6 +44,12 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         
         git clone https://github.com/openspyrit/spyrit-examples.git        
         
+1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
+
+3. Open jupyter notebook    
+
+        jupyter notebook
+        
 1. Create a `data` folder and go into it.
 
 3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
@@ -52,10 +58,4 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 
         tar xvf datasets-dlmis21.tar 
 
-1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
-
-3. Open jupyter notebook    
-
-        jupyter notebook
-        
 1. Update the dataset path in the notebook `main.ipynb`
