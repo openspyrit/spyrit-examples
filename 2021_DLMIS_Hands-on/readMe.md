@@ -41,7 +41,7 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         
 1. Install spyrit
         
-        pip install -e spyrit
+        pip install spyrit
         
 1. Go into `/spyritexamples/2021_DLMIS_Hands-on/`
 
