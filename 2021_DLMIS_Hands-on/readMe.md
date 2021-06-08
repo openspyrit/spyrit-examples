@@ -36,7 +36,7 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 ## Runing the code on a local installation (not tested yet)
 1. Retrieve spyrit source code via git :
         
-        git clone https://github.com/openspyrit/spyrit.git
+        git clone https://github.com/openspyrit/spyrit-examples.git
 
         
 1. Install spyrit
