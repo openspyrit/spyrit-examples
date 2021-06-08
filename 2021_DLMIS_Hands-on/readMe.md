@@ -36,14 +36,13 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 ## Runing the code on a local installation (being tested)
 1. We recommend you to use virtual environment.
 
-1. Retrieve spyrit source code via git :
-        
-        git clone https://github.com/openspyrit/spyrit-examples.git
-
-        
 1. Install spyrit
         
         pip install spyrit
+
+1. Retrieve spyrit source code via git :
+        
+        git clone https://github.com/openspyrit/spyrit-examples.git        
         
 1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
 
