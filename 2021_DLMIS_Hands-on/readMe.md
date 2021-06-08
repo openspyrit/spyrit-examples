@@ -34,6 +34,8 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 5. Launch the jupyter notebook     `/floyd/home/spyritexamples-master/2021_DLMIS_Hands-on/main.ipyn`
 
 ## Runing the code on a local installation (being tested)
+1. We recommend you to use virtual environment.
+
 1. Retrieve spyrit source code via git :
         
         git clone https://github.com/openspyrit/spyrit-examples.git
