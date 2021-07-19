@@ -44,10 +44,11 @@ The hands-on session followed a scientific presentation. Check the [slides](http
         
         git clone https://github.com/openspyrit/spyrit-examples.git        
         
-1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`
+1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`     
 
-3. Open jupyter notebook    
+6. Open jupyter notebook    
 
+        pip install notebook
         jupyter notebook
         
 1. Create a `data` folder and go into it.
