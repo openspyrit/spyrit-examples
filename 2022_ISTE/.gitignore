@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+models*/
+stats*/
+data/
+*.zip
+*.png
+*.pdf
