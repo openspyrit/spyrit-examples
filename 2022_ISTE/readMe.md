@@ -1,22 +1,22 @@
 # Single-pixel reconstruction (ISTE 2021)
 We provide the code that produces the results that we report in 
 
-> Nicolas Ducros, A Lorente Mur, F. Peyrin. A Completion Network for Reconstruction from Compressed Acquisition. 2020 IEEE 17th International Symposium on Biomedical Imaging (ISBI), Apr 2020, Iowa City, United States, pp.619-623, ⟨10.1109/ISBI45749.2020.9098390⟩.
-> [Download PDF](https://hal.archives-ouvertes.fr/hal-02342766/document/).
+> Nicolas Ducros. Book title. Chapter Title. 2022 
+> ⟨doi⟩.
+> [Download PDF](https://hal.archives-ouvertes.fr/hal-XXXXXX/document/).
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 
 
-## Running the main notebook
+## Running the scripts
 1. Install SPyRiT and all dependencies. On Windows, you need first to install [torch](https://pytorch.org/get-started/locally/) first (see the SPyRiT [installation guide](https://github.com/openspyrit/spyrit)).
 
 ```shell
 pip install -e spyrit .
 ```
-```shell
-pip install -r extra_requirements.txt
-```
+NB: The scripts were tested with the commit [0035901](https://github.com/openspyrit/spyrit/commit/00359010cb3f8c5ca46a50dab1d0c3fbe2dbc41a).
+
 2. (optional) If you already have the STL-10 dataset on your computer, create a symbolic link.  Otherwise the STL-10 dataset will be downloaded.
 
 * Linux:
@@ -39,7 +39,7 @@ and run `main.ipynb`.
 
 
 
-## Re-training the networks
+## Re-training the networks (not tested yet)
 
 The notebook `main.ipynb` downloads trained networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). We also  provide `train.py` to train the different variants of the network, from a single command line.
 
