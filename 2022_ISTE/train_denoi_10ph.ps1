@@ -1,2 +1,0 @@
-python train_noisy.py --CR 1024 --precompute_root ./stats_walsh/ --num_epochs 40 --intensity_max 10 --intensity_sig 0 --denoi 1
-python train_noisy.py --CR 1024 --precompute_root ./stats_walsh/ --num_epochs 40 --intensity_max 10 --intensity_sig 0.5 --denoi 1
