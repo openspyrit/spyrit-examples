@@ -59,7 +59,7 @@ stat_walsh_stl10()
 
 ## Trained networks (not tested yet)
 
-You can download the networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2020_ISBI_CNet/2020_ISBI_CNet.zip). 
+You can download the networks from this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_ISTE/). 
 
 We also  provide `train.py` to train the different variants of the network, from a single command line.
 
