@@ -6,40 +6,15 @@ Created on Sat Jul  3 12:12:42 2021
 """
 
 #%%
-from __future__ import print_function, division
 import torch
 import numpy as np
 import torchvision
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 from pathlib import Path
-#import spyrit.misc.walsh_hadamard as wh
+
 from spyrit.learning.model_Had_DCAN import *
 from spyrit.learning.nets import *
 from spyrit.misc.metrics import psnr, psnr_, batch_psnr
-
-#%%
-from scipy.sparse.linalg import aslinearoperator
-import pylops
-
-#mu = 1.5
-def TV(y, H, img_size, mu = 0.15, lamda = [0.1, 0.1], niter = 20, niterinner = 10):
-    ny = img_size;
-    nx = img_size;
-    A = aslinearoperator(H);
-    H_p = pylops.LinearOperator(A)
-    Dop = \
-        [pylops.FirstDerivative(ny * nx, dims=(ny, nx), dir=0, edge=False,
-                                kind='backward', dtype=np.float64),
-         pylops.FirstDerivative(ny * nx, dims=(ny, nx), dir=1, edge=False,
-                                kind='backward', dtype=np.float64)]
-    xinv, niter = \
-    pylops.optimization.sparsity.SplitBregman(H_p, Dop, y.flatten(),
-                                              niter, niterinner,
-                                              mu=mu, epsRL1s=lamda,
-                                              tol=1e-4, tau=1., show=False,
-                                              **dict(iter_lim=5, damp=1e-4))
-    return xinv;
 
 #%%
 #- Acquisition
@@ -58,11 +33,11 @@ plt.rcParams['text.usetex'] = True  # Latex
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(7)
 
-transform = transforms.Compose(
-    [transforms.functional.to_grayscale,
-     transforms.Resize((img_size, img_size)),
-     transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])])
+transform = torchvision.transforms.Compose(
+    [torchvision.transforms.functional.to_grayscale,
+     torchvision.transforms.Resize((img_size, img_size)),
+     torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize([0.5], [0.5])])
 
 trainset = \
     torchvision.datasets.STL10(root=data_root, split='train+unlabeled',download=True, transform=transform)

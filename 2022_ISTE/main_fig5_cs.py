@@ -10,13 +10,15 @@ from __future__ import print_function, division
 import torch
 import numpy as np
 import torchvision
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 from pathlib import Path
-#import spyrit.misc.walsh_hadamard as wh
-from spyrit.learning.model_Had_DCAN import *
 import skimage.transform as skt
 import skimage.data as skd
+
+import spyrit.misc.walsh_hadamard as wh
+from spyrit.learning.model_Had_DCAN import *
+from spyrit.misc.statistics import Cov2Var
+
 #%%
 from scipy.sparse.linalg import aslinearoperator
 import pylops
@@ -57,11 +59,11 @@ plt.rcParams['text.usetex'] = True  # Latex
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(7)
 
-transform = transforms.Compose(
-    [transforms.functional.to_grayscale,
-     transforms.Resize((img_size, img_size)),
-     transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])])
+transform = torchvision.transforms.Compose(
+    [torchvision.transforms.functional.to_grayscale,
+     torchvision.transforms.Resize((img_size, img_size)),
+     torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize([0.5], [0.5])])
 
 trainset = \
     torchvision.datasets.STL10(root=data_root, split='train+unlabeled',download=True, transform=transform)
@@ -88,10 +90,7 @@ inputs = inputs.to(device)
 #%% Recon from Walsh-ordered 2D
 ind = [72,73]
 M = [2048, 1024, 512,256] 
-sig = [1,]#[0.1, 0.25, 2, 16] 
-#eps = np.random.standard_normal((M,))
-
-#image = skd.shepp_logan_phantom().astype(np.float32, copy=False)
+#sig = [1,]#[0.1, 0.25, 2, 16] 
 
 
 #%% Plot
@@ -128,7 +127,7 @@ for i_M, v_M  in enumerate(M):
         # 
         axs[2*i_ind,  i_M+1].imshow(rec_l2, cmap='gray')
         axs[2*i_ind+1,i_M+1].imshow(rec_tv, cmap='gray')
-        axs[2*i_ind,  i_M+1].set_title(f"L2: $M={v_M}$")
+        axs[2*i_ind,  i_M+1].set_title(f"PINV: $M={v_M}$")
         axs[2*i_ind+1,i_M+1].set_title(f"CS: $M={v_M}$")
         #
         axs[2*i_ind,i_M+1].get_xaxis().set_visible(False)

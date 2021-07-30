@@ -10,9 +10,9 @@ from __future__ import print_function, division
 import torch
 import numpy as np
 import torchvision
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 from pathlib import Path
+
 import spyrit.misc.walsh_hadamard as wh
 from spyrit.learning.model_Had_DCAN import *
 from spyrit.learning.nets import *
@@ -35,11 +35,11 @@ plt.rcParams['text.usetex'] = True  # Latex
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(7)
 
-transform = transforms.Compose(
-    [transforms.functional.to_grayscale,
-     transforms.Resize((img_size, img_size)),
-     transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])])
+transform = torchvision.transforms.Compose(
+    [torchvision.transforms.functional.to_grayscale,
+     torchvision.transforms.Resize((img_size, img_size)),
+     torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize([0.5], [0.5])])
 
 trainset = \
     torchvision.datasets.STL10(root=data_root, split='train+unlabeled',download=True, transform=transform)
@@ -63,32 +63,12 @@ H =  wh.walsh2_matrix(img_size)/img_size
 M = 64*64//4
 Ord = Cov2Var(Cov)
 model_root = './models/'
-epo = [0,5,10, 40, 55]
-ind = [1,2,3,4]
-#ind = [9,10,11]
-ind = [72,73,74,75]
-
-#- denoi comp net
-#model_param = 'c0mp_N0_10.0_sig_0.0_Denoi_N_64_M_1024_epo_60_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-#model = DenoiCompNet(img_size, M, Mean, Cov, variant=0, N0=10, sig = 0, H=H, Ord=Ord)
-
-#- noisy comp net
-#model_param = 'c0mp_N0_10.0_sig_0.0_N_64_M_1024_epo_40_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-#model = noiCompNet(img_size, M, Mean, Cov, variant=0, N0=10, sig = 0, H=H, Ord=Ord)
-#model_param = 'c0mp_N0_50.0_sig_0.0_N_64_M_1024_epo_50_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-#model = noiCompNet(img_size, M, Mean, Cov, variant=0, N0=50, sig = 0, H=H, Ord=Ord)
-
-#- comp net
-model_param = 'c0mp_N_64_M_1024_epo_40_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-model = compNet(img_size, M, Mean, Cov, variant=0, H=H, Ord=Ord)
-
-#- pinv net
-#model_param = 'pinv_N_64_M_1024_epo_40_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-#model = compNet(img_size, M, Mean, Cov, variant=2, H=H, Ord=Ord)
+epo = [0,5,10, 40]#, 55]
+ind = [9,10,11]
 
 #- free net
-#model_param = 'free_N_64_M_1024_epo_40_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
-#model = compNet(img_size, M, Mean, Cov, variant=3, H=H, Ord=Ord)
+model_param = 'free_N_64_M_1024_epo_40_lr_0.001_sss_20_sdr_0.2_bs_256_reg_1e-07'
+model = compNet(img_size, M, Mean, Cov, variant=3, H=H, Ord=Ord)
 
 model = model.to(device)
 inputs = inputs.to(device)
@@ -129,7 +109,7 @@ for i_epo, v_epo in enumerate(epo):
 
 f.subplots_adjust(wspace=0, hspace=0)
 #plt.suptitle(model_param)
-#plt.savefig("train.pdf", bbox_inches=0)
+plt.savefig("train.pdf", bbox_inches=0)
 
 #%%
 # Load training history

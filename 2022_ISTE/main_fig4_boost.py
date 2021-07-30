@@ -10,11 +10,11 @@ from __future__ import print_function, division
 import torch
 import numpy as np
 import torchvision
-from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 from pathlib import Path
-#import spyrit.misc.walsh_hadamard as wh
+import spyrit.misc.walsh_hadamard as wh
 from spyrit.learning.model_Had_DCAN import *
+from spyrit.misc.statistics import Cov2Var
 
 #%%
 #- Acquisition
@@ -33,11 +33,11 @@ plt.rcParams['text.usetex'] = True  # Latex
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(7)
 
-transform = transforms.Compose(
-    [transforms.functional.to_grayscale,
-     transforms.Resize((img_size, img_size)),
-     transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])])
+transform = torchvision.transforms.Compose(
+    [torchvision.transforms.functional.to_grayscale,
+     torchvision.transforms.Resize((img_size, img_size)),
+     torchvision.transforms.ToTensor(),
+     torchvision.transforms.Normalize([0.5], [0.5])])
 
 trainset = \
     torchvision.datasets.STL10(root=data_root, split='train+unlabeled',download=True, transform=transform)
@@ -97,7 +97,7 @@ for i_ind,v_ind in enumerate(ind):
         # 
         axs[2*i_ind,  i_sig+1].imshow(rs1, cmap='gray')
         axs[2*i_ind+1,i_sig+1].imshow(rec1, cmap='gray')
-        axs[2*i_ind,  i_sig+1].set_title(f"Direct: $\sigma={v_sig}$")
+        axs[2*i_ind,  i_sig+1].set_title(f"Raster: $\sigma={v_sig}$")
         axs[2*i_ind+1,i_sig+1].set_title(f"Had: $\sigma={v_sig}$")
         #
         axs[2*i_ind,i_sig+1].get_xaxis().set_visible(False)
