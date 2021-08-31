@@ -59,4 +59,4 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 
         tar xvf datasets-dlmis21.tar 
 
-1. Update the dataset path in the notebook `main.ipynb`. Look for the two occurences of `data_root =` and replace the quoted value with the path to your data folder, containing matrices and nets subfolders.
+1. Update the dataset path in the notebook `main.ipynb`: look for the two occurences of `data_root =` and replace the quoted value with the path to your data folder, containing matrices and nets subfolders.
