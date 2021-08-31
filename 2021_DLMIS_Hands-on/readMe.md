@@ -36,9 +36,10 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 ## Running the code on a local installation (being tested)
 1. We recommend you to use virtual environment.
 
-1. Install spyrit
+1. Install spyrit and a requirement
         
         pip install spyrit
+        pip install h5py
 
 1. Retrieve spyrit source code via git :
         
