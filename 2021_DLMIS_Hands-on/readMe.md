@@ -55,8 +55,8 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 
 3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
 
-1. Extract the dataset (there is an error in `tar: Unexpected EOF in archive`, even if the files appear with the good size (1.5Go = 860Mo + 586Mo)) :    
+1. Extract the dataset (there is an error in `tar: Unexpected EOF in archive`, even if the files appear with the good size (1.5Go = matrices 860Mo + nets 586Mo)) :    
 
         tar xvf datasets-dlmis21.tar 
 
-1. Update the dataset path in the notebook `main.ipynb`
+1. Update the dataset path in the notebook `main.ipynb`. Look for the two occurences of `data_root =` and replace the quoted value with the path to your data folder, containing matrices and nets subfolders.
