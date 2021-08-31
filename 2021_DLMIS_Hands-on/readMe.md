@@ -36,10 +36,11 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 ## Running the code on a local installation (being tested)
 1. We recommend you to use virtual environment.
 
-1. Install spyrit and a requirement
+1. Install spyrit and requirements
         
         pip install spyrit
         pip install h5py
+        pip install scikit-image
 
 1. Retrieve spyrit source code via git :
         
