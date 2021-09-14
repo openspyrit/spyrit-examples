@@ -10,12 +10,12 @@ This code is functionnal with the V1.0 of spyrit (and all it's following depende
 
 ## Downloading Spihim experimental data
 ```
-wget data (soon)
+wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip
 ```
 
 ## Downloading the trained neural networks
 ```
-wget nets (soon)
+wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip
 ```
 
 # Installation 

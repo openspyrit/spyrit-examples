@@ -33,25 +33,32 @@ The hands-on session followed a scientific presentation. Check the [slides](http
 
 5. Launch the jupyter notebook     `/floyd/home/spyritexamples-master/2021_DLMIS_Hands-on/main.ipyn`
 
-## Runing the code on a local installation (not tested yet)
-1. Create a new environnement with pytorch > 1.7
-1. Download https://www.creatis.insa-lyon.fr/~ducros/hands_on/spyrit-master.zip
-1. Unzip an rename
+## Running the code on a local installation (being tested)
+1. We recommend you to use virtual environment.
 
-        unzip spyrit-master.zip
-        rm spyrit-master.zip
-        mv spyrit-master spyrit
+1. Install spyrit and requirements
         
-1. Install spyrit
-        
-        pip install -e spyrit
-        
-1. Go into `/spyritexamples/2021_DLMIS_Hands-on/`
+        pip install spyrit
+        pip install h5py
+        pip install scikit-image
 
-1. Open jupyter notebook    
+1. Retrieve spyrit source code via git :
+        
+        git clone https://github.com/openspyrit/spyrit-examples.git        
+        
+1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`     
 
+6. Open jupyter notebook    
+
+        pip install notebook
         jupyter notebook
         
-1.  Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+1. Create a `data` folder and go into it.
 
-1. Update the dataset path in the notebooks
+3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+
+1. Extract the dataset (there is an error in `tar: Unexpected EOF in archive`, even if the files appear with the good size (1.5Go = matrices 860Mo + nets 586Mo)) :    
+
+        tar xvf datasets-dlmis21.tar 
+
+1. Update the dataset path in the notebook `main.ipynb`: look for the two occurences of `data_root =` and replace the quoted value with the path to your data folder, containing matrices and nets subfolders.
