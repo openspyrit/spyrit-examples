@@ -15,6 +15,11 @@ git clone https://github.com/openspyrit/spyrit-examples.git
 cd ./spyrit-examples/2021_Optics_express/
 ```
 
+This folder contains two script
+
+* main.py:  the script generates the figures in the paper from trained networks (typically run in spyder)
+* train.py: the script can be used to retrain the network (typically run in a terminal)
+
 # Install the dependencies
 
 Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package that can be installed via `pip`. We recommend creating a virtual (e.g., conda) environment first.
@@ -53,19 +58,7 @@ We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/s
 wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip
 ```
 
-Unzip and save in `./spyrit-examples/2021_Optics_express/models/`
-
-# Installation 
-
-```
-start new envoriment
-install spyrit v1.0
-Install any possible extra dependencies
-Launch jupyter-Lab on that new environment
-Run the jupyter-Notebook
-```
-
-
+Unzip and save in `./spyrit-examples/2021_Optics_express/models/` [CHECK!]
 
 # Training the neural networks from scratch
 
