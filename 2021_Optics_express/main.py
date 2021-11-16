@@ -1,3 +1,4 @@
+#%%
 from __future__ import print_function, division
 import torch
 import torch.nn as nn
@@ -22,18 +23,10 @@ from spyrit.misc.metrics import *
 import os, sys
 import warnings
 
-class HiddenPrints:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stdout = self._original_stdout
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#Defining functions to load the experimental Data
+#%% Functions to load the experimental Data
 def read_mat_data_index(expe_data, nflip, lambda_i = 548):
     F_pos = sio.loadmat(expe_data+"_{}_100_pos_data.mat".format(nflip));
     F_neg = sio.loadmat(expe_data+"_{}_100_neg_data.mat".format(nflip));
@@ -285,7 +278,6 @@ def Diag(A):
     d = np.reshape(A[np.diag_indices(n)], (n,1));
     return d;
 
-
 # def Denoi_stat_comp(y, Sigma, Sigma_a, H):
 #     Pat = np.dot(Sigma, np.transpose(H));
 #     P_k = np.linalg.inv(Sigma_a+np.dot(H,Pat));
@@ -320,38 +312,36 @@ def Diag(A):
 #     x_k_bm3d = BM3D_tikho(x_k_est, P_k);
 #     return x_k_bm3d;
 
-#Parameters
-#Acquisition Parameters
-img_size = 64; # Height / width dimension
-sig =0.5; # std maximum total number of photons
-K =1.6; # Normalisation constant
+#%% Parameters
+# Acquisition Parameters
+img_size = 64;  # Height / width dimension
+sig =0.5;       # std maximum total number of photons
+K =1.6;         # Normalisation constant
 C = 1070;
 s = 55;
 
-#Network and training
-data_root = "data_example", # Path to SLT-10 dataset
-net_arch = 0;   # Network architecture (variants for the FCL)
-precompute_root ="data_example/model/"# Path to precomputed data
-precompute =  False # Tells if the precomputed data is available 
-model_root = 'data_example/model/'; #  Path to model saving files
+# Network and training
+data_root = "data/",            # Path to SLT-10 dataset
+net_arch = 0;                   # Network architecture (variants for the FCL)
+precompute_root ="model/"       # Path to precomputed data
+precompute =  False             # Precomputed data is available 
+model_root = precompute_root    # Path to model saving files
 
-#Experimental data
-expe_root = "data_example/expe_2/" # Path to precomputed data
+# Experimental data
+expe_root = "expe/"#"data_example/expe_2/" # Path to precomputed data
 
-#Optimisation
-num_epochs = 20 ; #Number of training epochs 
-batch_size = 256 ; # Size of each training batch
-reg = 1e-7; # Regularisation Parameter
-lr = 1e-3; # Learning Rate
-step_size = 10; #Scheduler Step Size
-gamma =0.5; # Scheduler Decrease Rate
+# Optimisation
+batch_size = 256 ;  # Size of each training batch
+reg = 1e-7;         # Regularisation Parameter
+lr = 1e-3;          # Learning Rate
+step_size = 10;     # Scheduler Step Size
+gamma =0.5;         # Scheduler Decrease Rate
 
-#Loading Preprocessed Data
+#%% Loading Preprocessed Data
 my_transform_file = Path(expe_root) / ('transform_{}x{}'.format(img_size, img_size)+'.mat')
 H = sio.loadmat(my_transform_file);
 H = (1/img_size)*H["H"]
 #H_2 = Hadamard_Transform_Matrix(opt.img_size);
-
 
 my_average_file = Path(precompute_root) / ('Average_{}x{}'.format(img_size, img_size)+'.npy')
 my_cov_file = Path(precompute_root) / ('Cov_{}x{}'.format(img_size, img_size)+'.npy')
@@ -373,9 +363,7 @@ print('Loading covariance and mean')
 Mean_had_1 = sio.loadmat(my_average_file)
 Cov_had_1  = sio.loadmat(my_cov_file)
 
-
 # Normalisation of imported Mean and Covariance.
-
 Mean_had_1 = Mean_had_1["mu"]-np.dot(H, np.ones((img_size**2,1)));
 Mean_had_1 = np.reshape(Mean_had_1,(img_size, img_size));
 Mean_had_1 = np.amax(Mean_had)/np.amax(Mean_had_1)*Mean_had_1;
@@ -385,15 +373,14 @@ Cov_had_1 = np.amax(Cov_had)/np.amax(Cov_had_1)*Cov_had_1;
 Var = Cov2Var(Cov_had_1)
 Perm = Permutation_Matrix(Var)
 
-#Compressed Reconstruction via CNN (CR = 7/8)
+#%% Compressed Reconstruction via CNN [Compression ratio = 7/8, soit CR = 512] 
 #Parameters
-CR = 1024; # Number of patterns
+num_epochs = 100 ;   # Number of training epochs 
+CR = 512;           # Number of patterns
 even_index = range(0,2*CR,2);
 uneven_index = range(1,2*CR,2);
 
 
-# Var = Cov2Var(Cov_had)
-# Perm = Permutation_Matrix(Var)
 Pmat = np.dot(Perm,H);
 H_k = Pmat[:CR,:];
 
@@ -401,24 +388,26 @@ H_k = Pmat[:CR,:];
 suffix = '_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
         img_size, CR, num_epochs, lr, step_size,\
         gamma, batch_size, reg)
+# !!! REMOVE WHEN M=512 and 100 epochs available
+CR2 = 1024   
+suffix2 = '_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
+        img_size, CR2, 20, lr, step_size,\
+        gamma, batch_size, reg)
 
-# N0_list = [700, 150, 80, 60, 30, 10, 10];
-# N0_list_OG = [500, 150, 80, 60, 30, 10, 2];
 N0_list = [2500];
-# with HiddenPrints():
 model_list = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 0, H, suffix, model_root);
 model_list_denoi = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 1, H, suffix, model_root);
-model_list_no_noise = net_list(img_size, CR, Mean_had, Cov_had,net_arch, [0 for i in range(len(N0_list))], sig, 1, H, suffix,model_root);
+model_list_no_noise = net_list(img_size, CR2, Mean_had, Cov_had,net_arch, [0 for i in range(len(N0_list))], sig, 1, H, suffix2, model_root);
 
 model = noiCompNet(img_size, CR, Mean_had, Cov_had, 3, 50, 0.5, H)
-root_model = 'data_example/model/NET_free_N0_2500_sig_0.5_N_64_M_1024_epo_20_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
 model = model.to(device)
-load_net(root_model,model, device)
+net_path = Path(model_root) / 'NET_free_N0_2500_sig_0.5_N_64_M_512_epo_20_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
+load_net(net_path, model, device)
 
 titles = ["GT",  "TV", "Tikhonov","Noiseless Net", "Free Layer", "Proposed"]
 
-#LED Lamp - Part 3
-#Loading the Compressed Data
+#%% LED Lamp
+# Loading compressed data
 titles_expe = ["noObjectD_1_0.0_variance", "noObjectD_1_0.3_02_variance"]+\
               ["noObjectD_1_0.3_03_variance", "noObjectD_1_0.3_04_variance"]+\
               ["noObjectD_1_0.3_01_variance"]+\
@@ -441,8 +430,8 @@ m_prim.append(m_list[6]+m_list[8]);
 m_prim = m_prim+m_list[7:];
 m_list = m_prim;
 
-#Loading Ground Truth
-#We normalize the incoming data, so that it has the right functioning range for neural networks to work with.
+# Loading ground-truth
+# NB: we normalize it to get the range the neural networks work with.
 GT=raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
 # Good values 450 - 530 -  548 - 600
 GT_prim = [];
@@ -457,9 +446,8 @@ max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
 GT = [((GT[i]-np.amin(GT[i]))/max_list[i])*2-1 for i in range(len(GT))];
 max_list = [max_list[i]/K for i in range(len(max_list))];
 
-#Displaying the results
-#Once all the networks have been loaded, we appy those networks on the loaded Compressed Data.
-
+#%% Displaying the results
+#Once all the networks have been loaded, we evaluate them on the measurements.
 from time import perf_counter
 title_lists = [];
 Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j in range(len(titles))] for i in range (len(max_list))]
@@ -506,7 +494,7 @@ with torch.no_grad():
 o1 = outputs;
 t1 = title_lists;
 nb_disp_frames = 6;
-#compare_video_frames(outputs, nb_disp_frames, title_lists);
+compare_video_frames(outputs, nb_disp_frames, title_lists);
 outputs_0 = outputs[:1];
 outputs_1 = outputs[1:4];
 outputs_2 = outputs[4:];
@@ -514,11 +502,12 @@ title_lists_0 = title_lists[:1];
 title_lists_1 = title_lists[1:4];
 title_lists_2 = title_lists[4:];
 
-#compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
-#compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-#compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
+compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
+compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
+compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
 
-#STL-10 Cat
+#%% STL-10 Cat
+
 #Loading the Compressed Data
 titles_expe = ["stl10_05_1.5_0.0_0{}_variance".format(i) for i in range(1,7)]+\
               ["stl10_05_1_0.3_variance", "stl10_05_1_0.6_variance"]
@@ -529,7 +518,6 @@ nflip[-2:] = [1 for i in range(len(nflip[-2:]))]
 channel = 581;
 m_list = load_data_list_index(expe_data, nflip, CR, K, Perm, img_size, num_channel = channel);
 
-
 m_prim = [];
 m_prim = [];
 m_prim.append(sum(m_list[:7]));
@@ -538,7 +526,9 @@ m_prim.append(m_list[2]);
 m_prim = m_prim+m_list[-2:];
 m_list = m_prim;
 
-#Loading Ground Truth
+# Loading Ground-Truth
+# NB: we normalize it to get the range the neural networks work with.
+
 GT=raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
 # Good values 450 - 530 -  548 - 600
 GT_prim = [];
@@ -552,10 +542,9 @@ max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
 GT = [((GT[i]-np.amin(GT[i]))/max_list[i])*2-1 for i in range(len(GT))];
 max_list = [max_list[i]/K for i in range(len(max_list))];
 
-#Displaying the results
-#Once all the networks have been loaded, we appy those networks on the loaded Compressed Data.
+#%% Methods comparison
 
-
+# we evaluate the networks on the loaded measurements.
 title_lists = [];
 Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j in range(len(titles))] for i in range (len(max_list))]
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
@@ -604,21 +593,20 @@ title_lists_0 = title_lists[:1];
 title_lists_1 = title_lists[1:4];
 title_lists_2 = title_lists[4:];
 
-#compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
-#compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-#compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
+compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
+compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
+compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
 
-#Compressed Reconstruction via CNN (CR = 3/4)
-#Parameters 
-num_epochs = 20 ; #Number of training epochs 
-batch_size = 256 ; # Size of each training batch
-reg = 1e-7; # Regularisation Parameter
-lr = 1e-3; # Learning Rate
-step_size = 10; #Scheduler Step Size
-gamma =0.5; # Scheduler Decrease Rate
+#%% Compressed Reconstruction via CNN (CR = 3/4)
+# Parameters 
+num_epochs = 20 ;   # Number of training epochs 
+batch_size = 256 ;  # Size of each training batch
+reg = 1e-7;         # Regularisation Parameter
+lr = 1e-3;          # Learning Rate
+step_size = 10;     # Scheduler Step Size
+gamma =0.5;         # Scheduler Decrease Rate
 
-
-CR = 1024; # Number of patterns
+CR = 1024;          # Number of patterns
 
 even_index = range(0,2*CR,2);
 uneven_index = range(1,2*CR,2);
@@ -627,7 +615,7 @@ uneven_index = range(1,2*CR,2);
 Pmat = np.dot(Perm,H);
 H_k = Pmat[:CR,:];
 
-#Loading Relevant Neural Networks
+# Loading Relevant Neural Networks
 suffix = '_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
         img_size, CR, num_epochs, lr, step_size,\
         gamma, batch_size, reg)
@@ -641,13 +629,15 @@ model_list_denoi = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, s
 model_list_no_noise = net_list(img_size, CR, Mean_had, Cov_had,net_arch, [0 for i in range(len(N0_list))], sig, 1, H, suffix,model_root);
 
 model = noiCompNet(img_size, CR, Mean_had, Cov_had, 3, 50, 0.5, H)
-root_model = 'data_example/model/NET_free_N0_2500_sig_0.5_N_64_M_1024_epo_20_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
 model = model.to(device)
-load_net(root_model,model, device)
+
+net_path = Path(model_root) / 'NET_free_N0_2500_sig_0.5_N_64_M_1024_epo_20_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
+load_net(net_path, model, device)
+
 titles = ["GT",  "TV", "Tikhonov","Noiseless Net", "Free Layer", "Proposed"]
 
-#Siemens Star
-#Loading the Compressed Data
+#%% Siemens Star
+# Loading the compressed raw measurements
 titles_expe = ["starSectorD_2_0.0_01_variance", "starSectorD_2_0.0_02_variance"]+\
               ["starSectorD_2_0.0_03_variance", "starSectorD_2_0.0_04_variance"]+\
               ["starSectorD_2_0.0_05_variance", "starSectorD_2_0.0_06_variance"]+\
@@ -669,9 +659,9 @@ m_prim.append(sum(m_list[7:9]));
 m_prim = m_prim+m_list[9:];
 m_list = m_prim;
 
-#Loading Ground Truth
-#We normalize the incoming data, so that it has the right functioning range for neural networks to work with.
-GT=raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
+# Loading Ground Truth
+# NB: we normalize it to get the range the neural networks work with.
+GT = raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
 # Good values 450 - 530 -  548 - 600 -510
 
 GT_prim = [];
@@ -684,11 +674,8 @@ max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
 GT = [((GT[i]-np.amin(GT[i]))/max_list[i])*2-1 for i in range(len(GT))];
 max_list = [max_list[i]/K for i in range(len(max_list))];
 
-#Displaying the results
-#Once all the networks have been loaded, we appy those networks on the loaded Compressed Data.
+#%% Methods comparison
 m_list[0].shape
-
-
 
 title_lists = [];
 Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j in range(len(titles))] for i in range (len(max_list))]
@@ -738,9 +725,9 @@ title_lists_0 = title_lists[:1];
 title_lists_1 = title_lists[1:4];
 title_lists_2 = title_lists[4:];
 
-#compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
-#compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-#compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
+compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
+compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
+compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
 
 #%% Final Figure
 out_lamp = np.concatenate((np.reshape(o1[0][0,0,0,:,:],(1,1,1,img_size, img_size)), o1[-1]), axis = 1)
@@ -757,45 +744,19 @@ title_lists = [title_lamp, title_cat, title_star]
 
 
 nb_disp_frames = 7
-#compare_video_frames(outputs, nb_disp_frames, title_lists, fontsize = 11.4)
-
-def transpose(liste):
-    x = len(liste);
-    y = len(liste[0]);
-    out = [];
-    for i in range(y):
-        out_i = [];
-        for j in range(x):
-            out_i.append(liste[j][i]);
-        out.append(out_i);
-    return out;
-
-def transpose_vid(liste):
-    x = len(liste);
-    y = liste[0].shape[1];
-    n = liste[0].shape[-1]
-    out = [];
-    for i in range(y):
-        out_i = np.zeros((1,x,1,n,n));
-        for j in range(x):
-            out_i[0,j,0,:,:] = liste[j][0,i,0,:,:];
-        out.append(out_i);
-    return out;
+compare_video_frames(outputs, nb_disp_frames, title_lists, fontsize = 11.4)
 
 nb_disp_frames = 3
 
 title_lists[0][1] = "Noisy "+ title_lists[0][1]
 title_lists[2][1] = "Noisy "+ title_lists[2][1]
 title_lists[1][1] = "Noisy "+ title_lists[1][1]
-#compare_video_frames([outputs[0][:,:4,:,:,:]], nb_disp_frames, [title_lists[0][:4]], fontsize = 11.4)
-#compare_video_frames([outputs[0][:,4:,:,:,:]], nb_disp_frames, [title_lists[0][4:]], fontsize = 11.4)
 
-#compare_video_frames([outputs[1][:,:4,:,:,:]], nb_disp_frames, [title_lists[1][:4]], fontsize = 11.4)
-#compare_video_frames([outputs[1][:,4:,:,:,:]], nb_disp_frames, [title_lists[1][4:]], fontsize = 11.4)
+compare_video_frames([outputs[0][:,:4,:,:,:]], nb_disp_frames, [title_lists[0][:4]], fontsize = 11.4)
+compare_video_frames([outputs[0][:,4:,:,:,:]], nb_disp_frames, [title_lists[0][4:]], fontsize = 11.4)
 
-#compare_video_frames([outputs[2][:,:4,:,:,:]], nb_disp_frames, [title_lists[2][:4]], fontsize = 11.4)
-#compare_video_frames([outputs[2][:,4:,:,:,:]], nb_disp_frames, [title_lists[2][4:]], fontsize = 11.4)
+compare_video_frames([outputs[1][:,:4,:,:,:]], nb_disp_frames, [title_lists[1][:4]], fontsize = 11.4)
+compare_video_frames([outputs[1][:,4:,:,:,:]], nb_disp_frames, [title_lists[1][4:]], fontsize = 11.4)
 
-
-
-
+compare_video_frames([outputs[2][:,:4,:,:,:]], nb_disp_frames, [title_lists[2][:4]], fontsize = 11.4)
+compare_video_frames([outputs[2][:,4:,:,:,:]], nb_disp_frames, [title_lists[2][4:]], fontsize = 11.4)

@@ -38,29 +38,34 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 # pip install
 pip install spyrit # tested with spyrit==1.1.0
 pip install spyder
+pip install pylops
 ```
 
 # Experimental data
 
-We exploit some of the single-pixel raw acquisitions that constitute the [SPIHIM](https://github.com/openspyrit/spihim) dataset. The preprocessed data considered in the paper can be downloaded [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zi). In a terminal, 
+We exploit some of the single-pixel raw acquisitions that constitute the [SPIHIM](https://github.com/openspyrit/spihim) dataset. The preprocessed data considered in the paper can be downloaded [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip). Unzip in `./spyrit-examples/2021_Optics_express/expe/`. 
+
+In a terminal, [Check]
 
 ```shell
-wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip
+wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip -P ./spyrit-examples/2021_Optics_express/
+cd ./spyritexamples/2021_OpticsExpress/
+unzip expe.zip
 ```
-
-Unzip and save in `./spyrit-examples/2021_Optics_express/data/` [CHECK!]
 
 # Trained neural networks
 
-We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip). In a terminal, 
+We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip). Unzip in `./spyrit-examples/2021_Optics_express/model/`. 
+
+In a terminal, [Complete and check]
 
 ```shell
 wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip
 ```
 
-Unzip and save in `./spyrit-examples/2021_Optics_express/models/` [CHECK!]
+Unzip and save in `./spyrit-examples/2021_Optics_express/model/` 
 
-# Training the neural networks from scratch
+# Training the neural networks from scratch [check]
 
 ```
 python train_neural_networks --CR 512 --N0 50 --sig 0.5
