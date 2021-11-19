@@ -74,6 +74,7 @@ def read_mat_data_proc(expe_data, nflipi, lamda_min=460, lambda_max = 700):
     F = np.sum(F , axis=2);
     return F;
 
+# warning: K not used!
 def load_data_list_index(expe_data,nflip, CR, K, Perm, img_size, num_channel = 548):
     even_index = range(0,2*CR,2);
     odd_index = range(1,2*CR,2);
@@ -341,7 +342,6 @@ gamma =0.5;         # Scheduler Decrease Rate
 my_transform_file = Path(expe_root) / ('transform_{}x{}'.format(img_size, img_size)+'.mat')
 H = sio.loadmat(my_transform_file);
 H = (1/img_size)*H["H"]
-#H_2 = Hadamard_Transform_Matrix(opt.img_size);
 
 my_average_file = Path(precompute_root) / ('Average_{}x{}'.format(img_size, img_size)+'.npy')
 my_cov_file = Path(precompute_root) / ('Cov_{}x{}'.format(img_size, img_size)+'.npy')
@@ -388,18 +388,13 @@ H_k = Pmat[:CR,:];
 suffix = '_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
         img_size, CR, num_epochs, lr, step_size,\
         gamma, batch_size, reg)
-# !!! REMOVE WHEN M=512 and 100 epochs available
-CR2 = 1024   
-suffix2 = '_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
-        img_size, CR2, 20, lr, step_size,\
-        gamma, batch_size, reg)
 
 N0_list = [2500];
 model_list = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 0, H, suffix, model_root);
 model_list_denoi = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 1, H, suffix, model_root);
-model_list_no_noise = net_list(img_size, CR2, Mean_had, Cov_had,net_arch, [0 for i in range(len(N0_list))], sig, 1, H, suffix2, model_root);
-
-model = noiCompNet(img_size, CR, Mean_had, Cov_had, 3, 50, 0.5, H)
+model_list_no_noise = net_list(img_size, CR, Mean_had, Cov_had, net_arch, [0], sig, 1, H, suffix, model_root);
+# freeNET (trained for N0 = 2500 -> change !)
+model = noiCompNet(img_size, CR, Mean_had, Cov_had, 3, 50, 0.5, H) 
 model = model.to(device)
 net_path = Path(model_root) / 'NET_free_N0_2500_sig_0.5_N_64_M_512_epo_20_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
 load_net(net_path, model, device)
@@ -421,28 +416,22 @@ expe_data = [expe_root+titles_expe[i] for i in range(len(titles_expe))];
 
 m_list = load_data_list_index(expe_data, nflip, CR, K, Perm, img_size, num_channel = channel);
 
-
 m_prim = [];
 m_prim.append(sum(m_list[:4])+m_list[6]);
-m_prim.append(sum(m_list[:2]));
-m_prim.append(m_list[0]);
-m_prim.append(m_list[6]+m_list[8]);
-m_prim = m_prim+m_list[7:];
+m_prim.append(m_list[-1]);
 m_list = m_prim;
 
 # Loading ground-truth
 # NB: we normalize it to get the range the neural networks work with.
-GT=raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
+GT = raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = channel);
+
 # Good values 450 - 530 -  548 - 600
 GT_prim = [];
 GT_prim.append(sum(GT[:4])+GT[6]);
-GT_prim.append(sum(GT[:2]));
-GT_prim.append(GT[0]);
-GT_prim.append(GT[6]+GT[8]);
-GT_prim = GT_prim+GT[7:];
+GT_prim.append(GT[-1]);
 GT = GT_prim;
+
 max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
-#    GT = [((GT[i]-np.amin(GT[i]))/max_list[i]+1)/2 for i in range(len(GT))];
 GT = [((GT[i]-np.amin(GT[i]))/max_list[i])*2-1 for i in range(len(GT))];
 max_list = [max_list[i]/K for i in range(len(max_list))];
 
@@ -454,20 +443,25 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
+eta1 = 6 # hyperparameter
+
 with torch.no_grad():
     for i in range(len(GT)):
+        
         list_outs = [];
-        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i]*4, 1, 1, img_size, img_size, C, s, K);
+        m_list[i] = m_list[i]*eta1;
+
+        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
+        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);                   # noiseless linear
+        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i], 1, 1, img_size, img_size, C, s, K);  # Tikhonov
 
         t1_start = perf_counter() 
-        x_SDCAN = model_list_no_noise[0].forward_postprocess(x_Stat_comp, 1,1, img_size, img_size);
+        x_SDCAN = model_list_no_noise[0].forward_postprocess(x_Stat_comp, 1,1, img_size, img_size);                             # noiseless net
         t1_stop = perf_counter() 
         print("CNN time = {}s".format(t1_stop-t1_start))
         
-        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size, C, s, K);
-        x_free = model.forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size)#, C, s, K);
+        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i],1,1, img_size, img_size, C, s, K);
+        x_free = model.forward_reconstruct_expe(m_list[i],1,1, img_size, img_size)#, C, s, K);
         
         m = torch2numpy(m_list[i][0,0,even_index] - m_list[i][0,0,uneven_index]);
         alpha_est = np.amax(np.dot(np.dot(np.transpose(H_k), np.linalg.inv(np.dot(H_k, np.transpose(H_k)))),m))
@@ -504,7 +498,6 @@ title_lists_2 = title_lists[4:];
 
 compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
 compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
 
 #%% STL-10 Cat
 
@@ -519,11 +512,9 @@ channel = 581;
 m_list = load_data_list_index(expe_data, nflip, CR, K, Perm, img_size, num_channel = channel);
 
 m_prim = [];
-m_prim = [];
+
 m_prim.append(sum(m_list[:7]));
-m_prim.append(m_list[0]+m_list[1]);
-m_prim.append(m_list[2]);
-m_prim = m_prim+m_list[-2:];
+m_prim.append(m_list[-1]);
 m_list = m_prim;
 
 # Loading Ground-Truth
@@ -533,12 +524,9 @@ GT=raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = chan
 # Good values 450 - 530 -  548 - 600
 GT_prim = [];
 GT_prim.append(sum(GT[:7]));
-GT_prim.append(GT[0]+GT[1]);
-GT_prim.append(GT[2]);
-GT_prim = GT_prim+GT[-2:];
+GT_prim.append(GT[-1]);
 GT = GT_prim;
 max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
-#    GT = [((GT[i]-np.amin(GT[i]))/max_list[i]+1)/2 for i in range(len(GT))];
 GT = [((GT[i]-np.amin(GT[i]))/max_list[i])*2-1 for i in range(len(GT))];
 max_list = [max_list[i]/K for i in range(len(max_list))];
 
@@ -550,15 +538,22 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
+eta2 = 2 # hyperparameter
+
 with torch.no_grad():
     for i in range(len(GT)):
+        #
         list_outs = [];
-        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i]*4, 1, 1, img_size, img_size, C, s, K);
+        m_list[i] = m_list[i]*eta1;
+        
+        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
+        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);                   # noiseless linear
+        
+        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i], 1, 1, img_size, img_size, C, s, K);  # Tikho
+        
         x_SDCAN = model_list_no_noise[0].forward_postprocess(x_Stat_comp, 1,1, img_size, img_size);
-        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size, C, s, K);
-        x_free = model.forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size)#, C, s, K);
+        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i],1,1, img_size, img_size, C, s, K);
+        x_free = model.forward_reconstruct_expe(m_list[i], 1, 1, img_size, img_size)#, C, s, K);
 
             
         m = torch2numpy(m_list[i][0,0,even_index] - m_list[i][0,0,uneven_index]);
@@ -595,7 +590,6 @@ title_lists_2 = title_lists[4:];
 
 compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
 compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
 
 #%% Compressed Reconstruction via CNN (CR = 3/4)
 # Parameters 
@@ -626,7 +620,7 @@ N0_list = [2500];
 # with HiddenPrints():
 model_list = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 0, H, suffix, model_root);
 model_list_denoi = net_list(img_size, CR, Mean_had, Cov_had,net_arch, N0_list, sig, 1, H, suffix, model_root);
-model_list_no_noise = net_list(img_size, CR, Mean_had, Cov_had,net_arch, [0 for i in range(len(N0_list))], sig, 1, H, suffix,model_root);
+model_list_no_noise = net_list(img_size, CR, Mean_had, Cov_had,net_arch, [0], sig, 1, H, suffix, model_root);
 
 model = noiCompNet(img_size, CR, Mean_had, Cov_had, 3, 50, 0.5, H)
 model = model.to(device)
@@ -655,8 +649,7 @@ m_list = load_data_list_index(expe_data, nflip, CR, K, Perm, img_size, num_chann
     
 m_prim = [];
 m_prim.append(sum(m_list[:10]));
-m_prim.append(sum(m_list[7:9]));
-m_prim = m_prim+m_list[9:];
+m_prim.append(m_list[10]);
 m_list = m_prim;
 
 # Loading Ground Truth
@@ -666,8 +659,7 @@ GT = raw_ground_truth_list_index(expe_data, nflip, H, img_size, num_channel = ch
 
 GT_prim = [];
 GT_prim.append(sum(GT[:10]));
-GT_prim.append(sum(GT[7:9]));
-GT_prim = GT_prim+GT[9:];
+GT_prim.append(GT[10]);
 GT = GT_prim;
 max_list = [np.amax(GT[i])-np.amin(GT[i]) for i in range(len(GT))];
 #    GT = [((GT[i]-np.amin(GT[i]))/max_list[i]+1)/2 for i in range(len(GT))];
@@ -682,16 +674,21 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
+eta3 = 4 # hyperparameter
+
 with torch.no_grad():
     for i in range(len(GT)):
+        
         list_outs = [];
-        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i]*4, 1, 1, img_size, img_size);
-        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i]*4, 1, 1, img_size, img_size, C, s, K);
+        m_list[i] = m_list[i]*eta3;
+        
+        x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
+        x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);
+        x_Denoi_Stat_comp = model_list_denoi[0].forward_reconstruct_mmse_expe(m_list[i], 1, 1, img_size, img_size, C, s, K);
         x_SDCAN = model_list_no_noise[0].forward_postprocess(x_Stat_comp, 1,1, img_size, img_size);
-        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size, C, s, K);
-        x_free = model.forward_reconstruct_expe(m_list[i]*4,1,1, img_size, img_size)#, C, s, K);
-
+        
+        x_SDCAN_denoi = model_list_denoi[0].forward_reconstruct_expe(m_list[i],1,1, img_size, img_size, C, s, K);
+        x_free = model.forward_reconstruct_expe(m_list[i],1,1, img_size, img_size)#, C, s, K);
         
         m = torch2numpy(m_list[i][0,0,even_index] - m_list[i][0,0,uneven_index]);
         alpha_est = np.amax(np.dot(np.dot(np.transpose(H_k), np.linalg.inv(np.dot(H_k, np.transpose(H_k)))),m))
@@ -706,28 +703,25 @@ with torch.no_grad():
         list_outs.append(x_tv);
         list_outs.append(x_Denoi_Stat_comp);
         list_outs.append(x_SDCAN);
-        list_outs.append(x_free);
+        list_outs.append(x_free);               #freeNet
         list_outs.append(x_SDCAN_denoi);
         output = torch.stack(list_outs, axis = 1);
 
         psnr = batch_psnr_vid(Ground_truth, output);
         outputs.append(torch2numpy(output));
-        title_lists.append(["{} {},\n PSNR = {}".format(titles[j],Additional_info[i][j], round(psnr[j],2)) for j in range(len(titles))]);
+        title_lists.append(["{} {},\n PSNR = {}".format(titles[j], Additional_info[i][j], round(psnr[j],2)) for j in range(len(titles))]);
 
+o3 = outputs
+t3 = title_lists
+nb_disp_frames = 6
 
-o3 = outputs;
-t3 = title_lists;
-nb_disp_frames = 6;
-outputs_0 = outputs[:1];
-outputs_1 = outputs[1:4];
-outputs_2 = outputs[4:];
-title_lists_0 = title_lists[:1];
-title_lists_1 = title_lists[1:4];
-title_lists_2 = title_lists[4:];
+outputs_0 = outputs[:1]
+outputs_1 = outputs[1:4]
+title_lists_0 = title_lists[:1]
+title_lists_1 = title_lists[1:4]
 
-compare_video_frames(outputs_0, nb_disp_frames, title_lists_0);
-compare_video_frames(outputs_1, nb_disp_frames, title_lists_1);
-compare_video_frames(outputs_2, nb_disp_frames, title_lists_2);
+compare_video_frames(outputs_0, nb_disp_frames, title_lists_0)
+compare_video_frames(outputs_1, nb_disp_frames, title_lists_1)
 
 #%% Final Figure
 out_lamp = np.concatenate((np.reshape(o1[0][0,0,0,:,:],(1,1,1,img_size, img_size)), o1[-1]), axis = 1)
@@ -736,27 +730,11 @@ title_lamp = [t1[0][0][:-11] + "(a)"]+t1[-1]
 out_cat = np.concatenate((np.reshape(o2[0][0,0,0,:,:],(1,1,1,img_size, img_size)), o2[-1]), axis = 1)
 title_cat = [t2[0][0][:-11] + "(b)"]+t2[-1]
 
-out_star = np.concatenate((np.reshape(o3[0][0,0,0,:,:],(1,1,1,img_size, img_size)), o3[-4]), axis = 1)
-title_star = [t3[0][0][:-11] + "(c)"]+t3[-4]
+out_star = np.concatenate((np.reshape(o3[0][0,0,0,:,:],(1,1,1,img_size, img_size)), o3[-1]), axis = 1)
+title_star = [t3[0][0][:-11] + "(c)"]+t3[-1]
 
 outputs = [out_lamp, out_cat, out_star]
 title_lists = [title_lamp, title_cat, title_star]
 
-
 nb_disp_frames = 7
-compare_video_frames(outputs, nb_disp_frames, title_lists, fontsize = 11.4)
-
-nb_disp_frames = 3
-
-title_lists[0][1] = "Noisy "+ title_lists[0][1]
-title_lists[2][1] = "Noisy "+ title_lists[2][1]
-title_lists[1][1] = "Noisy "+ title_lists[1][1]
-
-compare_video_frames([outputs[0][:,:4,:,:,:]], nb_disp_frames, [title_lists[0][:4]], fontsize = 11.4)
-compare_video_frames([outputs[0][:,4:,:,:,:]], nb_disp_frames, [title_lists[0][4:]], fontsize = 11.4)
-
-compare_video_frames([outputs[1][:,:4,:,:,:]], nb_disp_frames, [title_lists[1][:4]], fontsize = 11.4)
-compare_video_frames([outputs[1][:,4:,:,:,:]], nb_disp_frames, [title_lists[1][4:]], fontsize = 11.4)
-
-compare_video_frames([outputs[2][:,:4,:,:,:]], nb_disp_frames, [title_lists[2][:4]], fontsize = 11.4)
-compare_video_frames([outputs[2][:,4:,:,:,:]], nb_disp_frames, [title_lists[2][4:]], fontsize = 11.4)
+compare_video_frames(outputs, nb_disp_frames, title_lists, 'eta = {} | {} | {}\n'.format(eta1,eta2,eta3), fontsize = 11.4)
