@@ -17,8 +17,8 @@ cd ./spyrit-examples/2021_Optics_express/
 
 This folder contains two script
 
-* main.py:  the script generates the figures in the paper from trained networks (typically run in spyder)
-* train.py: the script can be used to retrain the network (typically run in a terminal)
+* main.py:  generates the figures in the paper  (typically run in Spyder). It requires trained networks.
+* train.py: can be used to train the reconstruction networks (typically run in a terminal)
 
 # Install the dependencies
 
@@ -30,9 +30,9 @@ NB: On Windows, you need to install [torch](https://pytorch.org/get-started/loca
 # conda (or pip) install
 conda create --name spyrit-env
 conda activate spyrit-env
-#conda install -c anaconda spyder=5  # Not working!
+#conda install -c anaconda spyder=5  
 conda install -c anaconda pip
-# windows only
+# for windows only
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 
 # pip install
@@ -45,29 +45,34 @@ pip install pylops
 
 We exploit some of the single-pixel raw acquisitions that constitute the [SPIHIM](https://github.com/openspyrit/spihim) dataset. The preprocessed data considered in the paper can be downloaded [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip). Unzip in `./spyrit-examples/2021_Optics_express/expe/`. 
 
-In a terminal, [Check]
-
-```shell
-wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/expe.zip -P ./spyrit-examples/2021_Optics_express/
-cd ./spyritexamples/2021_OpticsExpress/
-unzip expe.zip
-```
-
 # Trained neural networks
 
 We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip). Unzip in `./spyrit-examples/2021_Optics_express/model/`. 
 
-In a terminal, [Complete and check]
-
-```shell
-wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip
-```
-
-Unzip and save in `./spyrit-examples/2021_Optics_express/model/` 
-
 # Training the neural networks from scratch [check]
 
-```
-python train_neural_networks --CR 512 --N0 50 --sig 0.5
+We train our networks by simulating single-pixel measurements from the STL-10 image database.
+
+In a terminal:
+
+```shell
+python train.py --CR 512 --intensity_max 2500 --precompute_root ./model/ --num_epochs 20
 ```
 
+NB: This will download the STL-10 database. 
+
+[optional] If you already have the STL-10 on your computer, create a symbolic link.
+
+* Linux: [CHECK]
+
+```shell
+ln -s <stl-10 parent folder> /data/ 
+```
+
+* Windows Powershell:
+
+``` powershell
+New-Item -ItemType SymbolicLink -Name \data\ -Target <stl-10 parent folder>
+```
+
+### 
