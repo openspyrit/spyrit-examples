@@ -29,12 +29,12 @@ if __name__ == "__main__":
     # Network and training
     parser.add_argument("--data_root",  type=str,   default='./data/', help="Path to SLT-10 dataset")
     parser.add_argument("--net_arch",   type=int,   default=0,      help="Network architecture (variants for the FCL)")
-    parser.add_argument("--precompute_root", type=str, default='./stats/', help="Path to precomputed data")
+    parser.add_argument("--precompute_root", type=str, default='./model/', help="Path to precomputed data")
     parser.add_argument("--precompute", type=bool,  default=False,  help="Tells if the precomputed data is available")
     parser.add_argument("--model_root", type=str,   default='./models/', help="Path to model saving files")
-    parser.add_argument("--intensity_max",  type=float,   default=None, help="maximum photons/pixel")
+    parser.add_argument("--intensity_max",  type=float,   default=2500, help="maximum photons/pixel")
     parser.add_argument("--intensity_sig",  type=float,   default=0.5, help="std of maximun photons/pixel")
-    parser.add_argument("--denoi",      type=bool,   default=False, help="Denoising layer")
+    parser.add_argument("--denoi",      type=bool,   default=True, help="Denoising layer")
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=60,     help="Number of training epochs")
     parser.add_argument("--batch_size", type=int,   default=256,    help="Size of each training batch")
