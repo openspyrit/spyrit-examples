@@ -30,14 +30,13 @@ NB: On Windows, you need to install [torch](https://pytorch.org/get-started/loca
 # conda (or pip) install
 conda create --name spyrit-env
 conda activate spyrit-env
-#conda install -c anaconda spyder=5  
+conda install -c anaconda spyder 
 conda install -c anaconda pip
 # for windows only
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 
 # pip install
 pip install spyrit # tested with spyrit==1.1.0
-pip install spyder
 pip install pylops
 ```
 
@@ -51,15 +50,43 @@ We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/s
 
 # Training the neural networks from scratch [check]
 
-We train our networks by simulating single-pixel measurements from the STL-10 image database.
+### Type of networks
 
-In a terminal:
+We provide `train.py` to train several variants of networks, from a single command line. This includes
+
+* DC-Net: Denoised Completion (Tikhonov) network
 
 ```shell
-python train.py --CR 512 --intensity_max 2500 --precompute_root ./model/ --num_epochs 20
+python train.py
 ```
 
-NB: This will download the STL-10 database. 
+* C-Net: Completion network (DC-Net with no denoising)
+
+```shell
+python train.py --denoi 0
+```
+
+* Free-Net. This is a C-Net where the completion layer is learnt (i.e., free during training)
+
+```shell
+python train.py --denoi 0 --net_arch 3
+```
+
+* Noiseless-Net. This is a C-Net trained with no noise.
+
+```shell
+python train.py --denoi 0 --intensity_max None
+```
+
+By default, all networks are trained for M = 512 measurements during 20 epochs. For other values, consider
+
+```shell
+python train.py --denoi 1 --CR 1024 --num_epochs 100
+```
+
+### Image database
+
+We train our networks by simulating single-pixel measurements from the STL-10 image database. Running the above command lines will download the database. 
 
 [optional] If you already have the STL-10 on your computer, create a symbolic link.
 
@@ -75,4 +102,3 @@ ln -s <stl-10 parent folder> /data/
 New-Item -ItemType SymbolicLink -Name \data\ -Target <stl-10 parent folder>
 ```
 
-### 
