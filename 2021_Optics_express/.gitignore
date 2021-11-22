@@ -1,5 +1,5 @@
 .ipynb_checkpoints/
-model/
-expe/
-data/
+model*/
+expe*/
+data*/
 *.zip
