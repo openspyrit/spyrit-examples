@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Acquisition
     parser.add_argument("--img_size",   type=int,   default=64,     help="Height / width dimension")
-    parser.add_argument("--CR",         type=int,   default=333,    help="Number of patterns")
+    parser.add_argument("--CR",         type=int,   default=512,    help="Number of patterns")
     # Network and training
     parser.add_argument("--data_root",  type=str,   default='./data/', help="Path to SLT-10 dataset")
     parser.add_argument("--net_arch",   type=int,   default=0,      help="Network architecture (variants for the FCL)")
@@ -36,8 +36,8 @@ if __name__ == "__main__":
     parser.add_argument("--intensity_sig",  type=float,   default=0.5, help="std of maximun photons/pixel")
     parser.add_argument("--denoi",      type=bool,   default=True, help="Denoising layer")
     # Optimisation
-    parser.add_argument("--num_epochs", type=int,   default=60,     help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int,   default=256,    help="Size of each training batch")
+    parser.add_argument("--num_epochs", type=int,   default=20,     help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int,   default=1024,    help="Size of each training batch")
     parser.add_argument("--reg",        type=float, default=1e-7,   help="Regularisation Parameter")
     parser.add_argument("--lr",         type=float, default=1e-3,   help="Learning Rate")
     parser.add_argument("--step_size",  type=int,   default=10,     help="Scheduler Step Size")
@@ -56,6 +56,7 @@ if __name__ == "__main__":
     # The device of the machine, number of workers...
     #
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(device)
 
     #%% =======================================================================
     # 1. Load and normalize STL10
