@@ -30,14 +30,14 @@ if __name__ == "__main__":
     parser.add_argument("--data_root",  type=str,   default='./data/', help="Path to SLT-10 dataset")
     parser.add_argument("--net_arch",   type=int,   default=0,      help="Network architecture (variants for the FCL)")
     parser.add_argument("--precompute_root", type=str, default='./model/', help="Path to precomputed data")
-    parser.add_argument("--precompute", type=bool,  default=False,  help="Tells if the precomputed data is available")
+    parser.add_argument("--precompute", default=False, action='store_true', help="recompute, even if precomputed data available")
     parser.add_argument("--model_root", type=str,   default='./models/', help="Path to model saving files")
     parser.add_argument("--intensity_max",  type=float,   default=2500, help="maximum photons/pixel")
     parser.add_argument("--intensity_sig",  type=float,   default=0.5, help="std of maximun photons/pixel")
-    parser.add_argument("--denoi",      type=bool,   default=True, help="Denoising layer")
+    parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=20,     help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int,   default=1024,    help="Size of each training batch")
+    parser.add_argument("--batch_size", type=int,   default=1024,   help="Size of each training batch")
     parser.add_argument("--reg",        type=float, default=1e-7,   help="Regularisation Parameter")
     parser.add_argument("--lr",         type=float, default=1e-3,   help="Learning Rate")
     parser.add_argument("--step_size",  type=int,   default=10,     help="Scheduler Step Size")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         model = compNet(opt.img_size, opt.CR, Mean_had, Cov_had, 
                     variant=opt.net_arch, H=H, Ord=Ord)
         midfix = ''
-    elif opt.denoi==False:
+    elif opt.no_denoi==True:
         model = noiCompNet(opt.img_size, opt.CR, Mean_had, Cov_had, 
                 variant=opt.net_arch, N0 = opt.intensity_max, 
                 sig = opt.intensity_sig,  H=H, Ord=Ord)
