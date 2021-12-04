@@ -72,14 +72,10 @@ python train.py --no_denoi
 python train.py --no_denoi --net_arch 3
 ```
 
-* Noiseless-Net. This is a C-Net trained with no noise.
+* Noiseless-Net. This is a C-Net trained with no noise (i.e., infinite number of photons)
 
 ```shell
-<<<<<<< HEAD
 python train.py --denoi 0 --intensity_max 'inf'
-=======
-python train.py --no_denoi --intensity_max None
->>>>>>> e2cadd43978f08d8af605a2e503a1f7a75671a60
 ```
 
 By default, all networks are trained for M = 512 measurements during 20 epochs. For other values, consider
