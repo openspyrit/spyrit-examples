@@ -15,10 +15,10 @@ git clone https://github.com/openspyrit/spyrit-examples.git
 cd ./spyrit-examples/2021_Optics_express/
 ```
 
-This folder contains two script
+This folder contains two scripts
 
 * main.py:  generates the figures in the paper  (typically run in Spyder). It requires trained networks.
-* train.py: can be used to train the reconstruction networks (typically run in a terminal)
+* train.py: can be used to train the reconstruction networks (typically run in a terminal).
 
 # Install the dependencies
 
@@ -63,25 +63,35 @@ python train.py
 * C-Net: Completion network (DC-Net with no denoising)
 
 ```shell
-python train.py --denoi 0
+python train.py --no_denoi
 ```
 
 * Free-Net. This is a C-Net where the completion layer is learnt (i.e., free during training)
 
 ```shell
-python train.py --denoi 0 --net_arch 3
+python train.py --no_denoi --net_arch 3
 ```
 
 * Noiseless-Net. This is a C-Net trained with no noise.
 
 ```shell
+<<<<<<< HEAD
 python train.py --denoi 0 --intensity_max 'inf'
+=======
+python train.py --no_denoi --intensity_max None
+>>>>>>> e2cadd43978f08d8af605a2e503a1f7a75671a60
 ```
 
 By default, all networks are trained for M = 512 measurements during 20 epochs. For other values, consider
 
 ```shell
-python train.py --denoi 1 --CR 1024 --num_epochs 100
+python train.py --CR 1024 --num_epochs 100
+```
+
+To consider different noise levels, play with the maximum number of photons (default, 2500 photons). For instance
+
+```shell
+python train.py --intensity_max 50
 ```
 
 ### Image database
