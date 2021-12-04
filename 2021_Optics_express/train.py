@@ -104,7 +104,7 @@ if __name__ == "__main__":
     # 3. Define a Neural Network
     # =========================================================================
     net_type = ['c0mp', 'comp','pinv', 'free']
-    if opt.intensity_max==None:
+    if opt.intensity_max==float('inf'):
         model = compNet(opt.img_size, opt.CR, Mean_had, Cov_had, 
                     variant=opt.net_arch, H=H, Ord=Ord)
         midfix = ''
