@@ -317,7 +317,7 @@ def Diag(A):
 # Acquisition Parameters
 img_size = 64;  # Height / width dimension
 sig =0.5;       # std maximum total number of photons
-K =1.6;         # Normalisation constant
+K = 1.6;         # Normalisation constant
 C = 1070;
 s = 55;
 
@@ -337,6 +337,8 @@ reg = 1e-7;         # Regularisation Parameter
 lr = 1e-3;          # Learning Rate
 step_size = 10;     # Scheduler Step Size
 gamma =0.5;         # Scheduler Decrease Rate
+
+eta = 4 # hyperparameter
 
 #%% Loading Preprocessed Data
 my_transform_file = Path(expe_root) / ('transform_{}x{}'.format(img_size, img_size)+'.mat')
@@ -443,13 +445,11 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
-eta1 = 6 # hyperparameter
-
 with torch.no_grad():
     for i in range(len(GT)):
         
         list_outs = [];
-        m_list[i] = m_list[i]*eta1;
+        m_list[i] = m_list[i]*eta;
 
         x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
         x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);                   # noiseless linear
@@ -538,13 +538,11 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
-eta2 = 2 # hyperparameter
-
 with torch.no_grad():
     for i in range(len(GT)):
         #
         list_outs = [];
-        m_list[i] = m_list[i]*eta1;
+        m_list[i] = m_list[i]*eta;
         
         x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
         x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);                   # noiseless linear
@@ -674,13 +672,11 @@ Additional_info = [["N0 = {}".format(round(max_list[i])) if j==0 else "" for j i
 Ground_truth = torch.Tensor(GT[0]).view(1,1,1,img_size, img_size).repeat(1,len(titles),1,1,1);
 outputs = [];
 
-eta3 = 4 # hyperparameter
-
 with torch.no_grad():
     for i in range(len(GT)):
         
         list_outs = [];
-        m_list[i] = m_list[i]*eta3;
+        m_list[i] = m_list[i]*eta;
         
         x_Pinv = model_list[0].forward_reconstruct_pinv_expe(1/K*m_list[i], 1, 1, img_size, img_size);
         x_Stat_comp = model_list[0].forward_reconstruct_comp_expe(1/K*m_list[i], 1, 1, img_size, img_size);
@@ -737,4 +733,4 @@ outputs = [out_lamp, out_cat, out_star]
 title_lists = [title_lamp, title_cat, title_star]
 
 nb_disp_frames = 7
-compare_video_frames(outputs, nb_disp_frames, title_lists, 'eta = {} | {} | {}\n'.format(eta1,eta2,eta3), fontsize = 11.4)
+compare_video_frames(outputs, nb_disp_frames, title_lists, 'eta = {}\n'.format(eta), fontsize = 11.4)
