@@ -1,64 +1,76 @@
-# Hands-on session 3.1: image reconstruction using the PyTorch and Spyrit packages
+# Hands-on Session 3.1: Image Reconstruction using the PyTorch and Spyrit Packages
 
-This code was used for a hands-on session given at the [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
+This code was used during a hands-on session given at the [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
 
-The purpose of the session was to practice image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. Answers and solution code are given in `main_with_answers.ipynb`
+The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
 
-The hands-on session followed a scientific presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2021_Ducros_DLMIS.pdf) or watch the [video](https://www.youtube.com/watch?v=Q5s5P3luqOE).
+The hands-on session followed a presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2021_Ducros_DLMIS.pdf) or watch the [video](https://www.youtube.com/watch?v=Q5s5P3luqOE).
 
 *Authors:* N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux, T. Grenier
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
-## Running the code on floyhub
-1. Create a new workspace in your personal project:
-* Press the ’Create Workspace’ button
-* Select ’Start from scratch’
-* Set ’Environment’ to ’Pytorch 1.7’ and ’Machine’ to ’GPU’
-* Press the ’Create environment’ button
+# Install the dependencies
 
-2. Enter in the new workspace (Warning: this step can take several minutes)
+1. We recommend creating a virtual (e.g., conda) environment first.
 
-3. Add dataset using the right-hand panel:
-* Type `dlmis21_dataset`
-* Click on the ’Attach dataset’ button
+    ```shell
+    # conda (or pip) install
+    conda create --name new-env
+    conda activate new-env
+    conda install -c anaconda spydery
+    conda install -c conda-forge jupyterlab
+    conda install -c anaconda scikit-image
+    conda install -c anaconda h5py 
+    conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch # for windows
+    ```
 
-4. In a ’New Launcher’ (directly accessible, if not, via File > New Launcher) choose’Terminal’ and run the following command lines
+    Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env `
 
-        wget https://www.creatis.insa-lyon.fr/~ducros/hands_on/start.sh
-        bash ./start.sh
-        rm start.sh
+    Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  NB: On Windows, you need to install [torch](https://pytorch.org/get-started/locally/) before SPyRiT
 
-    NB: The downloads and installation typically take two minutes
+    ```shell
+    # pip install
+    pip install spyrit # tested with spyrit==1.1.0
+    ```
 
-5. Launch the jupyter notebook     `/floyd/home/spyritexamples-master/2021_DLMIS_Hands-on/main.ipyn`
+# Get the scripts and data
 
-## Running the code on a local installation (being tested)
-1. We recommend you to use virtual environment.
-
-1. Install spyrit and requirements
-        
-        pip install spyrit
-        pip install h5py
-        pip install scikit-image
-
-1. Retrieve spyrit source code via git :
-        
+1. Get source code from GitHub
+   
         git clone https://github.com/openspyrit/spyrit-examples.git        
-        
-1. Go into `spyrit-examples/2021_DLMIS_Hands-on/`     
+    
+4. Go into `spyrit-examples/2021_DLMIS_Hands-on/`     
 
-6. Open jupyter notebook    
+    ```
+    cd spyrit-examples/2021_DLMIS_Hands-on/    
+    ```
 
-        pip install notebook
-        jupyter notebook
-        
-1. Create a `data` folder and go into it.
+3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_DLMIS_Hands-on/data.zip) and extract its content
 
-3. Download dataset https://www.creatis.insa-lyon.fr/~ducros/hands_on/datasets-dlmis21.tar
+    **Windows PowerShell**
 
-1. Extract the dataset (there is an error in `tar: Unexpected EOF in archive`, even if the files appear with the good size (1.5Go = matrices 860Mo + nets 586Mo)) :    
+    ```powershell
+    wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_DLMIS_Hands-on/data.zip -outfile data.zip
+    tar xvf data.zip 
+    ```
 
-        tar xvf datasets-dlmis21.tar 
+    The directory structure should be
 
-1. Update the dataset path in the notebook `main.ipynb`: look for the two occurences of `data_root =` and replace the quoted value with the path to your data folder, containing matrices and nets subfolders.
+        |---spyrit-examples
+        |   |---2021_DLMIS_Hands-on
+        |	|	|---data
+        |	|	|   |---
+        |	|	|---main.ipynb
+        |	|	|---main_with_answers.ipynb
+        |	|	|---train.py
+
+    
+
+4. Open JupyterLab environment and select the kernel corresponding to your environment (e.g., dlmis21)
+
+        ipython kernel install --user --name=dlmis21
+        jupyter lab
+
+# Training a model from scratch
+
