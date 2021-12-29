@@ -48,7 +48,7 @@ if __name__ == "__main__":
     parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=3,     help="Number of epochs")
-    parser.add_argument("--batch_size", type=int,   default=1000,   help="Batch size")
+    parser.add_argument("--batch_size", type=int,   default=256,   help="Batch size")
     parser.add_argument("--reg",        type=float, default=1e-7,   help="Regularisation Parameter")
     parser.add_argument("--lr",         type=float, default=1e-3,   help="Learning Rate")
     parser.add_argument("--step_size",  type=int,   default=10,     help="Scheduler Step Size")
