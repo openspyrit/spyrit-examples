@@ -48,7 +48,7 @@ The hands-on session followed a presentation. Check the [slides](https://www.cre
 
 3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_DLMIS_Hands-on/data.zip) and extract its content
 
-    **Windows PowerShell**
+    * Windows PowerShell
 
     ```powershell
     wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_DLMIS_Hands-on/data.zip -outfile data.zip
@@ -59,18 +59,30 @@ The hands-on session followed a presentation. Check the [slides](https://www.cre
 
         |---spyrit-examples
         |   |---2021_DLMIS_Hands-on
-        |	|	|---data
-        |	|	|   |---
-        |	|	|---main.ipynb
-        |	|	|---main_with_answers.ipynb
-        |	|	|---train.py
+        |   |   |---data
+        |   |   |   |---
+        |   |   |---main.ipynb
+        |   |   |---main_with_answers.ipynb
+        |   |   |---train.py
 
-    
-
-4. Open JupyterLab environment and select the kernel corresponding to your environment (e.g., dlmis21)
+4. Open JupyterLab environment and create a kernel (e.g., dlmis21) corresponding to your current conda environment 
 
         ipython kernel install --user --name=dlmis21
         jupyter lab
 
 # Training a model from scratch
+
+We provide `train.py` to train a network from a single command line
+
+```shell
+python train.py
+```
+
+By default, all networks are trained for 60 view angles during 20 epochs. For other values (e.g., 40 angles and 100 epochs), consider
+
+```shell
+python train.py --angle_nb 40 --num_epochs 100
+```
+
+To specify training parameters such as the batch size or learning rate, and for other options, type ` python train.py --help`
 
