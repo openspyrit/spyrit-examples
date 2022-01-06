@@ -22,7 +22,7 @@ This folder contains two scripts
 
 # Install the dependencies
 
-Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package that can be installed via `pip`. We recommend creating a virtual (e.g., conda) environment first.
+Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package (tested with v1.1.2) that can be installed via `pip` . We recommend creating a virtual (e.g., conda) environment first.
 
 NB: On Windows, you need to install [torch](https://pytorch.org/get-started/locally/) before SPyRiT.
 
@@ -36,7 +36,7 @@ conda install -c anaconda pip
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 
 # pip install
-pip install spyrit # tested with spyrit==1.1.0
+pip install spyrit # tested with spyrit==1.1.2
 pip install pylops
 ```
 
@@ -48,7 +48,7 @@ We exploit some of the single-pixel raw acquisitions that constitute the [SPIHIM
 
 We provide the trained network [here](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2021_OpticsExpress/model.zip). Unzip in `./spyrit-examples/2021_Optics_express/model/`. 
 
-# Training the neural networks from scratch [check]
+# Training the neural networks from scratch
 
 ### Type of networks
 
