@@ -151,4 +151,4 @@ for ax, row in zip(axs[:,0], rows):
 
 f.subplots_adjust(wspace=0, hspace=0)
 #plt.suptitle(f"Measurement with ${N0}$ photons $\pm {sig}$")
-plt.savefig("net_noise.pdf", bbox_inches=0)
+plt.savefig("cnet_robustness.pdf", bbox_inches=0)
