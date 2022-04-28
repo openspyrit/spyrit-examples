@@ -21,13 +21,20 @@
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env `
 
-    Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  NB: On Windows, you need to install [torch](https://pytorch.org/get-started/locally/) before SPyRiT
-
+    **Not adviced for now** Our scripts primarily relies on the [SPyRiT ](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  NB: On Windows, you need to install [torch](https://pytorch.org/get-started/locally/) before SPyRiT
     ```shell
     # pip install
     pip install spyrit # tested with spyrit==1.2.0
 	pip install spas   # tested with spas== ??1.1.0
     ```
+
+    **Recomended** In order to avoid any issues with the versions of spyrit, it is highly recomended that you clone the spyrit package, and upload it locally : 
+    ```shell
+    git clone https://github.com/openspyrit/spyrit.git
+    git checkout ieee_tci_branch
+    pip install -e ./spyrit
+```
+
 
 # Get the scripts and data
 
