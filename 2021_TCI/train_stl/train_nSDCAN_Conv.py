@@ -16,6 +16,7 @@ from spyrit.learning.model_Had_DCAN import *
 from spyrit.learning.nets import *
 from spyrit.misc.disp import *
 from spyrit.reconstruction.recon_functions import * 
+import spyrit.misc.walsh_hadamard as wh
 
 
 if __name__ == "__main__":
@@ -29,14 +30,14 @@ if __name__ == "__main__":
     
     parser.add_argument("--n_iter",      type=int,  default=4, help="Tells if we use iteratif model - if yes how many iterations")
     parser.add_argument("--poisson_dc", type=int,  default=1, help="Tells if we use iteratif model for signal dependant noise {0 or 1}")
-    parser.add_argument("--data_train_root",  type=str,   default="../../data", help="Path to Imagenet train dataset")
-    parser.add_argument("--data_val_root",  type=str,   default="../../data", help="Path to Imagenet validation dataset")
+    parser.add_argument("--data_train_root",  type=str,   default="../../../data", help="Path to Imagenet train dataset")
+    parser.add_argument("--data_val_root",  type=str,   default="../../../data", help="Path to Imagenet validation dataset")
     parser.add_argument("--net_arch",   type=int,   default=0,   help="Network architecture (variants for the FCL)")
-    parser.add_argument("--precompute_root", type=str, default="../../models/SDCAN/", help="Path to precomputed data")
+    parser.add_argument("--precompute_root", type=str, default="../../../models/SDCAN/", help="Path to precomputed data")
     parser.add_argument("--precompute",type=bool, default=False, help="Tells if the precomputed data is available")
     parser.add_argument("--denoise",   type=int, default=0, help="Tells if we use the denoising architecture")
-    parser.add_argument("--model_root",type=str, default='../../models/MoDL/', help="Path to model saving files")
-    parser.add_argument("--expe_root", type=str, default="../../data/expe/", help="Path to precomputed data")
+    parser.add_argument("--model_root",type=str, default='../../../models/new_EM/', help="Path to model saving files")
+    parser.add_argument("--expe_root", type=str, default="../../../data/new_expe/", help="Path to precomputed data")
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=2,   help="Number of training epochs")
     parser.add_argument("--batch_size", type=int,   default=64, help="Size of each training batch")
@@ -109,23 +110,43 @@ if __name__ == "__main__":
         Cov_had  = np.load(my_cov_file)
 
     if opt.expe_root:
-        my_transform_file = Path(opt.expe_root) / ('transform_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
-        H = sio.loadmat(my_transform_file);
-        H = (1/opt.img_size)*H["H"]
-        
-        my_average_file = Path(opt.expe_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
-        my_cov_file = Path(opt.expe_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
-        Mean_had_1 = sio.loadmat(my_average_file)
-        Cov_had_1  = sio.loadmat(my_cov_file)
-    
-        Mean_had_1 = Mean_had_1["mu"]-np.dot(H, np.ones((opt.img_size**2,1)));
+        H = wh.walsh2_matrix(opt.img_size) / opt.img_size
+#        my_transform_file = Path(opt.expe_root) / ('transform_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+#        H = sio.loadmat(my_transform_file);
+#        H = (1/opt.img_size)*H["H"]
+#        
+        my_average_file = Path(opt.expe_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        my_cov_file = Path(opt.expe_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        Mean_had_1 = np.load(my_average_file)
+        Cov_had_1  = np.load(my_cov_file)
+ 
+#
+#    if opt.expe_root:
+#        my_transform_file = Path(opt.expe_root) / ('transform_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
+#        H = sio.loadmat(my_transform_file);
+#        H = (1/opt.img_size)*H["H"]
+#        
+#        my_average_file = Path(opt.expe_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
+#        my_cov_file = Path(opt.expe_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.mat')
+#        Mean_had_1 = sio.loadmat(my_average_file)
+#        Cov_had_1  = sio.loadmat(my_cov_file)
+#    
+#        Mean_had_1 = Mean_had_1["mu"]-np.dot(H, np.ones((opt.img_size**2,1)));
+#        Mean_had_1 = np.reshape(Mean_had_1,(opt.img_size, opt.img_size));
+#        Mean_had_1 = np.amax(Mean_had)/np.amax(Mean_had_1)*Mean_had_1;
+#        Cov_had_1 = Cov_had_1["C"];
+#        Cov_had_1 = np.amax(Cov_had)/np.amax(Cov_had_1)*Cov_had_1;
+#        Cov_had = Cov_had_1;
+#        Mean_had = Mean_had_1;
+#
         Mean_had_1 = np.reshape(Mean_had_1,(opt.img_size, opt.img_size));
         Mean_had_1 = np.amax(Mean_had)/np.amax(Mean_had_1)*Mean_had_1;
-        Cov_had_1 = Cov_had_1["C"];
         Cov_had_1 = np.amax(Cov_had)/np.amax(Cov_had_1)*Cov_had_1;
         Cov_had = Cov_had_1;
         Mean_had = Mean_had_1;
-         
+ 
+
+
     else :
         H = None;
     #%%
