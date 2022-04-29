@@ -1,6 +1,8 @@
-# Optics Express paper, in preparation
+# SPIE Photonics Europe; Unconventional Optical Imaging II; Advanced Methods: Computational Imaging; Contribution 12136-27
 
-*Authors:* N Ducros, A Lorente Mur, G. Beneti-Martin, L Mahieu-Williame
+*Title:* A fast computational approach for high spectral resolution imaging
+
+*Authors:*  Laurent Mahieu-Williame; Antonio Lorente-Mur; Valeriya Pronina; Bruno Montcel; Françoise Peyrin; Nicolas Ducros
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
@@ -31,11 +33,11 @@
 
 ## Get the scripts, networks and raw data
 
-1.  Get source code and navigate to the `/2022_OE/` folder
+1.  Get source code and navigate to the `/2022_SPIE/` folder
 
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
-    cd spyrit-examples/2022_OE/ 
+    cd spyrit-examples/2022_SPIE/ 
     ```
     
 2. Download the trained EM-Net model at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_OE/2022_SPIE_OE.zip) and extract its content in `models`
@@ -51,14 +53,14 @@ The directory structure should be
 
 ```
 |---spyrit-examples
-|   |---2022_OE
+|   |---2022_SPIE
 |   |   |---data
 |   |   |   |---
 |   |   |---models
 |   |   |   |---
 |   |   |---stats
 |   |   |   |---
-|   |   |---expe_data_analysis.py
+|   |   |---SPIE_europe_figures.py
 |   |   |---
 ```
 
