@@ -40,7 +40,7 @@
     cd spyrit-examples/2022_SPIE/ 
     ```
     
-2. Download the trained EM-Net model at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip) and extract its content in `models`
+2. Download the trained EM-Net models and raw data at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip) and unzip the folder.
 
 * Windows PowerShell
 
@@ -58,9 +58,11 @@ The directory structure should be
 |   |   |   |---
 |   |   |---models
 |   |   |   |---
-|   |   |---stats
-|   |   |   |---
 |   |   |---SPIE_europe_figures.py
 |   |   |---
 ```
 
+NB: We only use the following datasets in `2022_SPIE`:
+
+* cat_linear
+* star_sector_linear
