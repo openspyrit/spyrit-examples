@@ -38,12 +38,12 @@
     cd spyrit-examples/2022_OE/ 
     ```
     
-2. Download the trained EM-Net model at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_OE/2022_SPIE_OE.zip) and extract its content in `models`
+2. Download the trained EM-Net model at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip) and extract its content in `models`
 
 * Windows PowerShell
 
 ```powershell
-wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_OE/2022_SPIE_OE.zip -outfile data.zip
+wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip -outfile data.zip
 tar xvf data.zip 
 ```
 
