@@ -99,16 +99,16 @@ if __name__ == "__main__":
     Hperm = Perm@H;
     Pmat = Hperm[:opt.M,:];
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # 3. Define a Neural Network
     # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     FO_split_had = Split_Forward_operator_ft_had(Pmat, Perm)
     Acq = Bruit_Poisson_approx_Gauss(opt.N0, FO_split_had)
     PreP = Split_diag_poisson_preprocess(opt.N0, opt.M, opt.img_size**2)
-    DC_layer = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov, M = opt.M, N = opt.img_size**2)
-    Denoi = ConvNet()
-    model = DC_Net(Acq, PreP, DC_layer, Denoi)
+    DC_layer =Pinv_orthogonal() 
+    Denoi = Unet()
+    model = Pinv_Net(Acq, PreP, DC_layer, Denoi)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -151,14 +151,14 @@ if __name__ == "__main__":
            opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
 
-    title = opt.model_root + 'DC_Net_Conv_net' + train_type+suffix    
+    title = opt.model_root + 'Pinv_net_Unet_' + train_type+suffix    
     print(title)
     save_net(title, model)
     
    #- save training history
     params = Train_par(opt.batch_size, opt.lr, opt.img_size,reg=opt.reg);
     params.set_loss(train_info);
-    train_path = opt.model_root+'TRAIN_DC_Net_Conv_net'+train_type+suffix+'.pkl'
+    train_path = opt.model_root+'TRAIN_Pinv_net_Unet'+train_type+suffix+'.pkl'
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
     torch.cuda.empty_cache()
