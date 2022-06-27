@@ -21,6 +21,7 @@ if __name__ == "__main__":
     parser.add_argument("--N0",         type=float, default=10,   help="Mean maximum total number of photons")
     # Network and training
     
+    parser.add_argument("--n_iter",         type=int,   default=5,  help="Number of iterations of MoDL network")
     parser.add_argument("--data_train_root",  type=str,   default="../../data", help="Path to Imagenet train dataset")
     parser.add_argument("--data_val_root",  type=str,   default="../../data", help="Path to Imagenet validation dataset")
     parser.add_argument("--stat_root", type=str, default="../../data/stats_walsh", help="Path to precomputed data")
@@ -106,9 +107,9 @@ if __name__ == "__main__":
     FO_split_had = Split_Forward_operator_ft_had(Pmat, Perm)
     Acq = Bruit_Poisson_approx_Gauss(opt.N0, FO_split_had)
     PreP = Split_diag_poisson_preprocess(opt.N0, opt.M, opt.img_size**2)
-    DC_layer = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov, M = opt.M, N = opt.img_size**2)
-    Denoi = ConvNet()
-    model = DC_Net(Acq, PreP, DC_layer, Denoi)
+    DC_layer = Orthogonal_Tikhonov(0.05)
+    Denoi = Unet()
+    model = MoDL(Acq, PreP, DC_layer, Denoi, n_iter = opt.n_iter)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -151,14 +152,14 @@ if __name__ == "__main__":
            opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
 
-    title = opt.model_root + 'DC_Net_Conv_net' + train_type+suffix    
+    title = opt.model_root + 'MoDL_Unet' + train_type+suffix    
     print(title)
     save_net(title, model)
     
    #- save training history
     params = Train_par(opt.batch_size, opt.lr, opt.img_size,reg=opt.reg);
     params.set_loss(train_info);
-    train_path = opt.model_root+'TRAIN_DC_Net_Conv_net'+train_type+suffix+'.pkl'
+    train_path = opt.model_root+'TRAIN_MoDL_Unet'+train_type+suffix+'.pkl'
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
     torch.cuda.empty_cache()
