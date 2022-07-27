@@ -89,10 +89,12 @@ Perm = Permutation_Matrix(Ord)
 Hperm = Perm@H
 Pmat = Hperm[:M,:]
 
+Cov_perm = Perm @ Cov @ Perm.T
+
 Forward = Split_Forward_operator_ft_had(Pmat, Perm)
 Noise = Bruit_Poisson_approx_Gauss(N0, Forward)
 Prep = Split_diag_poisson_preprocess(N0, M, img_size**2)
-DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov, M = M, 
+DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, M = M, 
                                      N = img_size**2)
 Denoi = ConvNet()
 model = DC_Net(Noise, Prep, DC, Denoi)
@@ -173,10 +175,7 @@ save_root = Path('recon_exp/') # no save if False
 
 # Init Pinv
 Pinv = Pinv_orthogonal()
-Forward.to(device) # to compute pinv on GPU
-Prep.to(device)
-DC.to(device)
-Denoi.to(device)
+model.to(device)
 
 # Subsample
 had = had_all[:M,:]
@@ -204,7 +203,7 @@ for wav in range(meas.shape[1]):
     rec_pinv[wav,:,:] = rec_cpu
 
     # MMSE
-    model.PreP.N0 = rec_pinv[wav,:,:].max()/10 # /!\ NOT WORKING 
+    model.PreP.N0 = rec_pinv[wav,:,:].max() # /!\ NOT WORKING 
     rec_mmse_gpu = model.reconstruct_mmse(m)
     rec_mmse_gpu = (rec_mmse_gpu + 1) * model.PreP.N0/2
     rec_mmse_cpu = rec_mmse_gpu.cpu().detach().numpy().squeeze()
@@ -212,7 +211,7 @@ for wav in range(meas.shape[1]):
     
     # Net
     rec_net_gpu = model.reconstruct(m)
-    rec_net_gpu = (rec_net_gpu + 1) * model.PreP.N0/2 # /!\ NOT WORKING
+    rec_net_gpu = (rec_net_gpu + 1) * model.PreP.N0/2 
     rec_net_cpu = rec_net_gpu.cpu().detach().numpy().squeeze()
     rec_net[wav,:,:] = rec_net_cpu;
 
@@ -232,7 +231,7 @@ if save_root:
 #%% Plot pinv
 wav_0 = 50 
 wav_1 = 500
-wav_2 = 1500
+wav_2 = 1000
 
 fig , axs = plt.subplots(1,3)
 #
