@@ -98,6 +98,10 @@ if __name__ == "__main__":
     Perm = Permutation_Matrix(Ord)
     Hperm = Perm@H;
     Pmat = Hperm[:opt.M,:];
+    
+    
+    Cov_perm = Perm@Cov@Perm.T;
+
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # 3. Define a Neural Network
@@ -106,7 +110,7 @@ if __name__ == "__main__":
     FO_split_had = Split_Forward_operator_ft_had(Pmat, Perm)
     Acq = Bruit_Poisson_approx_Gauss(opt.N0, FO_split_had)
     PreP = Split_diag_poisson_preprocess(opt.N0, opt.M, opt.img_size**2)
-    DC_layer = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov, M = opt.M, N = opt.img_size**2)
+    DC_layer = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, M = opt.M, N = opt.img_size**2)
     Denoi = ConvNet()
     model = DC_Net(Acq, PreP, DC_layer, Denoi)
 
