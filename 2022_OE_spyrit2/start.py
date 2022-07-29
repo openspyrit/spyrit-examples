@@ -2,7 +2,7 @@
 
 #%% Compute covariance matrix
 from spyrit.misc.statistics import stat_walsh_stl10
-stat_walsh_stl10()
+#stat_walsh_stl10()
 
 #%% Compare "experimental" and "simulated" covariances
 import numpy as np
