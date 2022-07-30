@@ -1,7 +1,5 @@
 # Optics Express paper, in preparation (revision after rejection)
-
 *Authors:* N Ducros, A Lorente Mur, G. Beneti-Martin, L Mahieu-Williame
-
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Install the dependencies
@@ -90,5 +88,5 @@ We do **NOT** use the following datasets:
 ## Train the network from scratch
 
 ```powershell
-./train_DC-Net.py --stat_root models_online/ --model_root ./model_exp/ --num_epochs 30 --M 2048
+./train_DC-Net.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
 ```
