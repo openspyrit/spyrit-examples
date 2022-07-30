@@ -22,4 +22,4 @@ i2 = 876
 print(C_exp[i1, i2])
 print(C_sim[i1, i2])
 
-#%%
+#%% Todo: Compute covariance matrix from imageNet (128x128, or even larger!)
