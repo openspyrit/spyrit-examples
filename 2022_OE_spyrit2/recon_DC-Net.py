@@ -71,7 +71,7 @@ def unsplit(raw):
 
 #%% Load reconstruction network
 img_size = 64
-M = 2048
+M = 4095
 N0 = 10
 stat_folder = Path('data_online/') 
 average_file = stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
