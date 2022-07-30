@@ -15,6 +15,7 @@ from pathlib import Path
 import spyrit.misc.walsh_hadamard as wh
 
 # from spyrit.misc.statistics import stat_walsh_stl10
+from spyrit.learning.model_Had_DCAN import Permutation_Matrix, meas2img
 from spyrit.misc.statistics import *
 from spyrit.misc.disp import *
 from spyrit.learning.nets import load_net
@@ -25,7 +26,7 @@ from spyrit.restructured.Updated_Had_Dcan import *
 img_size = 64 # image size
 M = 512    # number of measurements
 N0 = 10    # Image intensity (in photons)
-bs = 9 # Batch size
+bs = 8 # Batch size
 
 data_root = Path('data/')
 stat_root = Path('models_online/') 
