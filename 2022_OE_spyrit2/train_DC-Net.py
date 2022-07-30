@@ -9,6 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from spyrit.learning.model_Had_DCAN import Permutation_Matrix, Weight_Decay_Loss
 from spyrit.learning.nets import *
 from spyrit.restructured.Updated_Had_Dcan import * 
 from spyrit.misc.statistics import *
@@ -95,12 +96,12 @@ if __name__ == "__main__":
     Mean = np.load(my_average_file)
     Cov  = np.load(my_cov_file)
 
-    
     H =  wh.walsh2_matrix(opt.img_size)
     Ord = Cov2Var(Cov)
     Perm = Permutation_Matrix(Ord)
-    Hperm = Perm@H;
-    Pmat = Hperm[:opt.M,:];
+    Hperm = Perm @ H
+    Pmat = Hperm[:opt.M,:]
+    Cov_perm = Perm @ Cov @ Perm.T
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     # 3. Define a Neural Network
@@ -109,7 +110,7 @@ if __name__ == "__main__":
     FO = Split_Forward_operator_ft_had(Pmat, Perm)
     Noi = Bruit_Poisson_approx_Gauss(opt.N0, FO)
     Prep = Split_diag_poisson_preprocess(opt.N0, opt.M, opt.img_size**2)
-    DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov, M = opt.M, 
+    DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, M = opt.M, 
                                          N = opt.img_size**2)
     Denoi = ConvNet()
     model = DC_Net(Noi, Prep, DC, Denoi)

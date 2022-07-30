@@ -73,11 +73,11 @@ def unsplit(raw):
 img_size = 64
 M = 2048
 N0 = 10
-stat_folder = Path('models_online/') 
+stat_folder = Path('data_online/') 
 average_file = stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file = stat_folder / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')
     
-title = f'./model_exp/DC_Net_Conv_net_N0_10_N_64_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_1024_reg_1e-07'
+title = f'./model_v2/DC_Net_Conv_net_N0_10_N_64_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_1024_reg_1e-07'
 
 # Init DC-Net
 Mean = np.load(average_file)
@@ -106,8 +106,8 @@ model.eval()                    # Mandantory when batchNorm is used
 #%% Load expe data and unsplit
 data_root = Path('data_online/')
 #-1
-data_folder = Path('usaf_x12/')
-data_file_prefix = 'zoom_x12_usaf_group5'                   
+# data_folder = Path('usaf_x12/')
+# data_file_prefix = 'zoom_x12_usaf_group5'                   
 #-2
 # data_folder = Path('usaf_x2/')
 # data_file_prefix = 'zoom_x2_usaf_group2' 
@@ -118,8 +118,8 @@ data_file_prefix = 'zoom_x12_usaf_group5'
 # data_folder = Path('star_sector_x12/')
 # data_file_prefix = 'zoom_x12_starsector' 
 #-5
-# data_folder = Path('tomato_slice_x12/')
-# data_file_prefix = 'tomato_slice_2_zoomx12' 
+data_folder = Path('tomato_slice_x12/')
+data_file_prefix = 'tomato_slice_2_zoomx12' 
 #-6
 # data_folder = Path('tomato_slice_x2/')
 # data_file_prefix = 'tomato_slice_2_zoomx2'
@@ -127,8 +127,8 @@ data_file_prefix = 'zoom_x12_usaf_group5'
 #data_folder = Path('cat/')
 #data_file_prefix = 'Cat_whiteLamp'
 #-8
-data_folder = Path('horse/')
-data_file_prefix = 'Horse_whiteLamp'
+# data_folder = Path('horse/')
+# data_file_prefix = 'Horse_whiteLamp'
 
 full_path = data_root / data_folder / (data_file_prefix + '_spectraldata.npz')
 raw = np.load(full_path)
@@ -203,7 +203,7 @@ for wav in range(meas.shape[1]):
     rec_pinv[wav,:,:] = rec_cpu
 
     # MMSE
-    model.PreP.N0 = rec_pinv[wav,:,:].max() # /!\ NOT WORKING 
+    model.PreP.N0 = rec_pinv[wav,:,:].max()# /!\ NOT WORKING
     rec_mmse_gpu = model.reconstruct_mmse(m)
     rec_mmse_gpu = (rec_mmse_gpu + 1) * model.PreP.N0/2
     rec_mmse_cpu = rec_mmse_gpu.cpu().detach().numpy().squeeze()
@@ -315,3 +315,18 @@ if save_root:
     (save_root/data_folder).mkdir(parents=True, exist_ok=True)
     full_path = save_root / data_folder / (data_file_prefix + f'_sum_M_{M}.png')
     fig.savefig(full_path)
+    
+#%% Plot single channel
+fig , axs = plt.subplots(1,3)
+#
+im0 = axs[0].imshow(rec_pinv[wav_1,:,:], cmap='gray')
+fig.colorbar(im0, ax=axs[0])
+axs[0].set_title(f"Pinv, channel = {wav_1}")
+#
+im1 = axs[1].imshow(rec_mmse[wav_1,:,:], cmap='gray')
+fig.colorbar(im1, ax=axs[1])
+axs[1].set_title(f"MMSE, channel = {wav_1}")
+#
+im2 = axs[2].imshow(rec_net[wav_1,:,:], cmap='gray')
+fig.colorbar(im2, ax=axs[2])
+axs[2].set_title(f"NET, channel = {wav_1}")
