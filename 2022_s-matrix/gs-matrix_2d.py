@@ -15,20 +15,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import spyrit.misc.walsh_hadamard as wh
 from skimage import data, transform
 
-
-
-def add_colorbar(mappable):
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    import matplotlib.pyplot as plt
-    last_axes = plt.gca()
-    ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    cbar = fig.colorbar(mappable, cax=cax)
-    plt.sca(last_axes)
-    return cbar
-
 #%% 2D Walsh-ordered from spyrit
 import numpy as np
 import spyrit.misc.walsh_hadamard as wh
@@ -52,7 +38,7 @@ for ii in range(4):
 f.subplots_adjust(wspace=0, hspace=0.05)
 
 #%% Walsh S-matrix in 1D
-saveTag = True
+saveTag = False
 n = 15
 
 #- compute
@@ -77,7 +63,7 @@ if saveTag:
 plt.title(f"Walsh S-matrix of order {n}")
 
 #%% Walsh S-matrix in 2D
-saveTag = True
+saveTag = False
 n = 8
 
 import numpy as np
