@@ -20,6 +20,7 @@ from spyrit.misc.disp import torch2numpy, imagesc, plot
 from spyrit.learning.nets import *
 from spyrit.restructured.Updated_Had_Dcan import *
 from spyrit.misc.metrics import psnr_
+from spyrit.misc.disp import imagesc, add_colorbar, noaxis
 
 from pathlib import Path
 
@@ -78,19 +79,20 @@ def unsplit(raw):
 
 #%% Load reconstruction network
 img_size = 64
-M = 512
+M = 2048
 N0 = 10 # Check if we used 10 in the paper 
 stat_folder = Path('data_online/') 
 average_file= stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file    = stat_folder / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')
 
-net_arch    = 'pinv-net'  # 'dc-net' or 'pinv_net'
-net_denoi   = 'cnn'    # 'cnn' or 'unet'
-net_data    = 'stl10'
+net_arch    = 'pinv-net'  # 'dc-net' or 'pinv-net'
+net_denoi   = 'unet'    # 'cnn' 'cnnbn' or 'unet'
+net_data    = 'stl10'    # 'imagenet' or 'stl10'
 net_suffix  = f'N0_{N0}_N_64_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_1024_reg_1e-07'
 
+net_folder= f'{net_arch}_{net_denoi}_{net_data}/'
 net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_suffix}'
-title = './model_v2/' + net_title
+title = './model_v2/' + net_folder + net_title
 
 # Init DC-Net
 Mean = np.load(average_file)
@@ -135,8 +137,8 @@ model.eval()                    # Mandantory when batchNorm is used
 #%% Load expe data and unsplit
 data_root = Path('data_online/')
 #-1
-data_folder = Path('usaf_x12/')
-data_file_prefix = 'zoom_x12_usaf_group5'                   
+#data_folder = Path('usaf_x12/')
+#data_file_prefix = 'zoom_x12_usaf_group5'                   
 #-2
 #data_folder = Path('usaf_x2/')
 #data_file_prefix = 'zoom_x2_usaf_group2' 
@@ -153,8 +155,8 @@ data_file_prefix = 'zoom_x12_usaf_group5'
 #data_folder = Path('tomato_slice_x2/')
 #data_file_prefix = 'tomato_slice_2_zoomx2'
 #-7
-#data_folder = Path('cat/')
-#data_file_prefix = 'Cat_whiteLamp'
+data_folder = Path('cat/')
+data_file_prefix = 'Cat_whiteLamp'
 #-8
 # data_folder = Path('horse/')
 # data_file_prefix = 'Horse_whiteLamp'
@@ -242,7 +244,7 @@ for wav in range(meas.shape[1]):
     rec_net_gpu = model.reconstruct(m)
     rec_net_gpu = (rec_net_gpu + 1) * model.PreP.N0/2 
     rec_net_cpu = rec_net_gpu.cpu().detach().numpy().squeeze()
-    rec_net[wav,:,:] = rec_net_cpu;
+    rec_net[wav,:,:] = rec_net_cpu
 
 # save
 if save_root:
@@ -258,22 +260,18 @@ if save_root:
     np.save(full_path_net, rec_net)
 
 #%% Plot pinv
-wav_0 = 50 
-wav_1 = 500
-wav_2 = 1000
-
 fig , axs = plt.subplots(1,3)
 #
-im0 = axs[0].imshow(rec_pinv[wav_0,:,:], cmap='gray')
-fig.colorbar(im0, ax=axs[0])
+im = axs[0].imshow(rec_pinv[wav_0,:,:], cmap='gray')
+add_colorbar(im)
 axs[0].set_title(f"Pinv, channel = {wav_0}")
 #
-im1 = axs[1].imshow(rec_pinv[wav_1,:,:], cmap='gray')
-fig.colorbar(im1, ax=axs[1])
+im = axs[1].imshow(rec_pinv[wav_1,:,:], cmap='gray')
+add_colorbar(im)
 axs[1].set_title(f"Pinv, channel = {wav_1}")
 #
-im2 = axs[2].imshow(rec_pinv[wav_2,:,:], cmap='gray')
-fig.colorbar(im2, ax=axs[2])
+im = axs[2].imshow(rec_pinv[wav_2,:,:], cmap='gray')
+add_colorbar(im)
 axs[2].set_title(f"Pinv, channel = {wav_2}")
 
 # save
@@ -285,16 +283,16 @@ if save_root:
 #%% Plot mmse
 fig , axs = plt.subplots(1,3)
 #
-im0 = axs[0].imshow(rec_mmse[wav_0,:,:], cmap='gray')
-fig.colorbar(im0, ax=axs[0])
+im = axs[0].imshow(rec_mmse[wav_0,:,:], cmap='gray')
+add_colorbar(im)
 axs[0].set_title(f"MMSE, channel = {wav_0}")
 #
-im1 = axs[1].imshow(rec_mmse[wav_1,:,:], cmap='gray')
-fig.colorbar(im1, ax=axs[1])
+im = axs[1].imshow(rec_mmse[wav_1,:,:], cmap='gray')
+add_colorbar(im)
 axs[1].set_title(f"MMSE, channel = {wav_1}")
 #
-im2 = axs[2].imshow(rec_mmse[wav_2,:,:], cmap='gray')
-fig.colorbar(im2, ax=axs[2])
+im = axs[2].imshow(rec_mmse[wav_2,:,:], cmap='gray')
+add_colorbar(im)
 axs[2].set_title(f"MMSE, channel = {wav_2}")
 
 # save
@@ -306,16 +304,16 @@ if save_root:
 #%% Plot net
 fig , axs = plt.subplots(1,3)
 #
-im0 = axs[0].imshow(rec_net[wav_0,:,:], cmap='gray')
-fig.colorbar(im0, ax=axs[0])
+im = axs[0].imshow(rec_net[wav_0,:,:], cmap='gray')
+add_colorbar(im)
 axs[0].set_title(f"Net, channel = {wav_0}")
 #
-im1 = axs[1].imshow(rec_net[wav_1,:,:], cmap='gray')
-fig.colorbar(im1, ax=axs[1])
+im = axs[1].imshow(rec_net[wav_1,:,:], cmap='gray')
+add_colorbar(im)
 axs[1].set_title(f"Net, channel = {wav_1}")
 #
-im2 = axs[2].imshow(rec_net[wav_2,:,:], cmap='gray')
-fig.colorbar(im2, ax=axs[2])
+im = axs[2].imshow(rec_net[wav_2,:,:], cmap='gray')
+add_colorbar(im)
 axs[2].set_title(f"Net, channel = {wav_2}")
 
 # save
@@ -323,39 +321,84 @@ if save_root:
     (save_root/data_folder/net_title).mkdir(parents=True, exist_ok=True)
     full_path = save_root / data_folder / net_title / (data_file_prefix + f'_net_M_{M}.png')
     fig.savefig(full_path)
-
-#%% Plot sum
+    
+#%% Plot single channel
 fig , axs = plt.subplots(1,3)
 #
-im0 = axs[0].imshow(rec_pinv.sum(axis = 0), cmap='gray')
-fig.colorbar(im0, ax=axs[0])
-axs[0].set_title("Pinv, sum of all channels")
+im = axs[0].imshow(rec_pinv[wav_1,:,:], cmap='gray')
+add_colorbar(im)
+axs[0].set_title(f"Pinv, channel = {wav_1}")
 #
-im1 = axs[1].imshow(rec_mmse.sum(axis = 0), cmap='gray')
-fig.colorbar(im1, ax=axs[1])
-axs[1].set_title("MMSE, sum of all channels")
+im = axs[1].imshow(rec_mmse[wav_1,:,:], cmap='gray')
+add_colorbar(im)
+axs[1].set_title(f"MMSE, channel = {wav_1}")
 #
-im2 = axs[2].imshow(rec_net.sum(axis = 0), cmap='gray')
-fig.colorbar(im2, ax=axs[2])
-axs[2].set_title("NET, sum of all channels")
+im = axs[2].imshow(rec_net[wav_1,:,:], cmap='gray')
+add_colorbar(im)
+axs[2].set_title(f"NET, channel = {wav_1}")
+
+#%% Plot sum of recon
+fig , axs = plt.subplots(1,3)
+#
+im = axs[0].imshow(rec_pinv.sum(axis = 0), cmap='gray')
+add_colorbar(im)
+axs[0].set_title("sum of Pinv")
+#
+im = axs[1].imshow(rec_mmse.sum(axis = 0), cmap='gray')
+add_colorbar(im)
+axs[1].set_title("sum of MMSE")
+#
+im = axs[2].imshow(rec_net.sum(axis = 0), cmap='gray')
+add_colorbar(im)
+axs[2].set_title("sum of NET")
+
+# save
+if save_root:
+    (save_root/data_folder/net_title).mkdir(parents=True, exist_ok=True)
+    full_path = save_root / data_folder / net_title / (data_file_prefix + f'_mus_M_{M}.png')
+    fig.savefig(full_path)
+    
+    
+#%% Plot recon of sum
+# Measurement vector
+m = torch.Tensor(meas[:2*M,500:1500].sum(axis=1))
+m = m.view(1,1,2*M).to(device)
+
+# Pseudo-inverse
+rec_gpu = Pinv(m[...,0::2]-m[...,1::2],Forward)
+rec_cpu = rec_gpu.cpu().detach().numpy().squeeze()
+rec_cpu = np.reshape(rec_cpu,(img_size,img_size))
+rec_pinv = rec_cpu
+
+# MMSE
+model.PreP.N0 = rec_pinv.max()
+rec_mmse_gpu = model.reconstruct_mmse(m)
+rec_mmse_gpu = (rec_mmse_gpu + 1) * model.PreP.N0/2
+rec_mmse_cpu = rec_mmse_gpu.cpu().detach().numpy().squeeze()
+rec_mmse = rec_mmse_cpu
+
+# Net
+rec_net_gpu = model.reconstruct(m)
+rec_net_gpu = (rec_net_gpu + 1) * model.PreP.N0/2 
+rec_net_cpu = rec_net_gpu.cpu().detach().numpy().squeeze()
+rec_net = rec_net_cpu
+
+fig , axs = plt.subplots(1,3)
+#
+im = axs[0].imshow(rec_pinv, cmap='gray')
+add_colorbar(im)
+axs[0].set_title("Pinv of sum")
+#
+im = axs[1].imshow(rec_mmse, cmap='gray')
+add_colorbar(im)
+axs[1].set_title("MMSE of sum")
+#
+im = axs[2].imshow(rec_net, cmap='gray')
+add_colorbar(im)
+axs[2].set_title("NET of sum")
 
 # save
 if save_root:
     (save_root/data_folder/net_title).mkdir(parents=True, exist_ok=True)
     full_path = save_root / data_folder / net_title / (data_file_prefix + f'_sum_M_{M}.png')
     fig.savefig(full_path)
-    
-#%% Plot single channel
-fig , axs = plt.subplots(1,3)
-#
-im0 = axs[0].imshow(rec_pinv[wav_1,:,:], cmap='gray')
-fig.colorbar(im0, ax=axs[0])
-axs[0].set_title(f"Pinv, channel = {wav_1}")
-#
-im1 = axs[1].imshow(rec_mmse[wav_1,:,:], cmap='gray')
-fig.colorbar(im1, ax=axs[1])
-axs[1].set_title(f"MMSE, channel = {wav_1}")
-#
-im2 = axs[2].imshow(rec_net[wav_1,:,:], cmap='gray')
-fig.colorbar(im2, ax=axs[2])
-axs[2].set_title(f"NET, channel = {wav_1}")

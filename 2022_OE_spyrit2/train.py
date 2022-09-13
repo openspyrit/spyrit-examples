@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 
     # Optimisation
-    parser.add_argument("--num_epochs", type=int,   default=20,   help="Number of training epochs")
+    parser.add_argument("--num_epochs", type=int,   default=30,   help="Number of training epochs")
     parser.add_argument("--batch_size", type=int,   default=1024, help="Size of each training batch")
     parser.add_argument("--reg",        type=float, default=1e-7, help="Regularisation Parameter")
     parser.add_argument("--lr",         type=float, default=1e-3, help="Learning Rate")
@@ -90,9 +90,13 @@ if __name__ == "__main__":
     # 2. Statistics of the training images
     #==========================================================================
     print('Loading covariance and mean')
-    my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-    my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-    
+    if opt.img_size == 64:
+        my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+    else:
+        my_average_file = Path(opt.stat_root) / ('Average_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        my_cov_file = Path(opt.stat_root) / ('Cov_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        
     Mean = np.load(my_average_file)
     Cov  = np.load(my_cov_file)
 
