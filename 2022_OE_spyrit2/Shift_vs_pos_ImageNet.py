@@ -30,13 +30,14 @@ from spyrit.learning.nets import load_net
 from spyrit.restructured.Updated_Had_Dcan import * 
 
 #%% User-defined parameters
-img_size = 128 # image size
-M = 1024    # number of measurements
+img_size = 64 # image size
+CR = 4
+M = 4096//CR    # number of measurements
 N0 = 100    # Image intensity (in photons)
 bs = 8 # Batch size
 
-i_im = 3     # image index
-i_noi = 0    # noise sample index shift fails for 2, 3, 5, 6
+i_im = 4     # image index
+i_noi = 2    # for 0 and 1 the 'single' offset outperforms the 'sum' offset
 
 data_root = Path('data/ILSVRC2012_img_test_v10102019')
 stat_root = Path('models_online/') 
@@ -51,10 +52,11 @@ print(f'Torch device: {device}')
 
 transform = transforms.Compose(
     [transforms.functional.to_grayscale,
-     #transforms.Resize((img_size*4, img_size*4)),
+     transforms.Resize((img_size, img_size)),
      transforms.RandomCrop(img_size),
      transforms.ToTensor(),
-     transforms.Normalize([0.5], [0.5])])
+     transforms.Normalize([0.5], [0.5])
+    ])
 
 testset = \
     torchvision.datasets.ImageFolder(root=data_root, transform=transform)
@@ -79,7 +81,7 @@ H =  wh.walsh2_matrix(img_size)
 
 # 1. low-freq order
 Ord = np.zeros((64,64))
-Ord[0:32,0:32] = 1
+Ord[0:int(M**0.5),0:int(M**0.5)] = 1
 
 # 2. high-energy order
 Ord = Cov2Var(Cov)
@@ -134,9 +136,6 @@ raw_shift = torch.cat((raw_tmp[:,0].view(b*c,1),raw_pos),1)
 torch.manual_seed(i_noi)    # for reproducibility
 M_split.alpha = M_split.alpha/2
 raw_split = M_split(x)
-
-#raw_shift = M_shift(x)
-#raw_pos   = raw_shift[:,1:] # same dataset for both  #M_pos(x)
 
 y_split = P_split(raw_split, F_split)
 y_shift = P_shift(raw_shift, F_shift)
