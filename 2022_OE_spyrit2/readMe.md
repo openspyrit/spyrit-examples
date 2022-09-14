@@ -19,12 +19,12 @@
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Clone the spyrit package, and install the version in the  `New_Fadoua` branch: 
+1. Clone the spyrit package, and install the version in the  `towards_v2` branch: 
 
     ```shell
     git clone https://github.com/openspyrit/spyrit.git
     cd spyrit
-    git checkout New_Fadoua
+    git checkout towards_v2
     pip install -e .
     ```
 
