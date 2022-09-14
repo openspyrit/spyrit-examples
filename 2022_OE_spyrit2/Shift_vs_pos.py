@@ -31,12 +31,13 @@ from spyrit.restructured.Updated_Had_Dcan import *
 
 #%% User-defined parameters
 img_size = 64 # image size
-M = 1024    # number of measurements
+CR = 4
+M = 4096//CR    # number of measurements
 N0 = 100    # Image intensity (in photons)
 bs = 8 # Batch size
 
-i_im = 1     # image index
-i_noi = 0    # noise sample index shift fails for 2, 3, 5, 6
+i_im = 4     # image index
+i_noi = 1    # for 0 and 1 the 'single' offset outperforms the 'sum' offset
 
 data_root = Path('data/')
 stat_root = Path('models_online/') 
@@ -78,7 +79,7 @@ H =  wh.walsh2_matrix(img_size)
 
 # 1. low-freq order
 Ord = np.zeros((64,64))
-Ord[0:32,0:32] = 1
+Ord[0:int(M**0.5),0:int(M**0.5)] = 1
 
 # 2. high-energy order
 Ord = Cov2Var(Cov)
@@ -115,7 +116,7 @@ model_split.eval()
 model_shift.eval()             
 model_pos.eval()
 
-#%%
+#%% CHECK IF THE NOISE REALIZATION ARE THE SAME ????
 nonoise_split = F_split(x)
 nonoise_shift = F_shift(x)
 nonoise_pos   = F_pos(x)
@@ -133,9 +134,6 @@ raw_shift = torch.cat((raw_tmp[:,0].view(b*c,1),raw_pos),1)
 torch.manual_seed(i_noi)    # for reproducibility
 M_split.alpha = M_split.alpha/2
 raw_split = M_split(x)
-
-#raw_shift = M_shift(x)
-#raw_pos   = raw_shift[:,1:] # same dataset for both  #M_pos(x)
 
 y_split = P_split(raw_split, F_split)
 y_shift = P_shift(raw_shift, F_shift)
@@ -157,7 +155,6 @@ plt.title("raw shift")
 plt.figure()
 plt.plot(y_pos[:,:].T)
 plt.title("raw pos")
-
 
 #%% Pinv reconstruction from network
 outputs = model_split.reconstruct_mmse(raw_split.view((bs,1,2*M)),64,64)
@@ -183,15 +180,15 @@ fig , axs = plt.subplots(2,4)
 #
 im0 = axs[0,0].imshow(img_split, cmap='gray')
 fig.colorbar(im0, ax=axs[0,0])
-axs[0,0].set_title(f'P-Inv split patterns; N0 = {M_split.alpha}')
+axs[0,0].set_title(f'P-Inv split; N0 = {M_split.alpha}')
 #
 im1 = axs[0,1].imshow(img_shift, cmap='gray')
 fig.colorbar(im1, ax=axs[0,1])
-axs[0,1].set_title(f'P-Inv shift patterns; N0 = {M_shift.alpha}')
+axs[0,1].set_title(f'P-Inv shift (single); N0 = {M_shift.alpha}')
 #
 im2 = axs[0,2].imshow(img_pos, cmap='gray')
 fig.colorbar(im2, ax=axs[0,2])
-axs[0,2].set_title(f"P-Inv pos patterns, N0 = {M_pos.alpha}")
+axs[0,2].set_title(f"P-Inv shift (sum); N0 = {M_pos.alpha}")
 #
 im3 = axs[0,3].imshow(img_nonoise, cmap='gray')
 fig.colorbar(im3, ax=axs[0,3])
@@ -199,12 +196,16 @@ axs[0,3].set_title("No noise")
 #
 im4 = axs[1,0].imshow(img_split-img_nonoise, cmap='gray')
 fig.colorbar(im4, ax=axs[1,0])
+axs[1,0].set_title(f'Error')
 #
 im5 = axs[1,1].imshow(img_shift-img_nonoise, cmap='gray')
 fig.colorbar(im5, ax=axs[1,1])
+axs[1,1].set_title(f'Error')
 #
 im6 = axs[1,2].imshow(img_pos-img_nonoise, cmap='gray')
 fig.colorbar(im6, ax=axs[1,2])
+axs[1,2].set_title(f'Error')
 #
 im7 = axs[1,3].imshow(img_true, cmap='gray')
 fig.colorbar(im7, ax=axs[1,3])
+axs[1,3].set_title(f'Ground-truth')
