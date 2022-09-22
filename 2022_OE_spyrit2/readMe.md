@@ -11,6 +11,7 @@
     conda create --name new-env
     conda activate new-env
     conda install spyder
+    conda install -c conda-forge matplotlib
     conda install -c conda-forge jupyterlab
     conda install -c anaconda scikit-image
     conda install -c anaconda h5py 
@@ -25,6 +26,14 @@
     git clone https://github.com/openspyrit/spyrit.git
     cd spyrit
     git checkout towards_v2
+    pip install -e .
+    ```
+    
+1. Clone the spas package: 
+
+    ```shell
+    git clone https://github.com/openspyrit/spas.git
+    cd spas
     pip install -e .
     ```
 

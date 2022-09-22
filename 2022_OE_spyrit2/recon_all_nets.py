@@ -79,7 +79,7 @@ def unsplit(raw):
 
 #%% Load reconstruction network
 img_size = 64
-M = 2048
+M = 1024
 N0 = 10 # Check if we used 10 in the paper 
 stat_folder = Path('data_online/') 
 average_file= stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
@@ -106,7 +106,7 @@ Pmat = Hperm[:M,:]
 
 Cov_perm = Perm @ Cov @ Perm.T
 
-Forward = Split_Forward_operator_ft_had(Pmat, Perm)
+Forward = Split_Forward_operator_ft_had(Pmat, Perm, 64, 64)
 Noise = Bruit_Poisson_approx_Gauss(N0, Forward)
 Prep = Split_diag_poisson_preprocess(N0, M, img_size**2)
 
@@ -235,7 +235,7 @@ for wav in range(meas.shape[1]):
 
     # MMSE
     model.PreP.N0 = rec_pinv[wav,:,:].max()
-    rec_mmse_gpu = model.reconstruct_mmse(m)
+    rec_mmse_gpu = model.reconstruct_meas2im(m)
     rec_mmse_gpu = (rec_mmse_gpu + 1) * model.PreP.N0/2
     rec_mmse_cpu = rec_mmse_gpu.cpu().detach().numpy().squeeze()
     rec_mmse[wav,:,:] = rec_mmse_cpu

@@ -1,5 +1,7 @@
+
+**/model*
 **/results/*
 **/results_OE/*
 **/spas/*
 **/.ipynb_checkpoints/*
-**/data/*
+**/data*
