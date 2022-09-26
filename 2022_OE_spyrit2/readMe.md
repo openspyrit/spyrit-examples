@@ -97,5 +97,5 @@ We do **NOT** use the following datasets:
 ## Train the network from scratch
 
 ```powershell
-./train_DC-Net.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
+./train2.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
 ```
