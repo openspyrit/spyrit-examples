@@ -39,19 +39,23 @@ collections.Callable = collections.abc.Callable
 
 #%% user-defined
 img_size = 64
-M_list = [4095,  2048, 1024, 512, 256]
-N0 = 2500 # Check if we used 10 in the paper 
+M_list = [2048]#[4095, 2048, 1024, 512, 256]  
+N0 = 10 # Check if we used 10 in the paper 
 stat_folder = Path('data_online/') 
 average_file= stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file    = stat_folder / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')
 
-net_arch    = 'dc-net'  # 'dc-net' or 'pinv-net'
-net_denoi   = 'unet'    # 'cnn' 'cnnbn' or 'unet'
+net_arch_list    = ['dc-net','pinv-net']
+net_denoi_list   = ['cnn'] #['cnn', 'unet'] #['unet', 'cnn']    # 'cnn' 'cnnbn' or 'unet'
 net_data    = 'stl10'    # 'imagenet' or 'stl10'
-save_root = 'recon_expe' # False or 'some_folder' 
+save_root = Path('recon_all_expe_pdf') # False or Path('some_folder') 
 
-#%% Loop over compression ratios
-for M in M_list:
+#%% Loop over compression ratios, network architectures, and image domain denoisers
+for M, net_arch, net_denoi in [
+                            (M,net_arch,net_denoi) for M in M_list 
+                            for net_arch in net_arch_list 
+                            for net_denoi in net_denoi_list]:   
+#for M in M_list:
     net_suffix  = f'N0_{N0}_N_64_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_1024_reg_1e-07'
 
     net_folder= f'{net_arch}_{net_denoi}_{net_data}/'
@@ -148,7 +152,9 @@ for M in M_list:
         rec_net = np.zeros((wavelengths.shape[0],img_size, img_size))
         
         # Net
-        model.to(device)
+        #model.to(device)
+        model.PreP.set_expe(0.77,739,17,1)
+        #model.PreP.set_expe()
         
         with torch.no_grad():
             for b in range(n_batch):       
@@ -156,13 +162,12 @@ for M in M_list:
                 ind = range(b*n_wav, (b+1)*n_wav)            
                 m = torch.Tensor(meas[:2*M,ind].T).to(device)
                 rec_net_gpu = model.reconstruct_expe(m)
-                #rec_net_gpu = model.reconstruct_expe(m,1,700,17)
                 rec_net[ind,:,:] = rec_net_gpu.cpu().detach().numpy().squeeze()
         
         # Save
         if save_root:
-            (save_root/data_folder/net_title).mkdir(parents=True, exist_ok=True)
-            full_path = save_root / data_folder /net_title / (data_file_prefix + '_bin')
+            save_root.mkdir(parents=True, exist_ok=True)
+            #full_path = save_root / (data_folder.name + '_slice_' + net_title + '.png')
             #np.save(full_path, rec_net)
             
         
@@ -180,8 +185,8 @@ for M in M_list:
         rec_slice = np.rot90(rec_slice,2,(1,2))
         
         # either save
-        if save_root is not False:
-            full_path = save_root / data_folder /net_title / (data_file_prefix + '_slice')   
+        if save_root is not False: 
+            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.pdf')
             plot_color(rec_slice, wavelengths_slice, fontsize=7, filename=full_path)
             plt.close()
         # or plot    
@@ -202,9 +207,9 @@ for M in M_list:
         rec_net = np.rot90(rec_net,2,(1,2))
         # either save
         if save_root is not False:
-            full_path = save_root / data_folder /net_title / (data_file_prefix + '_bin')
+            full_path = save_root / (data_folder.name + '_bin_' + net_title + '.pdf')
             plot_color(rec_net, wavelengths_bin, fontsize=7, filename=full_path)
             plt.close()
         # or plot    
-        else:
+        else:   
             plot_color(rec_net, wavelengths_bin, fontsize=7)
