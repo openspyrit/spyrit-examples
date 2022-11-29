@@ -59,6 +59,8 @@ with open('caption.tex', 'w') as f:
     f.write('\end{enumerate}')
     f.write('\n\n')
     
+    f.write('\\newpage\n\n')
+    
     for data_folder, sample in zip(data_folder_list,sample_list):
         
         text = f'''\subsection{{{sample}}}
@@ -85,3 +87,6 @@ with open('caption.tex', 'w') as f:
             
             f.write(text)
             f.write('\n\n')
+            
+        f.write('            \\newpage')
+        f.write('\n\n')
