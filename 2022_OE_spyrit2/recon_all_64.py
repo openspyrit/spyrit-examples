@@ -167,8 +167,8 @@ for M, net_arch, net_denoi in [
         # Save
         if save_root:
             save_root.mkdir(parents=True, exist_ok=True)
-            #full_path = save_root / (data_folder.name + '_slice_' + net_title + '.png')
-            #np.save(full_path, rec_net)
+            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.npy')
+            np.save(full_path, rec_net)
             
         
         #%% Pick-up a few spectral slice from full reconstruction

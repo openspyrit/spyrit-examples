@@ -15,14 +15,15 @@ collections.Callable = collections.abc.Callable
 from pathlib import Path
 
 #%% user-defined
-img_size = 64
-M_list = [4095, 2048, 1024, 512, 256]
-N0_list = [10,2500]
+img_size = 128
+M_list = [4096, 1024, 512]
+sub_list = ['rect','var','var']
+N0 = 10
 
 
-net_arch_list    = ['pinv-net', 'dc-net']
-net_denoi_list   = ['cnn','unet'] #['unet', 'cnn']    # 'cnn' 'cnnbn' or 'unet'
-net_data    = 'stl10'    # 'imagenet' or 'stl10'
+net_arch  = 'dc-net'   # ['pinv-net', 'dc-net']
+net_denoi = 'unet'     # ['unet', 'cnn']
+net_data  = 'imagenet'   # 'imagenet' or 'stl10'
 
 data_folder_list = [Path('usaf_x2'), 
                     Path('usaf_x12'),
@@ -58,14 +59,6 @@ with open('caption.tex', 'w') as f:
     f.write('\end{enumerate}')
     f.write('\n\n')
     
-    # Network list
-    f.write('We consider the following network\n')
-    f.write('\\begin{enumerate}\n')
-    for data_folder, sample in zip(data_folder_list,sample_list):
-        f.write(f'\\item {sample}, see \\ref{{sec:{data_folder.name}}}\n')    
-    f.write('\end{enumerate}')
-    f.write('\n\n')
-    
     for data_folder, sample in zip(data_folder_list,sample_list):
         
         text = f'''\subsection{{{sample}}}
@@ -73,14 +66,9 @@ with open('caption.tex', 'w') as f:
         f.write(text)
         f.write('\n')
         
-        for M, N0, net_arch, net_denoi in [
-                                (M, N0, net_arch, net_denoi) 
-                                for M in M_list 
-                                for N0 in N0_list
-                                for net_arch in net_arch_list 
-                                for net_denoi in net_denoi_list]:   
+        for M, sub in zip(M_list,sub_list):   
     
-            net_suffix  = f'N0_{N0}_N_64_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_1024_reg_1e-07'
+            net_suffix  = f'{sub}_N0_{N0}_N_128_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
             net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_suffix}'
             
             full_path_slice = (data_folder.name + '_slice_' + net_title)
@@ -91,8 +79,9 @@ with open('caption.tex', 'w') as f:
             \\begin{{center}}
                 \includegraphics[width=\linewidth,trim={{0 2.7cm 0 2.5cm}},clip]{{{{{full_path_bin}}}.pdf}}
                 \includegraphics[width=\linewidth,trim={{0 2.7cm 0 2.9cm}},clip]{{{{{full_path_slice}}}.pdf}}
-                \captionof{{figure}}{{Reconstruction of four spectral bins (top) and channels (bottom) using a {net_arch} trained at $\\alpha = {N0}$ photons for $M = {M}$ measurements. The image domain denoiser is a {net_denoi}.}}
+                \captionof{{figure}}{{Reconstruction of four spectral bins (top) and channels (bottom) using a {net_arch} trained for $M = {M}$ measurements.}}
             \end{{center}}'''#.format(full_path_slice, full_path_bin)
+            #\captionof{{figure}}{{Reconstruction of four spectral bins (top) and channels (bottom) using a {net_arch} trained at $\\alpha = {N0}$ photons for $M = {M}$ measurements. The image domain denoiser is a {net_denoi}.}}
             
             f.write(text)
             f.write('\n\n')

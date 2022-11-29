@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct  7 08:48:35 2022
+Created on Tue Nov 29 15:41:19 2022
+
+This scripts generated the figures in the Appendix of the paper
 
 NB (15-Sep-22): to debug needs to run
-
 import collections
 collections.Callable = collections.abc.Callable
 
@@ -36,7 +37,6 @@ import collections
 collections.Callable = collections.abc.Callable
 
 #%% user-defined
-
 # for reconstruction
 N_rec = 128  
 M_list = [4096, 1024, 512] # [4095, 1024, 512]   for N_rec = 64 
@@ -50,16 +50,11 @@ stat_folder_acq =  Path('./data_online/')
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
 net_data    = 'imagenet'    # 'imagenet' 
-save_root = Path('./recon_128/')
+save_root = Path('./supplemental/')
 
 #%% covariance matrix and network filnames
 stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
-
-if N_rec==64:
-    cov_rec_file= stat_folder_rec/ ('Cov_{}x{}'.format(N_rec, N_rec)+'.npy')
-elif N_rec==128:
-    cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy')
-    
+cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy') 
 bs = 256
 #  
 stat_folder_acq =  Path('./data_online/') 
@@ -95,7 +90,6 @@ for M in M_list:
     elif net_order == 'var':
         Ord_rec = Cov2Var(Cov_rec)
         
-        
     # Init network  
     Perm_rec = Permutation_Matrix(Ord_rec)
     Hperm = Perm_rec @ H
@@ -115,24 +109,31 @@ for M in M_list:
     net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
     title = './model_v2/' + net_folder + net_title
     load_net(title, model, device)
-    model.eval()                    # Mandantory when batchNorm is used
-    
-    model_pinv = Pinv_Net(Noise, Prep, Pinv_orthogonal(), Identity())
-    model_pinv.to(device)
+    model.eval()                    # Mandantory when batchNorm is used  
     
     #%% Load expe data and unsplit
     data_root = Path('data_online/')
-    data_folder_list = [Path('usaf_x12/'),
-                        #Path('star_sector_x12/'),
-                        #Path('tomato_slice_x2/'),
-                        #Path('tomato_slice_x12'),
-                        ]
-    
+    data_folder_list = [Path('usaf_x12/'), 
+                        Path('usaf_x2/'), 
+                        Path('star_sector_x2/'), 
+                        Path('star_sector_x12/'),
+                        Path('star_sector_linear'),
+                        Path('tomato_slice_x2/'),
+                        Path('tomato_slice_x12'),
+                        Path('cat/'),
+                        Path('cat_linear/'),
+                        Path('horse/')]
+     
     data_file_prefix_list = ['zoom_x12_usaf_group5',
-                             #'zoom_x12_starsector',
-                             #'tomato_slice_2_zoomx2',
-                             #'tomato_slice_2_zoomx12',
-                             ]
+                             'zoom_x2_usaf_group2',
+                             'zoom_x2_starsector',
+                             'zoom_x12_starsector',
+                             'SeimensStar_whiteLamp_linear_color_filter',
+                             'tomato_slice_2_zoomx2',
+                             'tomato_slice_2_zoomx12',
+                             'Cat_whiteLamp',
+                             'Cat_LinearColoredFilter',
+                             'Horse_whiteLamp']
        
     
     #%% Load data
@@ -183,15 +184,6 @@ for M in M_list:
         if N_rec == N_acq:
             # To reorder measurements
             Perm_sub = Perm_acq[:N_rec**2,:].T
-            #Perm = Perm_rec @ Perm_acq[:N_rec**2,:].T
-          
-        elif N_rec < N_acq:
-            # Square subsampling in the "natural" order
-            Ord_sub = np.zeros((N_acq,N_acq))
-            Ord_sub[:N_rec,:N_rec]= -np.arange(-N_rec**2,0).reshape(N_rec,N_rec)
-            Perm_sub = Permutation_Matrix(Ord_sub) 
-            Perm_sub = Perm_sub[:N_rec**2,:]
-            Perm_sub = Perm_sub @ Perm_acq.T    
         
         if N_rec <= N_acq:   
             # Get both positive and negative coefficients permutated
@@ -208,66 +200,69 @@ for M in M_list:
             Perm_raw[1::2,1::2] = Perm
             meas = Perm_raw @ meas
         
-        #%% Reconstruct a few spectral slice from full reconstruction
-        wav_min = 530 
-        wav_max = 730
-        wav_num = 8
-        meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
-                                                        wavelengths, 
-                                                        wav_min, 
-                                                        wav_max, 
-                                                        wav_num)
+        #%% Reconstruct all spectral channels
+        # init
+        n_batch = 32 # a power of two
+        n_wav = wavelengths.shape[0]//n_batch
+        rec_net = np.zeros((wavelengths.shape[0],N_rec, N_rec))
+        
+        # Net
         model.to(device)
         model.PreP.set_expe()
         
         with torch.no_grad():
-            m = torch.Tensor(meas_slice[:2*M,:]).to(device)
-            rec_gpu = model.reconstruct_expe(m)
-            rec = rec_gpu.cpu().detach().numpy().squeeze()
-            
-        #%% Plot or save 
-        # rotate
-        #rec = np.rot90(rec,2,(1,2))
-        full_path = save_root / (data_folder.name + '_slice_' + net_title + '.pdf')
-        plot_color(rec, wavelengths_slice, fontsize=7, filename = full_path)
-        plt.close()
+            for b in range(n_batch):       
+    
+                ind = range(b*n_wav, (b+1)*n_wav)            
+                m = torch.Tensor(meas[:2*M,ind].T).to(device)
+                rec_net_gpu = model.reconstruct_expe(m)
+                rec_net[ind,:,:] = rec_net_gpu.cpu().detach().numpy().squeeze()
         
-        #%% Reconstruct a single spectral slice from full reconstruction
-        wav_min = 579#530 
-        wav_max = 579.1#730
-        wav_num = 1#8
-        meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
-                                                        wavelengths, 
-                                                        wav_min, 
-                                                        wav_max, 
-                                                        wav_num)
+        # Save
+        if save_root:
+            save_root.mkdir(parents=True, exist_ok=True)
+            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.npy')
+            np.save(full_path, rec_net)
+        
+        #%% Pick-up a few spectral slice from full reconstruction
+        wav_min = 530 
+        wav_max = 730
+        wav_num = 4
+        
+        rec_net = rec_net.reshape((wavelengths.shape[0],-1))
+        rec_slice, wavelengths_slice, _ = spectral_slicing(
+            rec_net, wavelengths, wav_min, wav_max, wav_num)
+        rec_slice = rec_slice.reshape((wavelengths_slice.shape[0],N_rec,N_rec))
+        
+        # rotate
+        #rec_slice = np.rot90(rec_slice,2,(1,2))
+        
+        # either save
+        if save_root is not False: 
+            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.pdf')
+            plot_color(rec_slice, wavelengths_slice, fontsize=7, filename=full_path)
+            plt.close()
+        # or plot    
+        else:
+            plot_color(rec_slice, wavelengths_slice, fontsize=7)
+            
+        #%% Reconstrcution of spectrally-binned measurements
+        meas_bin, wavelengths_bin, _ = spectral_binning(
+            meas.T, wavelengths, wav_min, wav_max, wav_num)
+        
         with torch.no_grad():
-            m = torch.Tensor(meas_slice[:2*M,:]).to(device)
-            rec_gpu = model.reconstruct_expe(m)
-            rec = rec_gpu.cpu().detach().numpy().squeeze()
+            m = torch.Tensor(meas_bin[:2*M,:]).to(device)
+            rec_net_gpu = model.reconstruct_expe(m)
+            rec_net = rec_net_gpu.cpu().detach().numpy().squeeze()
             
         #%% Plot or save 
         # rotate
-        #rec = np.rot90(rec,2)
-        
-        fig , axs = plt.subplots(1,1)
-        im = axs.imshow(rec, cmap='gray')
-        noaxis(axs)
-        add_colorbar(im, 'bottom')
-        
-        full_path = save_root / (data_folder.name + '_' + f'{M}_{N_rec}' + '.pdf')
-        fig.savefig(full_path, bbox_inches='tight')
-        
-        
-        #%% pseudo inverse
-        if M==4096:
-            rec_pinv_gpu = model_pinv.reconstruct(m)
-            rec_pinv = rec_pinv_gpu.cpu().detach().numpy().squeeze()
-        
-            fig , axs = plt.subplots(1,1)
-            im = axs.imshow(rec, cmap='gray')
-            noaxis(axs)
-            add_colorbar(im, 'bottom')
-            
-            full_path = save_root / (data_folder.name + '_' + f'pinv_{N_rec}' + '.pdf')
-            fig.savefig(full_path, bbox_inches='tight', dpi=600)
+        #rec_net = np.rot90(rec_net,2,(1,2))
+        # either save
+        if save_root is not False:
+            full_path = save_root / (data_folder.name + '_bin_' + net_title + '.pdf')
+            plot_color(rec_net, wavelengths_bin, fontsize=7, filename=full_path)
+            plt.close()
+        # or plot    
+        else:   
+            plot_color(rec_net, wavelengths_bin, fontsize=7)
