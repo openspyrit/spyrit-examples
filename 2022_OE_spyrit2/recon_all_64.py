@@ -39,16 +39,16 @@ collections.Callable = collections.abc.Callable
 
 #%% user-defined
 img_size = 64
-M_list = [2048]#[4095, 2048, 1024, 512, 256]  
+M_list = [4095, 2048, 1024, 512, 256]   
 N0 = 10 # Check if we used 10 in the paper 
 stat_folder = Path('data_online/') 
 average_file= stat_folder / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file    = stat_folder / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')
 
 net_arch_list    = ['dc-net','pinv-net']
-net_denoi_list   = ['cnn'] #['cnn', 'unet'] #['unet', 'cnn']    # 'cnn' 'cnnbn' or 'unet'
+net_denoi_list   = ['unet', 'cnn']    # 'cnn' 'cnnbn' or 'unet'
 net_data    = 'stl10'    # 'imagenet' or 'stl10'
-save_root = Path('recon_all_expe_pdf') # False or Path('some_folder') 
+save_root = Path('recon_pdf') # False or Path('some_folder') 
 
 #%% Loop over compression ratios, network architectures, and image domain denoisers
 for M, net_arch, net_denoi in [
@@ -152,9 +152,9 @@ for M, net_arch, net_denoi in [
         rec_net = np.zeros((wavelengths.shape[0],img_size, img_size))
         
         # Net
-        #model.to(device)
-        model.PreP.set_expe(0.77,739,17,1)
-        #model.PreP.set_expe()
+        model.to(device)
+        #model.PreP.set_expe(0.77,739,17,1)
+        model.PreP.set_expe()
         
         with torch.no_grad():
             for b in range(n_batch):       
@@ -167,14 +167,14 @@ for M, net_arch, net_denoi in [
         # Save
         if save_root:
             save_root.mkdir(parents=True, exist_ok=True)
-            #full_path = save_root / (data_folder.name + '_slice_' + net_title + '.png')
-            #np.save(full_path, rec_net)
+            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.npy')
+            np.save(full_path, rec_net)
             
         
         #%% Pick-up a few spectral slice from full reconstruction
         wav_min = 530 
         wav_max = 730
-        wav_num = 8
+        wav_num = 4
         
         rec_net = rec_net.reshape((wavelengths.shape[0],-1))
         rec_slice, wavelengths_slice, _ = spectral_slicing(
