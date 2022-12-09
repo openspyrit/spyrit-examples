@@ -1,8 +1,10 @@
 
 # Labex PRIMES workshop on reproductibility
-https://reprod-primes.sciencesconf.org/
+
+This code generates the figures reported in the presentation entitled "Robustness of Deep Reconstruction Methods" (in French "Robustesse des méthodes de reconstruction par deep learning") given at Labex PRIMES [workshop on reproductibility](https://reprod-primes.sciencesconf.org/) on 08 December 2022.
 
 *Authors:* N Ducros
+
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Install the dependencies
@@ -23,7 +25,7 @@ https://reprod-primes.sciencesconf.org/
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Clone the spyrit package, and install the version in the  `towards_v2` branch (tested with commit):
+1. Clone the spyrit package, and install the version in the  `towards_v2_fadoua` branch
 
     ```shell
     git clone https://github.com/openspyrit/spyrit.git
@@ -40,37 +42,45 @@ https://reprod-primes.sciencesconf.org/
     pip install -e .
     ```
 
-## Get the scripts, networks and raw data
+## Get the scripts and networks
 
-1.  Get source code and navigate to the `/2022_OE_spyrit2/` folder
-
+1.  Get source code and navigate to the `/2022_reproductibility/` folder
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
-    cd spyrit-examples/2022_OE_spyrit2/ 
+    cd spyrit-examples/2022_reproductibility/ 
     ```
-    
-2. Download 
+2. Download the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/639355234d15dd536f0483c4) 
 
-* the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e) 
+3. Download the average and covariance matrices from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/639359a14d15dd536f04847a)
 
-* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e). You can download the full folder with all subfolder or navigate to select a few of them.
-
-
-Unzip the folders. The directory structure should be
+The directory structure should be
 
 ```
+|---model_v2
+|   |---dc-net_unet_stl10
+|   |   |---reprod
+|   |   |   |---dc-net_unet_stl10_rect_N0_2_N_64_M_1024_*.pth
+|   |   |   |---
 |---spyrit-examples
-|   |---2022_OE
-|   |   |---data
-|   |   |   |---
-|   |   |---models
-|   |   |   |---
-|   |   |---expe_data_analysis.py
+|   |---2022_reproductibility
+|   |   |---main_net_std.py
 |   |   |---
+|---stat
+|   |---stl10
+|   |   |---Average_64x64.npy
+|   |   |---Cov_64x64.npy
 ```
 
 
-## To train the network from scratch
+## Train the networks from scratch
+For a given random seed (`seed`) and image intensity `N0` (in photons)
+
 ```powershell
-./train2.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
+python ./train.py --seed 4 --N0 10
+```
+
+For all cases considered in the study
+
+```powershell
+./train.ps1
 ```
