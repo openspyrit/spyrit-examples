@@ -11,7 +11,10 @@ from spyrit.misc.disp import *
 from spyrit.misc.metrics import psnr_
 from spyrit.learning.nets import load_net
 
-from spyrit.restructured.Updated_Had_Dcan import * 
+from spyrit.core.Acquisition import * 
+from spyrit.core.Forward_Operator import *
+from spyrit.core.AI import *
+
 from spyrit.misc.disp import imagesc, add_colorbar, noaxis
 
 #%% User-defined parameters
@@ -76,9 +79,9 @@ Pmat = Hperm[:M,:]
 Cov_perm = Perm @ Cov @ Perm.T
 
 #%% Init
-Forw = Split_Forward_operator_ft_had(Pmat, Perm, img_size, img_size)
-Acq = Bruit_Poisson_approx_Gauss(N0, Forw)
-Prep = Split_diag_poisson_preprocess(N0, M, img_size**2)
+Forw = Forward_operator_Split_ft_had(Pmat, Perm, img_size, img_size)
+Acq = Acquisition_Poisson_approx_Gauss(N0, Forw)
+Prep = Preprocess_Split_diag_poisson(N0, M, img_size**2)
 
 # 
 DC = Generalized_Orthogonal_Tikhonov(Cov_perm, M, img_size**2)

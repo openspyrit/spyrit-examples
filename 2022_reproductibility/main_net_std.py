@@ -11,7 +11,10 @@ from spyrit.misc.disp import *
 from spyrit.misc.metrics import psnr_
 from spyrit.learning.nets import load_net
 
-from spyrit.restructured.Updated_Had_Dcan import * 
+from spyrit.core.Acquisition import * 
+from spyrit.core.Forward_Operator import *
+from spyrit.core.AI import *
+
 from spyrit.misc.disp import imagesc, add_colorbar, noaxis
 
 #%% User-defined parameters
@@ -28,7 +31,7 @@ model_root = Path('../../model_v2/dc-net_unet_stl10/reprod')
 average_file = stat_root / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file = stat_root / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')    
 
-seed_list = [0,1,2,3,4,5,6,7,8,9]
+seed_list = range(10)
 noise_list = range(25)    # noise sample index
 
 N0_train = 50
@@ -71,11 +74,9 @@ Pmat = Hperm[:M,:]
 Cov_perm = Perm @ Cov @ Perm.T
 
 #%% Init
-Forw = Split_Forward_operator_ft_had(Pmat, Perm, img_size, img_size)
-#Acq = Bruit_Poisson_approx_Gauss(N0_test, Forw)
-#Acq = Acquisition(Forw) # no noise
+Forw = Forward_operator_Split_ft_had(Pmat, Perm, img_size, img_size)
 Acq = Acquisition_Poisson_GaussApprox_sameNoise(N0_test, Forw) # same noise sample across batch
-Prep = Split_diag_poisson_preprocess(N0_test, M, img_size**2)
+Prep = Preprocess_Split_diag_poisson(N0_test, M, img_size**2)
 
 # 
 DC = Generalized_Orthogonal_Tikhonov(Cov_perm, M, img_size**2)
