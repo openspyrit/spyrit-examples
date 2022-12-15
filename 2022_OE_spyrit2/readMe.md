@@ -46,16 +46,14 @@
     cd spyrit-examples/2022_OE_spyrit2/ 
     ```
     
-2. Download the trained EM-Net models and raw data at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip) and unzip the folder.
+2. Download 
 
-* Windows PowerShell
+* the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e) 
 
-```powershell
-wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2022_SPIE_OE/2022_SPIE_OE.zip -outfile data.zip
-tar xvf data.zip 
-```
+* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e). You can download the full folder with all subfolder or navigate to select a few of them.
 
-The directory structure should be
+
+Unzip the folders. The directory structure should be
 
 ```
 |---spyrit-examples
@@ -68,34 +66,8 @@ The directory structure should be
 |   |   |---
 ```
 
-NB: We use the following datasets in `2022_OE/recon_check_pinv_mmse.ipynb`:
 
-* cat 
-* horse 
-* star_sector
-* tomato_slice
-
-We use the following datasets in `recon_resolution_targets.ipynb`:
-
-* star_sector_x12 
-* star_sector_x2 
-* usaf_x12
-* usaf_x2
-
-We use the following datasets in `recon_tomato.ipynb`:
-
-* tomato_slice_x1
-* tomato_slice_x12
-* tomato_slice_x2
-* tomato_slice_x6
-
-We do **NOT** use the following datasets:
-
-* cat_linear
-* star_sector_linear
-
-## Train the network from scratch
-
+## To train the network from scratch
 ```powershell
-./train_DC-Net.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
+./train2.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
 ```

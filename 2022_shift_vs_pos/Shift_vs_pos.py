@@ -40,7 +40,7 @@ i_im = 4     # image index
 i_noi = 1    # for 0 and 1 the 'single' offset outperforms the 'sum' offset
 
 data_root = Path('data/')
-stat_root = Path('models_online/') 
+stat_root = Path('data_online/') 
 average_file = stat_root / ('Average_{}x{}'.format(img_size,img_size)+'.npy')
 cov_file = stat_root / ('Cov_{}x{}'.format(img_size,img_size)+'.npy')    
 
@@ -90,7 +90,7 @@ Hperm = Perm@H
 Pmat = Hperm[:M,:]
 
 #%% Pinv_Net
-F_split = Split_Forward_operator_ft_had(Pmat, Perm)
+F_split = Split_Forward_operator_ft_had(Pmat, Perm, img_size, img_size)
 F_shift = Forward_operator_shift_had(Pmat, Perm)
 F_pos   = Forward_operator_pos(Pmat, Perm)
 
@@ -157,19 +157,19 @@ plt.plot(y_pos[:,:].T)
 plt.title("raw pos")
 
 #%% Pinv reconstruction from network
-outputs = model_split.reconstruct_mmse(raw_split.view((bs,1,2*M)),64,64)
+outputs = model_split.reconstruct_meas2im(raw_split)
 img_split = outputs[i_im,0,:,:]
 img_split = img_split.detach().cpu().numpy().reshape(h,w)
 
-outputs = model_pos.reconstruct_mmse(raw_pos.view((bs,1,M)),64,64)
+outputs = model_pos.reconstruct_meas2im(raw_pos.view((bs,1,M)))
 img_pos = outputs[i_im,0,:,:]
 img_pos.detach().cpu().numpy().reshape(h,w)
 
-outputs = model_shift.reconstruct_mmse(raw_shift.view((bs,1,M+1)),64,64)
+outputs = model_shift.reconstruct_meas2im(raw_shift.view((bs,1,M+1)))
 img_shift = outputs[i_im,0,:,:]
 img_shift = img_shift.detach().cpu().numpy().reshape(h,w)
 
-outputs = model_shift.reconstruct_mmse(noiseless_shift.view((bs,1,M+1)),64,64)
+outputs = model_shift.reconstruct_meas2im(noiseless_shift.view((bs,1,M+1)))
 img_nonoise = outputs[i_im,0,:,:]
 img_nonoise = img_nonoise.detach().cpu().numpy().reshape(h,w)
 
