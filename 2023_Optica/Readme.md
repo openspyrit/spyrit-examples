@@ -41,7 +41,7 @@ This code generates the figures in the article and allow to study the data used.
     pip install -e .
     ```
 
-## Get the scripts and networks
+## Get the notebooks and the data
 
 1.  Get source code and navigate to the `/2023_Optica/` folder
     ```shell
