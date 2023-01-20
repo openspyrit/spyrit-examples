@@ -43,16 +43,13 @@ This code generates the figures in the article and allow to study the data used.
 
 ## Get the scripts and networks
 
-1.  Get source code and navigate to the `/2023_Opyica/` folder
+1.  Get source code and navigate to the `/2023_Optica/` folder
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
     cd spyrit-examples/2023_Opyica/ 
     ```
-2. Download the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/Achanger) 
+2. Download the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/Achanger) A Changer
 
-3. Download the average and covariance matrices from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/Achanger)
-
-The directory structure should be
 
 
 
