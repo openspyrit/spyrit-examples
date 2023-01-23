@@ -1,5 +1,9 @@
-# Optics Express paper, in preparation (revision after rejection)
-*Authors:* N Ducros, A Lorente Mur, G. Beneti-Martin, L Mahieu-Williame
+# OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging 
+
+This repository contains the code that produces the results reported in
+
+> G. Beneti-Martin, L Mahieu-Williame, T Baudier, N Ducros, "OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging," Preprint, (2022). [HAL (open access PDF)](https://hal.science/hal-03910077).
+
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Install the dependencies
@@ -20,7 +24,7 @@
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Clone the spyrit package, and install the version in the  `towards_v2` branch: 
+1. Clone the spyrit package, and install the version in the  `towards_v2_fadoua` branch: 
 
     ```shell
     git clone https://github.com/openspyrit/spyrit.git
@@ -36,6 +40,7 @@
     cd spas
     pip install -e .
     ```
+> Todo: Upate spas package to remove unwanted imports of ``reconstruct_nn``  
 
 ## Get the scripts, networks and raw data
 
@@ -57,12 +62,13 @@ Unzip the folders. The directory structure should be
 
 ```
 |---spyrit-examples
-|   |---2022_OE
+|   |---2022_OE_spyrit2
 |   |   |---data
 |   |   |   |---
 |   |   |---models
 |   |   |   |---
-|   |   |---expe_data_analysis.py
+|   |   |---fig8_recon.py
+|   |   |---fig8_mask.py
 |   |   |---
 ```
 

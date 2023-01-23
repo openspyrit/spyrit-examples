@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-
 import numpy as np
-from spyrit.misc.statistics import Cov2Var, img2mask
+from spyrit.misc.statistics import Cov2Var
+from spyrit.misc.sampling import img2mask
 from matplotlib import pyplot as plt
-from spyrit.misc.disp import add_colorbar, noaxis
+from spyrit.misc.disp import noaxis
 
 from pathlib import Path
-
 
 #%%
 M = [4096, 1024, 512] #[1024, 4095, 4096]

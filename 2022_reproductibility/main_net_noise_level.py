@@ -4,24 +4,30 @@ from torchvision import datasets, transforms
 from pathlib import Path
 import spyrit.misc.walsh_hadamard as wh
 
-# from spyrit.misc.statistics import stat_walsh_stl10
-from spyrit.learning.model_Had_DCAN import Permutation_Matrix
-from spyrit.misc.statistics import *
+from spyrit.misc.statistics import Cov2Var
 from spyrit.misc.disp import *
 from spyrit.misc.metrics import psnr_
-from spyrit.learning.nets import load_net
 
 from spyrit.core.Acquisition import * 
 from spyrit.core.Forward_Operator import *
-from spyrit.core.AI import *
+from spyrit.core.Preprocess import *
+from spyrit.core.Data_Consistency import *
+from spyrit.core.neural_network import *
+from spyrit.core.reconstruction import *
+from spyrit.core.training import *
 
+from spyrit.misc.sampling import Permutation_Matrix
 from spyrit.misc.disp import imagesc, add_colorbar, noaxis
+
+#NB (15-Sep-22): to debug needs to run
+import collections
+collections.Callable = collections.abc.Callable
 
 #%% User-defined parameters
 img_size = 64 # image size
 M = img_size**2//4
 
-N0 = 50    # Image intensity (in photons)
+N0 = 2    # Image intensity (in photons)
 bs = 128 # Batch size
 
 i_im = 72     # image index
@@ -50,7 +56,7 @@ transform = transforms.Compose(
      transforms.Normalize([0.5], [0.5])])
 
 testset = \
-    torchvision.datasets.STL10(root=data_root, split='test',download=False, transform=transform)
+    datasets.STL10(root=data_root, split='test',download=False, transform=transform)
 testloader =  torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False)
 
 #%% Plot an image
@@ -109,7 +115,7 @@ for noise in noise_list:
             #torch.seed()               # for random measurements
             
             Acq.alpha = ph_v
-            meas = Acq(x)  
+            meas = Acq(x)
             
             #-- Recon
             rec = []
@@ -120,18 +126,19 @@ for noise in noise_list:
                 load_net(model_root / model_name, model, device)
                 model.eval() # Mandantory when batchNorm is used in Denoi, facultatory otherwise
         
-                Prep.N0 = ph_v # or equivalently model.PreP.N0 = ph_v
+                Prep.alpha = ph_v # 'Prep.alpha = ph_v' is equivalent to 'model.PreP.alpha = ph_v'
         
                 rec_gpu = model.reconstruct(meas)
                 rec_cpu = rec_gpu[i_im,0,:,:].cpu().detach().numpy()
                 rec.append(rec_cpu)
-                
+            
+            #-- plot
             for N0_i, N0_v in enumerate(N0_train):   
                 #- Plot   
                 im=axs[ph_i, N0_i].imshow(rec[N0_i], cmap='gray')
                 axs[ph_i, N0_i].set_title(f"{N0_v} ph: ${psnr_(img,rec[N0_i]):.2f}$ dB")
                 add_colorbar(im)
-        
+                
         # remove all axes
         for ax in iter(axs.flatten()):
             noaxis(ax)
