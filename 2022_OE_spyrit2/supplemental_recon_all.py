@@ -13,17 +13,21 @@ collections.Callable = collections.abc.Callable
 #%%
 import torch
 import numpy as np
-import spyrit.misc.walsh_hadamard as wh
+import math
 
 from matplotlib import pyplot as plt
 
-from spyrit.learning.model_Had_DCAN import *
-from spyrit.misc.disp import torch2numpy, imagesc, plot
+from spyrit.core.Acquisition import Acquisition_Poisson_approx_Gauss
+from spyrit.core.Forward_Operator import Forward_operator_Split_ft_had
+from spyrit.core.Preprocess import Preprocess_Split_diag_poisson
+from spyrit.core.Data_Consistency import Generalized_Orthogonal_Tikhonov
+from spyrit.core.training import load_net
+from spyrit.core.neural_network import Unet
+from spyrit.core.reconstruction import DC2_Net
 
-from spyrit.learning.nets import *
-from spyrit.restructured.Updated_Had_Dcan import *
-from spyrit.misc.metrics import psnr_
-from spyrit.misc.disp import imagesc, add_colorbar, noaxis
+from spyrit.misc.statistics import Cov2Var
+from spyrit.misc.sampling import Permutation_Matrix 
+import spyrit.misc.walsh_hadamard as wh
 
 from spas import read_metadata, plot_color, spectral_binning, spectral_slicing
 
@@ -50,7 +54,7 @@ stat_folder_acq =  Path('./data_online/')
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
 net_data    = 'imagenet'    # 'imagenet' 
-save_root = Path('./supplemental/')
+save_root = Path('./recon_128/')
 
 #%% covariance matrix and network filnames
 stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
@@ -95,9 +99,10 @@ for M in M_list:
     Hperm = Perm_rec @ H
     Pmat = Hperm[:M,:]
     
-    Forward = Split_Forward_operator_ft_had(Pmat, Perm_rec, N_rec, N_rec)
-    Noise = Bruit_Poisson_approx_Gauss(N0, Forward)
-    Prep = Split_diag_poisson_preprocess(N0, M, N_rec**2)
+    #    
+    Forward = Forward_operator_Split_ft_had(Pmat, Perm_rec, N_rec, N_rec)
+    Noise = Acquisition_Poisson_approx_Gauss(N0, Forward)
+    Prep = Preprocess_Split_diag_poisson(N0, M, N_rec**2)
     
     Denoi = Unet()
     Cov_perm = Perm_rec @ Cov_rec @ Perm_rec.T
@@ -111,30 +116,41 @@ for M in M_list:
     load_net(title, model, device)
     model.eval()                    # Mandantory when batchNorm is used  
     
-    #%% Load expe data and unsplit
+    #%% List expe data
     data_root = Path('data_online/')
-    data_folder_list = [Path('usaf_x12/'), 
-                        Path('usaf_x2/'), 
-                        Path('star_sector_x2/'), 
-                        Path('star_sector_x12/'),
-                        Path('star_sector_linear'),
-                        Path('tomato_slice_x2/'),
-                        Path('tomato_slice_x12'),
-                        Path('cat/'),
-                        Path('cat_linear/'),
-                        Path('horse/')]
+    data_folder_list = [Path('Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms/'),
+                        # Path('color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms/'),
+                        # Path('green_Tree_leaf_ti_20ms_zoomx4_objx40/'),
+                        # Path('half_SiemensStar_with_ThorLabsName/'),
+                        # Path('Thorlabs_box_ti_10ms_without_telecentric/'),
+                        # Path('usaf_x12/'), 
+                        # Path('usaf_x2/'), 
+                        # Path('star_sector_x2/'), 
+                        # Path('star_sector_x12/'),
+                        # Path('star_sector_linear'),
+                        # Path('tomato_slice_x2/'),
+                        # Path('tomato_slice_x12'),
+                        # Path('cat/'),
+                        # Path('cat_linear/'),
+                        Path('horse/')
+                        ]
      
-    data_file_prefix_list = ['zoom_x12_usaf_group5',
-                             'zoom_x2_usaf_group2',
-                             'zoom_x2_starsector',
-                             'zoom_x12_starsector',
-                             'SeimensStar_whiteLamp_linear_color_filter',
-                             'tomato_slice_2_zoomx2',
-                             'tomato_slice_2_zoomx12',
-                             'Cat_whiteLamp',
-                             'Cat_LinearColoredFilter',
-                             'Horse_whiteLamp']
-       
+    data_file_prefix_list = ['Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
+                             # 'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms',
+                             # 'green_Tree_leaf_ti_20ms_zoomx4_objx40',
+                             # 'half_SiemensStar_with_ThorLabsName',
+                             # 'Thorlabs_box_ti_10ms_without_telecentric',
+                             # 'zoom_x12_usaf_group5',
+                             # 'zoom_x2_usaf_group2',
+                             # 'zoom_x2_starsector',
+                             # 'zoom_x12_starsector',
+                             # 'SeimensStar_whiteLamp_linear_color_filter',
+                             # 'tomato_slice_2_zoomx2',
+                             # 'tomato_slice_2_zoomx12',
+                             # 'Cat_whiteLamp',
+                             # 'Cat_LinearColoredFilter',
+                             'Horse_whiteLamp'
+                             ]
     
     #%% Load data
     for data_folder,data_file_prefix in zip(data_folder_list,data_file_prefix_list):
@@ -229,17 +245,30 @@ for M in M_list:
         wav_max = 730
         wav_num = 4
         
+        too_long = ['Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
+                    'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms']
+        
         rec_net = rec_net.reshape((wavelengths.shape[0],-1))
         rec_slice, wavelengths_slice, _ = spectral_slicing(
             rec_net, wavelengths, wav_min, wav_max, wav_num)
         rec_slice = rec_slice.reshape((wavelengths_slice.shape[0],N_rec,N_rec))
         
-        # rotate
-        #rec_slice = np.rot90(rec_slice,2,(1,2))
+        # rotate 180°
+        if data_folder.name not in ['usaf_x2','usaf_x12']:
+            rec_slice = np.rot90(rec_slice,2,(1,2))
         
         # either save
         if save_root is not False: 
-            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.pdf')
+            # filenames
+            if data_folder.name not in too_long:
+                save_prefix = data_folder.name
+            elif data_folder.name == too_long[0]:
+                save_prefix = 'Bitten_Apple'
+            elif data_folder.name == too_long[1]:
+                save_prefix = 'color_checker'  
+            full_path = save_root / (save_prefix + '_slice_' + net_title + '.pdf')
+             
+            # plot, save, and close
             plot_color(rec_slice, wavelengths_slice, fontsize=7, filename=full_path)
             plt.close()
         # or plot    
@@ -256,13 +285,26 @@ for M in M_list:
             rec_net = rec_net_gpu.cpu().detach().numpy().squeeze()
             
         #%% Plot or save 
-        # rotate
-        #rec_net = np.rot90(rec_net,2,(1,2))
+        # rotate 180°
+        if data_folder.name not in ['usaf_x2','usaf_x12']:
+            rec_net = np.rot90(rec_net,2,(1,2))
+        
         # either save
         if save_root is not False:
-            full_path = save_root / (data_folder.name + '_bin_' + net_title + '.pdf')
+            
+            # filenames
+            if data_folder.name not in too_long:
+                save_prefix = data_folder.name
+            elif data_folder.name == too_long[0]:
+                save_prefix = 'Bitten_Apple'
+            elif data_folder.name == too_long[1]:
+                save_prefix = 'color_checker'        
+            full_path = save_root / (save_prefix + '_bin_' + net_title + '.pdf')
+            
+            # plot, save, and close
             plot_color(rec_net, wavelengths_bin, fontsize=7, filename=full_path)
             plt.close()
+       
         # or plot    
         else:   
             plot_color(rec_net, wavelengths_bin, fontsize=7)

@@ -5,15 +5,20 @@ from pathlib import Path
 import spyrit.misc.walsh_hadamard as wh
 
 # from spyrit.misc.statistics import stat_walsh_stl10
-from spyrit.learning.model_Had_DCAN import Permutation_Matrix
-from spyrit.misc.statistics import *
+#from spyrit.learning.model_Had_DCAN import Permutation_Matrix
+from spyrit.misc.statistics import Cov2Var
 from spyrit.misc.disp import *
 from spyrit.misc.metrics import psnr_
-from spyrit.learning.nets import load_net
 
 from spyrit.core.Acquisition import * 
 from spyrit.core.Forward_Operator import *
-from spyrit.core.AI import *
+from spyrit.core.Preprocess import *
+from spyrit.core.Data_Consistency import *
+from spyrit.core.neural_network import *
+from spyrit.core.reconstruction import *
+from spyrit.core.training import load_net
+
+from spyrit.misc.sampling import Permutation_Matrix
 
 from spyrit.misc.disp import imagesc, add_colorbar, noaxis
 
@@ -48,7 +53,7 @@ transform = transforms.Compose(
      transforms.Normalize([0.5], [0.5])])
 
 testset = \
-    torchvision.datasets.STL10(root=data_root, split='test',download=False, transform=transform)
+    datasets.STL10(root=data_root, split='test',download=False, transform=transform)
 testloader =  torch.utils.data.DataLoader(testset, batch_size=bs, shuffle=False)
 
 #%% Plot an image

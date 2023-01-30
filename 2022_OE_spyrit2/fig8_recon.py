@@ -14,16 +14,23 @@ collections.Callable = collections.abc.Callable
 import torch
 import numpy as np
 import spyrit.misc.walsh_hadamard as wh
+import math
 
 from matplotlib import pyplot as plt
 
-from spyrit.learning.model_Had_DCAN import *
-from spyrit.misc.disp import torch2numpy, imagesc, plot
 
-from spyrit.learning.nets import *
-from spyrit.restructured.Updated_Had_Dcan import *
-from spyrit.misc.metrics import psnr_
-from spyrit.misc.disp import imagesc, add_colorbar, noaxis
+from spyrit.misc.statistics import Cov2Var
+
+from spyrit.core.Acquisition import Acquisition_Poisson_approx_Gauss
+from spyrit.core.Forward_Operator import Forward_operator_Split_ft_had
+from spyrit.core.Preprocess import Preprocess_Split_diag_poisson
+from spyrit.core.Data_Consistency import Generalized_Orthogonal_Tikhonov, Pinv_orthogonal
+from spyrit.core.training import load_net
+from spyrit.core.neural_network import Unet, Identity
+from spyrit.core.reconstruction import Pinv_Net, DC2_Net
+
+from spyrit.misc.disp import add_colorbar, noaxis
+from spyrit.misc.sampling import Permutation_Matrix 
 
 from spas import read_metadata, plot_color, spectral_binning, spectral_slicing
 
@@ -51,7 +58,7 @@ stat_folder_acq =  Path('./data_online/')
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
 net_data    = 'imagenet'    # 'imagenet' 
-save_root = Path('./recon_128_b/')
+save_root = Path('./recon_128/')
 
 #%% covariance matrix and network filnames
 stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
@@ -102,9 +109,9 @@ for M in M_list:
     Hperm = Perm_rec @ H
     Pmat = Hperm[:M,:]
     
-    Forward = Split_Forward_operator_ft_had(Pmat, Perm_rec, N_rec, N_rec)
-    Noise = Bruit_Poisson_approx_Gauss(N0, Forward)
-    Prep = Split_diag_poisson_preprocess(N0, M, N_rec**2)
+    Forward = Forward_operator_Split_ft_had(Pmat, Perm_rec, N_rec, N_rec)
+    Noise = Acquisition_Poisson_approx_Gauss(N0, Forward)
+    Prep = Preprocess_Split_diag_poisson(N0, M, N_rec**2)
     
     Denoi = Unet()
     Cov_perm = Perm_rec @ Cov_rec @ Perm_rec.T
