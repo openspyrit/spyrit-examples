@@ -2,7 +2,7 @@
 """
 Created on Fri Oct  7 08:48:35 2022
 
-This scripts generated the figures in the Appendix of the paper
+This scripts reconstructs the images in Figure 8
 
 NB (15-Sep-22): to debug needs to run
 import collections
@@ -13,43 +13,36 @@ collections.Callable = collections.abc.Callable
 #%%
 import torch
 import numpy as np
-import spyrit.misc.walsh_hadamard as wh
 import math
-
 from matplotlib import pyplot as plt
-
-
-from spyrit.misc.statistics import Cov2Var
-
-from spyrit.core.Acquisition import Acquisition_Poisson_approx_Gauss
-from spyrit.core.Forward_Operator import Forward_operator_Split_ft_had
-from spyrit.core.Preprocess import Preprocess_Split_diag_poisson
-from spyrit.core.Data_Consistency import Generalized_Orthogonal_Tikhonov, Pinv_orthogonal
-from spyrit.core.training import load_net
-from spyrit.core.neural_network import Unet, Identity
-from spyrit.core.reconstruction import Pinv_Net, DC2_Net
-
-from spyrit.misc.disp import add_colorbar, noaxis
-from spyrit.misc.sampling import Permutation_Matrix 
-
-from spas import read_metadata, plot_color, spectral_binning, spectral_slicing
-
 from pathlib import Path
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(f'Torch device: {device}')
-
 # get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
+
+from spyrit.misc.statistics import Cov2Var
+from spyrit.core.noise import Poisson 
+from spyrit.core.meas import HadamSplit
+from spyrit.core.prep import SplitPoisson
+from spyrit.core.recon import DCNet, PinvNet
+from spyrit.core.train import load_net
+from spyrit.core.nnet import Unet
+from spyrit.misc.sampling import reorder
+from spyrit.misc.disp import add_colorbar, noaxis
+
+
+from spas import read_metadata, spectral_slicing
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f'Torch device: {device}')
 
 #%% user-defined
 
 # for reconstruction
 N_rec = 128  # 128 or 64
-M_list = [4096, 1024, 512] # [4095, 1024, 512]   for N_rec = 64 
+M_list = [4096] # [4096, 1024, 512]   for N_rec = 64 
 N0 = 10     # Check if we used 10 in the paper
-stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/') # works for for N = 64 only !!
+stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
 
 # used for acquisition
 N_acq = 64
@@ -82,12 +75,10 @@ for M in M_list:
     else:
         net_order   = 'var'
 
-    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07'
+    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
     net_folder= f'{net_arch}_{net_denoi}_{net_data}/'
     
     #%% Init and load trained network
-    H =  wh.walsh2_matrix(N_rec)
-    
     # Covariance in hadamard domain
     Cov_rec = np.load(cov_rec_file)
     Cov_acq = np.load(cov_acq_file)
@@ -103,46 +94,39 @@ for M in M_list:
     elif net_order == 'var':
         Ord_rec = Cov2Var(Cov_rec)
         
-        
     # Init network  
-    Perm_rec = Permutation_Matrix(Ord_rec)
-    Hperm = Perm_rec @ H
-    Pmat = Hperm[:M,:]
+    meas = HadamSplit(M, N_rec, Ord_rec)
+    noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
+    prep  = SplitPoisson(N0, M, N_rec**2)    
+    denoi = Unet()
+    model = DCNet(noise, prep, Cov_rec, denoi)
     
-    Forward = Forward_operator_Split_ft_had(Pmat, Perm_rec, N_rec, N_rec)
-    Noise = Acquisition_Poisson_approx_Gauss(N0, Forward)
-    Prep = Preprocess_Split_diag_poisson(N0, M, N_rec**2)
-    
-    Denoi = Unet()
-    Cov_perm = Perm_rec @ Cov_rec @ Perm_rec.T
-    DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, 
-                                         M = M, N = N_rec**2)
-    model = DC2_Net(Noise, Prep, DC, Denoi)
+    pinet = PinvNet(noise, prep)
     
     # Load trained DC-Net
     net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
     title = './model_v2/' + net_folder + net_title
-    load_net(title, model, device)
+    load_net(title, model, device, strict = False)
     model.eval()                    # Mandantory when batchNorm is used
     
-    model_pinv = Pinv_Net(Noise, Prep, Pinv_orthogonal(), Identity())
+    model_pinv = PinvNet(noise, prep)
     model_pinv.to(device)
     
+    model.prep.set_expe()
     model.to(device)
-    model.PreP.set_expe()
     
     #%% Load expe data and unsplit
     data_root = Path('data_online/')
     data_folder_list = [Path('usaf_x12/'),
-                        #Path('star_sector_x12/'),
-                        #Path('tomato_slice_x2/'),
-                        #Path('tomato_slice_x12'),
+                        Path('star_sector_x12/'),
+                        Path('tomato_slice_x2/'),
+                        Path('tomato_slice_x12'),
                         ]
     
     data_file_prefix_list = ['zoom_x12_usaf_group5',
-                             #'zoom_x12_starsector',
-                             #'tomato_slice_2_zoomx2',
-                             #'tomato_slice_2_zoomx12',
+                             'zoom_x12_starsector',
+                             'tomato_slice_2_zoomx2',
+                             'tomato_slice_2_zoomx12',
                              ]
        
     
@@ -161,54 +145,8 @@ for M in M_list:
         raw = np.load(full_path)
         meas= raw['spectral_data']
         
-        # Order used for acquisistion
-        Perm_acq = Permutation_Matrix(Ord_acq)
-        
-        # zero filling when reconstrcution res is higher than acquisition res
-        if N_rec > N_acq:
-            
-            # Natural order measurements (N_acq resolution)
-            Perm_raw = np.zeros((2*N_acq**2,2*N_acq**2))
-            Perm_raw[::2,::2] = Perm_acq.T     
-            Perm_raw[1::2,1::2] = Perm_acq.T
-            meas = Perm_raw @ meas
-            
-            # Square subsampling in the "natural" order
-            Ord_sub = np.zeros((N_rec,N_rec))
-            Ord_sub[:N_acq,:N_acq]= -np.arange(-N_acq**2,0).reshape(N_acq,N_acq)
-            Perm_sub = Permutation_Matrix(Ord_sub) 
-            
-            # zero filled measurement (N_res resolution)
-            zero_filled = np.zeros((2*N_rec**2,len(wavelengths)))
-            zero_filled[:2*N_acq**2,:] = meas
-            
-            meas = zero_filled
-            
-            Perm_raw = np.zeros((2*N_rec**2,2*N_rec**2))
-            Perm_raw[::2,::2] = Perm_sub.T     
-            Perm_raw[1::2,1::2] = Perm_sub.T
-            
-            meas = Perm_raw @ meas
-        
-        # Reorder measurements  
-        if N_rec == N_acq:
-            # To reorder measurements
-            Perm_sub = Perm_acq[:N_rec**2,:].T
-        
-        if N_rec <= N_acq:   
-            # Get both positive and negative coefficients permutated
-            Perm = Perm_rec @ Perm_sub
-            Perm_raw = np.zeros((2*N_rec**2,2*N_acq**2))
-            Perm_raw[::2,::2] = Perm     
-            Perm_raw[1::2,1::2] = Perm
-            meas = Perm_raw @ meas
-            
-        elif N_rec > N_acq:
-            Perm = Perm_rec
-            Perm_raw = np.zeros((2*N_rec**2,2*N_rec**2))
-            Perm_raw[::2,::2] = Perm     
-            Perm_raw[1::2,1::2] = Perm
-            meas = Perm_raw @ meas
+        # reorder measurements to match with reconstruction 
+        meas = reorder(meas, Ord_acq, Ord_rec)
         
         #%% Reconstruct a single spectral slice from full reconstruction
         wav_min = 579 
@@ -239,11 +177,11 @@ for M in M_list:
         
         #%% pseudo inverse
         if M==4096:
-            rec_pinv_gpu = model_pinv.reconstruct(m)
+            rec_pinv_gpu = model_pinv.reconstruct_expe(m)
             rec_pinv = rec_pinv_gpu.cpu().detach().numpy().squeeze()
         
             fig , axs = plt.subplots(1,1)
-            im = axs.imshow(rec, cmap='gray')
+            im = axs.imshow(rec_pinv, cmap='gray')
             noaxis(axs)
             add_colorbar(im, 'bottom')
             

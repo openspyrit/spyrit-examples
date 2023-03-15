@@ -17,17 +17,14 @@ import math
 
 from matplotlib import pyplot as plt
 
-from spyrit.core.Acquisition import Acquisition_Poisson_approx_Gauss
-from spyrit.core.Forward_Operator import Forward_operator_Split_ft_had
-from spyrit.core.Preprocess import Preprocess_Split_diag_poisson
-from spyrit.core.Data_Consistency import Generalized_Orthogonal_Tikhonov
-from spyrit.core.training import load_net
-from spyrit.core.neural_network import Unet
-from spyrit.core.reconstruction import DC2_Net
-
 from spyrit.misc.statistics import Cov2Var
-from spyrit.misc.sampling import Permutation_Matrix 
-import spyrit.misc.walsh_hadamard as wh
+from spyrit.core.noise import Poisson 
+from spyrit.core.meas import HadamSplit
+from spyrit.core.prep import SplitPoisson
+from spyrit.core.recon import DCNet
+from spyrit.core.train import load_net
+from spyrit.core.nnet import Unet
+from spyrit.misc.sampling import reorder
 
 from spas import read_metadata, plot_color, spectral_binning, spectral_slicing
 
@@ -45,7 +42,7 @@ collections.Callable = collections.abc.Callable
 N_rec = 128  
 M_list = [4096, 1024, 512] # [4095, 1024, 512]   for N_rec = 64 
 N0 = 10     # Check if we used 10 in the paper
-stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/') # works for for N = 64 only !!
+stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
 
 # used for acquisition
 N_acq = 64
@@ -58,12 +55,11 @@ save_root = Path('./recon_128/')
 
 #%% covariance matrix and network filnames
 stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
-cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy') 
+cov_rec_file = stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy') 
 bs = 256
 #  
 stat_folder_acq =  Path('./data_online/') 
-cov_acq_file= stat_folder_acq / ('Cov_{}x{}'.format(N_acq, N_acq)+'.npy')
-
+cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(N_acq, N_acq)+'.npy')
 
 #%% Networks
 for M in M_list:
@@ -73,12 +69,10 @@ for M in M_list:
     else:
         net_order   = 'var'
 
-    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07'
+    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
     net_folder= f'{net_arch}_{net_denoi}_{net_data}/'
     
     #%% Init and load trained network
-    H =  wh.walsh2_matrix(N_rec)
-    
     # Covariance in hadamard domain
     Cov_rec = np.load(cov_rec_file)
     Cov_acq = np.load(cov_acq_file)
@@ -95,25 +89,16 @@ for M in M_list:
         Ord_rec = Cov2Var(Cov_rec)
         
     # Init network  
-    Perm_rec = Permutation_Matrix(Ord_rec)
-    Hperm = Perm_rec @ H
-    Pmat = Hperm[:M,:]
-    
-    #    
-    Forward = Forward_operator_Split_ft_had(Pmat, Perm_rec, N_rec, N_rec)
-    Noise = Acquisition_Poisson_approx_Gauss(N0, Forward)
-    Prep = Preprocess_Split_diag_poisson(N0, M, N_rec**2)
-    
-    Denoi = Unet()
-    Cov_perm = Perm_rec @ Cov_rec @ Perm_rec.T
-    DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, 
-                                         M = M, N = N_rec**2)
-    model = DC2_Net(Noise, Prep, DC, Denoi)
+    meas = HadamSplit(M, N_rec, Ord_rec)
+    noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
+    prep  = SplitPoisson(N0, M, N_rec**2)    
+    denoi = Unet()
+    model = DCNet(noise, prep, Cov_rec, denoi)
     
     # Load trained DC-Net
     net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
     title = './model_v2/' + net_folder + net_title
-    load_net(title, model, device)
+    load_net(title, model, device, False)
     model.eval()                    # Mandantory when batchNorm is used  
     
     #%% List expe data
@@ -167,54 +152,8 @@ for M in M_list:
         raw = np.load(full_path)
         meas= raw['spectral_data']
         
-        # Order used for acquisistion
-        Perm_acq = Permutation_Matrix(Ord_acq)
-        
-        # zero filling when reconstrcution res is higher than acquisition res
-        if N_rec > N_acq:
-            
-            # Natural order measurements (N_acq resolution)
-            Perm_raw = np.zeros((2*N_acq**2,2*N_acq**2))
-            Perm_raw[::2,::2] = Perm_acq.T     
-            Perm_raw[1::2,1::2] = Perm_acq.T
-            meas = Perm_raw @ meas
-            
-            # Square subsampling in the "natural" order
-            Ord_sub = np.zeros((N_rec,N_rec))
-            Ord_sub[:N_acq,:N_acq]= -np.arange(-N_acq**2,0).reshape(N_acq,N_acq)
-            Perm_sub = Permutation_Matrix(Ord_sub) 
-            
-            # zero filled measurement (N_res resolution)
-            zero_filled = np.zeros((2*N_rec**2,len(wavelengths)))
-            zero_filled[:2*N_acq**2,:] = meas
-            
-            meas = zero_filled
-            
-            Perm_raw = np.zeros((2*N_rec**2,2*N_rec**2))
-            Perm_raw[::2,::2] = Perm_sub.T     
-            Perm_raw[1::2,1::2] = Perm_sub.T
-            
-            meas = Perm_raw @ meas
-        
-        # Reorder measurements  
-        if N_rec == N_acq:
-            # To reorder measurements
-            Perm_sub = Perm_acq[:N_rec**2,:].T
-        
-        if N_rec <= N_acq:   
-            # Get both positive and negative coefficients permutated
-            Perm = Perm_rec @ Perm_sub
-            Perm_raw = np.zeros((2*N_rec**2,2*N_acq**2))
-            Perm_raw[::2,::2] = Perm     
-            Perm_raw[1::2,1::2] = Perm
-            meas = Perm_raw @ meas
-            
-        elif N_rec > N_acq:
-            Perm = Perm_rec
-            Perm_raw = np.zeros((2*N_rec**2,2*N_rec**2))
-            Perm_raw[::2,::2] = Perm     
-            Perm_raw[1::2,1::2] = Perm
-            meas = Perm_raw @ meas
+        # reorder measurements to match with reconstruction 
+        meas = reorder(meas, Ord_acq, Ord_rec)
         
         #%% Reconstruct all spectral channels
         # init
@@ -223,8 +162,8 @@ for M in M_list:
         rec_net = np.zeros((wavelengths.shape[0],N_rec, N_rec))
         
         # Net
+        model.prep.set_expe()
         model.to(device)
-        model.PreP.set_expe()
         
         with torch.no_grad():
             for b in range(n_batch):       
@@ -234,19 +173,26 @@ for M in M_list:
                 rec_net_gpu = model.reconstruct_expe(m)
                 rec_net[ind,:,:] = rec_net_gpu.cpu().detach().numpy().squeeze()
         
+        too_long = ['Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
+                    'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms']
+        
         # Save
         if save_root:
             save_root.mkdir(parents=True, exist_ok=True)
-            full_path = save_root / (data_folder.name + '_slice_' + net_title + '.npy')
+            
+            if data_folder.name not in too_long:
+                save_prefix = data_folder.name
+            elif data_folder.name == too_long[0]:
+                save_prefix = 'Bitten_Apple'
+            elif data_folder.name == too_long[1]:
+                save_prefix = 'color_checker'
+            full_path = save_root / (save_prefix + '_all_' + net_title + '.npy')
             np.save(full_path, rec_net)
         
         #%% Pick-up a few spectral slice from full reconstruction
         wav_min = 530 
         wav_max = 730
         wav_num = 4
-        
-        too_long = ['Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
-                    'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms']
         
         rec_net = rec_net.reshape((wavelengths.shape[0],-1))
         rec_slice, wavelengths_slice, _ = spectral_slicing(

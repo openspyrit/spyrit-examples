@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Sep  7 15:25:43 2022
-
-@author: ducros
-"""
 from __future__ import print_function, division
 import torch
 import torch.optim as optim
@@ -130,7 +125,7 @@ if __name__ == "__main__":
     #==========================================================================
     # 3. Define a Neural Network
     #==========================================================================
-    FO = Split_Forward_operator_ft_had(Pmat, Perm, opt.img_size, opt.img_size)
+    FO = Split_Forward_operator_ft_had(Pmat, Perm)
     Noi = Bruit_Poisson_approx_Gauss(opt.N0, FO)
     Prep = Split_diag_poisson_preprocess(opt.N0, opt.M, opt.img_size**2)
     
@@ -148,7 +143,7 @@ if __name__ == "__main__":
         DC = Generalized_Orthogonal_Tikhonov(sigma_prior = Cov_perm, 
                                              M = opt.M, 
                                              N = opt.img_size**2)
-        model = DC2_Net(Noi, Prep, DC, Denoi)
+        model = DC_Net(Noi, Prep, DC, Denoi)
         
     elif opt.arch == 'pinv-net':    # Pseudo Inverse Network
         DC = Pinv_orthogonal()
@@ -191,7 +186,7 @@ if __name__ == "__main__":
            opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
 
-    title = opt.model_root / f'{opt.arch}2_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    
+    title = opt.model_root / f'{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    
     print(title)
     
     Path(opt.model_root).mkdir(parents=True, exist_ok=True)
@@ -204,7 +199,7 @@ if __name__ == "__main__":
     #- save training history
     params = Train_par(opt.batch_size, opt.lr, opt.img_size,reg=opt.reg);
     params.set_loss(train_info);
-    train_path = opt.model_root / f'TRAIN_{opt.arch}2_{opt.denoi}_{opt.data}_{train_type}_{suffix}.pkl'
+    train_path = opt.model_root / f'TRAIN_{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}.pkl'
     
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
