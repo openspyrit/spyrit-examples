@@ -24,7 +24,7 @@ This repository contains the code that produces the results reported in
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Clone the spyrit package, and install the version in the  `towards_v2_fadoua` branch: 
+1. Clone the spyrit package, and install the version in the  `towards_v2` branch: 
 
     ```shell
     git clone https://github.com/openspyrit/spyrit.git
@@ -55,17 +55,21 @@ This repository contains the code that produces the results reported in
 
 * the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e) 
 
-* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e). You can download the full folder with all subfolder or navigate to select a few of them.
+* the covariance matrices from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/63d7f3620386da2747641e1b) 
+
+* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/6149c3ce29e3fc10d47dbffb). You can download the full folder with all subfolder or navigate to select a few of them.
 
 
-Unzip the folders. The directory structure should be
+Unzip the folders into `/model/`, `/stat/`, and `/data/`, respectively. The directory structure should be
 
 ```
 |---spyrit-examples
 |   |---2022_OE_spyrit2
 |   |   |---data
 |   |   |   |---
-|   |   |---models
+|   |   |---model
+|   |   |   |---
+|   |   |---stat
 |   |   |   |---
 |   |   |---fig8_recon.py
 |   |   |---fig8_mask.py
@@ -75,5 +79,5 @@ Unzip the folders. The directory structure should be
 
 ## To train the network from scratch
 ```powershell
-./train2.py --stat_root models_online/ --model_root ./model_v2/ --num_epochs 30 --M 2048
+./train.py --M 2048 --img_size 128 --batch_size 256
 ```
