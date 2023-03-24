@@ -13,13 +13,13 @@ Here are some of research contributions based on the SPYRIT toolbox. All of them
 
 ### 2021
 
-* [A Denoised Completion Network (DC-Net) for experimental data](./2021_Optics_express/) (Optics Express 2021)
+* [A Denoised Completion Network (DC-Net) for experimental data](./deprecated/2021_Optics_express/) (Optics Express 2021)
 
 > Antonio Lorente Mur, Pierre Leclerc, Françoise Peyrin, Nicolas Ducros.  Single-Pixel Image Reconstruction from Experimental Data Using Neural Networks. [DOI](https://doi.org/10.1364/OE.424228). [PDF](https://hal.archives-ouvertes.fr/hal-03202353/document).
 
 ### 2020
 
-* [A Completion Network (C-Net) for simulated data](./2020_ISBI_CNet/)  (ISBI 2020)
+* [A Completion Network (C-Net) for simulated data](./deprecated/2020_ISBI_CNet/)  (ISBI 2020)
 
 > Nicolas Ducros, A Lorente Mur, F. Peyrin. A Completion Network for  Reconstruction from Compressed Acquisition. 2020 IEEE 17th International Symposium on Biomedical Imaging (ISBI), Apr 2020, Iowa City, United  States, pp.619-623. [DOI](10.1109/ISBI45749.2020.9098390). [PDF](https://hal.archives-ouvertes.fr/hal-02342766/document/).
 
@@ -29,7 +29,7 @@ Materials used during Master Classes or Seasonal Schools, with emphasis on image
 
 ### 2021
 
-* [Notebook on CT image reconstruction](/2021_DLMIS_Hands-on/) (DLMIS 21)
+* [Notebook on CT image reconstruction](./deprecated/2021_DLMIS_Hands-on/) (DLMIS 21)
 
 > N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux. Hands-on session 3.1: image reconstruction using the PyTorch and Spyrit packages.  [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
 
@@ -39,13 +39,13 @@ Some projects of last year MSc students, INSA-Lyon, Electrical Engineering Depar
 
 ### 2020-21 S1
 
-* [A deep neural network for limited view X-ray tomography](./2021_MSc_radon/)
+* [A deep neural network for limited view X-ray tomography](./deprecated/2021_MSc_radon/)
 
 > Jules Dartois, Valentin Bérisset
 
 ### 2020-21 S1
 
-* [Single-pixel reconstruction of 128 x 128 images](./2020_MSc_128x128/)
+* [Single-pixel reconstruction of 128 x 128 images](./deprecated/2020_MSc_128x128/)
 
 > Marc Chanet, Juliette Coumert
 
