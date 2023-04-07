@@ -19,16 +19,15 @@ def Files_names(Path,name_type):
     files.sort(key=os.path.getmtime)
     return([os.path.basename(x) for x in files])
     
-def Select_data(Dir, Run):
+def Select_data(Dir,Run):
     Data_path = Dir+Run+'/'
     name_type = os.listdir(Data_path)[0]
     name_type = name_type[:-9]+'*'+name_type[-4:]
     files = Files_names(Data_path,str(name_type))
     print('Données du dossier : '+Data_path)
-    with open(Dir+'info_run',"r") as fichier:
-        print(fichier.read())
-    return(Data_path,files)
 
+    return(Data_path,files)
+    
 def change_set_acqui(*args):
     n = len(set_acqui.value)
     run.options = [x[0][n:] for x in os.walk(set_acqui.value)][1:]

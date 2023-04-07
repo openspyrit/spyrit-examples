@@ -1,55 +1,48 @@
-# Optica 2023 pulibcation : Quantitative hyperspectral microscopy using encoded illumination and neural networks with physics priors
+# Quantitative hyperspectral microscopy using encoded illumination and neural networks with physics priors
 
-This code generates the figures in the article and allow to study the data used.
+This code generates the figures for the paper draft and allow to study the data used.
 
-*Authors:* S Crombez,N Ducros
+*Authors:* S Crombez, N Ducros
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Install the dependencies
 
-1. We recommend creating a virtual (e.g., conda) environment first.
-
-    ```shell
-    # conda install
-    conda create --name new-env
-    conda activate new-env
-    conda install spyder
-    conda install -c conda-forge matplotlib
-    conda install -c conda-forge jupyterlab
-    conda install -c anaconda scikit-image
-    conda install -c anaconda h5py 
-    conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c conda-forge
-    ```
-
-    Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
-
-1. Clone the spyrit package, and install the version in the  `towards_v2_fadoua` branch
-
-    ```shell
-    git clone https://github.com/openspyrit/spyrit.git
-    cd spyrit
-    git checkout towards_v2
-    pip install -e .
-    ```
-    
-1. Clone the spas package: 
-
-    ```shell
-    git clone https://github.com/openspyrit/spas.git
-    cd spas
-    pip install -e .
-    ```
+1. See env.yaml
 
 ## Get the notebooks and the data
 
 1.  Get source code and navigate to the `/2023_Optica/` folder
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
-    cd spyrit-examples/2023_Opyica/ 
+    cd spyrit-examples/2023_Optica/ 
     ```
-2. Download the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/Achanger) A Changer
+
+2. Download 
+
+* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/64218b0d0386da2747699efc). You can download the full folder with all subfolder or navigate to select a few of them.
 
 
+Unzip the folders into `/data/`, respectively. The directory structure should be
 
-
+```
+|---spyrit-examples
+|   |---2023_Optica
+|   |   |---data
+|   |   |   |---2023_02_28_mRFP_DsRed_3D
+|   |   |   |	|---Analyse_out
+|   |   |   |	|---Fig_images
+|   |   |   |	|---Raw_data_chSPSIM_and_SPIM
+|   |   |   |	|   |---data_2023_02_28
+|   |   |   |	|   |   |---RUN0001
+|   |   |   |	|   |   |---RUN0002
+|   |   |   |	|   |   |---
+|   |   |   |---2023_03_07_mRFP_DsRed_can_vs_had
+|   |   |   |	|--- 
+|   |   |   |	|   |Reference_spectra
+|   |   |---fonction
+|   |   |---Notebooks
+|   |   |---env.yaml
+|   |   |---Readme.md
+```
+./2023_02_28_mRFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM/data_2023_02_28
