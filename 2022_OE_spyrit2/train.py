@@ -119,7 +119,7 @@ if __name__ == "__main__":
     # 3. Define a Neural Network
     #==========================================================================
     meas = HadamSplit(opt.M, opt.img_size, Ord)
-    prep = SplitPoisson(opt.N0, opt.M, opt.img_size**2)
+    prep = SplitPoisson(opt.N0, meas)
     noise = PoissonApproxGauss(meas, opt.N0) # faster than Poisson
     
     # Image-domain denoising layer

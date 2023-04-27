@@ -24,7 +24,7 @@ from spyrit.core.prep import SplitPoisson
 from spyrit.core.recon import DCNet
 from spyrit.core.train import load_net
 from spyrit.core.nnet import Unet
-from spyrit.misc.sampling import reorder
+from spyrit.misc.sampling import reorder, Permutation_Matrix
 
 from spas import read_metadata, plot_color, spectral_binning, spectral_slicing
 
@@ -38,28 +38,22 @@ import collections
 collections.Callable = collections.abc.Callable
 
 #%% user-defined
+# used for acquisition
+N_acq = 64
+
 # for reconstruction
 N_rec = 128  
 M_list = [1024] #[4096, 1024, 512] 
 N0 = 10     # Check if we used 10 in the paper
-stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
 
-# used for acquisition
-N_acq = 64
-stat_folder_acq =  Path('./data_online/') 
-
+stat_folder_rec = Path('./stat/') #Path('../../stat/ILSVRC2012_v10102019/')
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
-net_data    = 'imagenet'    # 'imagenet' 
-save_root = Path('./recon/')
-
-#%% covariance matrix and network filnames
-stat_folder_rec = Path('../../stat/ILSVRC2012_v10102019/')
-cov_rec_file = stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy') 
+net_data    = 'imagenet'    # 'imagenet'
 bs = 256
-#  
-stat_folder_acq =  Path('./data_online/') 
-cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(N_acq, N_acq)+'.npy')
+cov_rec_file = stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy') 
+
+save_root = Path('./recon/')
 
 #%% Networks
 for M in M_list:
@@ -71,12 +65,9 @@ for M in M_list:
 
     net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
     
-    #%% Init and load trained network
-    # Covariance in hadamard domain
+    #%% Init and load trained network   
     Cov_rec = np.load(cov_rec_file)
-    Cov_acq = np.load(cov_acq_file)
-    Ord_acq = Cov2Var(Cov_acq)
-    
+
     # Sampling order
     if net_order == 'rect':
         Ord_rec = np.ones((N_rec, N_rec))
@@ -101,62 +92,44 @@ for M in M_list:
     model.eval()                    # Mandantory when batchNorm is used  
     
     #%% List expe data
-    data_root = Path('data_test/')
-    data_folder_list = [# Path('Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms/'),
-                        # Path('color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms/'),
-                        # Path('green_Tree_leaf_ti_20ms_zoomx4_objx40/'),
-                        # Path('half_SiemensStar_with_ThorLabsName/'),
-                        # Path('Thorlabs_box_ti_10ms_without_telecentric/'),
-                        # Path('usaf_x12/'), 
-                        # Path('usaf_x2/'), 
-                        # Path('star_sector_x2/'), 
-                        # Path('star_sector_x12/'),
-                        # Path('star_sector_linear'),
-                        Path('tomato_slice_2_zoomx2/'),
-                        # Path('tomato_slice_x12'),
-                        # Path('cat/'),
-                        # Path('cat_linear/'),
-                        # Path('horse/')
-                        # Path('')
-                        ]
-     
-    data_file_prefix_list = [# 'Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
-                             # 'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms',
-                             # 'green_Tree_leaf_ti_20ms_zoomx4_objx40',
-                             # 'half_SiemensStar_with_ThorLabsName',
-                             # 'Thorlabs_box_ti_10ms_without_telecentric',
-                             # 'zoom_x12_usaf_group5',
-                             # 'zoom_x2_usaf_group2',
-                             # 'zoom_x2_starsector',
-                             # 'zoom_x12_starsector',
-                             # 'SeimensStar_whiteLamp_linear_color_filter',
-                             'tomato_slice_2_zoomx2',
-                             # 'tomato_slice_2_zoomx12',
-                             # 'Cat_whiteLamp',
-                             # 'Cat_LinearColoredFilter',
-                             # 'Horse_whiteLamp'
+    data_root = Path('data/')
+    data_file_prefix_list = ['Bitten_Apple_t_5min-im_64x64_Zoom_x1_ti_10ms_tc_0.5ms',
+                            'Cat_LinearColoredFilter',
+                            'Cat_whiteLamp',
+                            'color_checker_full_FOV_64x64_Zoom_x1_ti_15ms_tc_0.2ms',
+                            'green_Tree_leaf_ti_20ms_zoomx4_objx40',
+                            'half_SiemensStar_with_ThorLabsName',
+                            'Horse_WhiteLamp',
+                            'SeimensStar_whiteLamp_linear_color_filter',
+                            'Thorlabs_box_ti_10ms_without_telecentric',
+                            'tomato_slice_2_zoomx12',
+                            'tomato_slice_2_zoomx2',
+                            'zoom_x12_starsector',
+                            'zoom_x12_usaf_group5',
+                            'zoom_x2_starsector',
+                            'zoom_x2_usaf_group2',
                              # 'reconstruction-diffuser'
                              ]
     
     #%% Load data
-    for data_folder,data_file_prefix in zip(data_folder_list,data_file_prefix_list):
+    for data_file_prefix in data_file_prefix_list:
         
-        print(data_folder / data_file_prefix)
+        print(data_file_prefix)
         
         # meta data
-        meta_path = data_root / data_folder / (data_file_prefix + '_metadata.json')
+        meta_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_metadata.json')
         _, acquisition_parameters, _, _ = read_metadata(meta_path)
         wavelengths = acquisition_parameters.wavelengths 
         
         # data
-        full_path = data_root / data_folder / (data_file_prefix + '_spectraldata.npz')
+        full_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_spectraldata.npz')
         raw = np.load(full_path)
         meas= raw['spectral_data']
-
+        
+        # reorder measurements to match with the reconstruction order
         Ord_acq = -np.array(acquisition_parameters.patterns)[::2]//2   # pattern order
         Ord_acq = np.reshape(Ord_acq, (N_acq,N_acq))                   # sampling map
-
-        # reorder measurements to match with the reconstruction order        
+        
         Perm_rec = Permutation_Matrix(Ord_rec)    # from natural order to reconstrcution order 
         Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
         meas = reorder(meas, Perm_acq, Perm_rec)
@@ -186,11 +159,11 @@ for M in M_list:
         if save_root:
             save_root.mkdir(parents=True, exist_ok=True)
             
-            if data_folder.name not in too_long:
-                save_prefix = data_folder.name
-            elif data_folder.name == too_long[0]:
+            if data_file_prefix not in too_long:
+                save_prefix = data_file_prefix
+            elif data_file_prefix == too_long[0]:
                 save_prefix = 'Bitten_Apple'
-            elif data_folder.name == too_long[1]:
+            elif data_file_prefix == too_long[1]:
                 save_prefix = 'color_checker'
             full_path = save_root / (save_prefix + '_all_' + net_title + '.npy')
             np.save(full_path, rec_net)
@@ -206,17 +179,17 @@ for M in M_list:
         rec_slice = rec_slice.reshape((wavelengths_slice.shape[0],N_rec,N_rec))
         
         # rotate 180°
-        if data_folder.name not in ['usaf_x2','usaf_x12']:
+        if data_file_prefix not in ['zoom_x2_usaf_group2','zoom_x12_usaf_group5']:
             rec_slice = np.rot90(rec_slice,2,(1,2))
         
         # either save
         if save_root is not False: 
             # filenames
-            if data_folder.name not in too_long:
-                save_prefix = data_folder.name
-            elif data_folder.name == too_long[0]:
+            if data_file_prefix not in too_long:
+                save_prefix = data_file_prefix
+            elif data_file_prefix == too_long[0]:
                 save_prefix = 'Bitten_Apple'
-            elif data_folder.name == too_long[1]:
+            elif data_file_prefix == too_long[1]:
                 save_prefix = 'color_checker'  
             full_path = save_root / (save_prefix + '_slice_' + net_title + '.pdf')
              
@@ -238,18 +211,18 @@ for M in M_list:
             
         #%% Plot or save 
         # rotate 180°
-        if data_folder.name not in ['usaf_x2','usaf_x12']:
+        if data_file_prefix not in ['zoom_x12_usaf_group5','zoom_x12_usaf_group5']:
             rec_net = np.rot90(rec_net,2,(1,2))
         
         # either save
         if save_root is not False:
             
             # filenames
-            if data_folder.name not in too_long:
-                save_prefix = data_folder.name
-            elif data_folder.name == too_long[0]:
+            if data_file_prefix not in too_long:
+                save_prefix = data_file_prefix
+            elif data_file_prefix == too_long[0]:
                 save_prefix = 'Bitten_Apple'
-            elif data_folder.name == too_long[1]:
+            elif data_file_prefix == too_long[1]:
                 save_prefix = 'color_checker'        
             full_path = save_root / (save_prefix + '_bin_' + net_title + '.pdf')
             

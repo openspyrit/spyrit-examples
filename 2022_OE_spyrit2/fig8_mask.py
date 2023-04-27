@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+
+#%%# -*- coding: utf-8 -*-
 import numpy as np
 from spyrit.misc.statistics import Cov2Var
 from spyrit.misc.sampling import img2mask
@@ -13,8 +14,8 @@ N = 128
 
 title_Tag = False
 
-C = np.load('../../stat/ILSVRC2012_v10102019/Cov_8_128x128.npy')
-save_root = Path('./recon_128/')
+C = np.load('./stat/Cov_8_128x128.npy')
+save_root = Path('./recon/')
 
 #%% Energy/variance subsampling
 Ord = Cov2Var(C)
