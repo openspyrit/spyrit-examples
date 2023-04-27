@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#%% -*- coding: utf-8 -*-
 """
 Created on Thu Mar 23 16:41:56 2023
 
@@ -9,7 +9,7 @@ import pickle
 import torch
 import numpy as np
 from spyrit.core.prep import DirectPoisson
-from spyrit.core.recon import PinvStoreNet
+from spyrit.core.recon import PinvNet
 from spyrit.core.meas import Linear
 from spyrit.core.noise import NoNoise, Poisson
 from spyrit.misc.statistics import data_loaders_stl10
@@ -36,7 +36,7 @@ H = H[:M,:]
     
 # Operators
 alpha = 1000.0
-meas_op = Linear(H)
+meas_op = Linear(H, pinv=True) 
 meas_op.h, meas_op.w = h, h
 
 #noise = NoNoise(meas_op)        # noiseless
@@ -45,7 +45,7 @@ meas_op.h, meas_op.w = h, h
 noise = Poisson(meas_op, alpha) # poisson noise
 prep = DirectPoisson(alpha, meas_op)
 
-pinv_net = PinvStoreNet(noise, prep)
+pinv_net = PinvNet(noise, prep)
 
 # use GPU, if available
 #device = "cpu"
