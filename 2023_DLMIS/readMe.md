@@ -4,8 +4,7 @@ This code was used during a hands-on session given at the [Deep Learning for Med
 
 The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
 
-> To be updated!! 
-The hands-on session followed a presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) or watch the [video](https://www.youtube.com/watch?v=Q5s5P3luqOE).
+The hands-on session followed a presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) or watch the [video](https://www.youtube.com/watch?v=y-PWcpzXkL0).
 
 *Authors:* (version 2023) L Amador, E Chen, N Ducros, H-J Ling, K Mom, J Puig, T Grenier, E Saillard,      
 *Authors:* (version 2021): N Ducros, T Leuliet, A Lorente Mur, Louise Friot-Giroux
@@ -13,17 +12,18 @@ The hands-on session followed a presentation. Check the [slides](https://www.cre
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 # Install the dependencies
-
-Our scripts primarily relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  NB: On Windows, you may need to install [torch](https://pytorch.org/get-started/locally/) before SPyRiT
-
+We recommend using a virtual (e.g., conda) environment.
 ```shell
-# pip install
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install spyrit # tested with spyrit==2.0.0
+conda create --name new-env
+conda activate new-env
+```
+Our notebook primarily relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 2.1.
+```shell
+pip install spyrit==2.1
 pip install scikit-image
 pip install h5py
-pip install jupyterlab
 ```
+
 
 # Get the scripts and data
 1. Get source code from GitHub
@@ -55,8 +55,11 @@ pip install jupyterlab
         |   |   |---main_with_answers.ipynb
         |   |   |---train.py
 
-# Training a model from scratch
+# At this this point you ready to go!
+Try to complete `main.ipynb` or run `main_with_answers.ipynb`
 
+
+# To go further
 We provide `train.py` to train a network from a single command line
 
 ```shell
