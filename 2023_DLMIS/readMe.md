@@ -4,7 +4,9 @@ This code was used during a hands-on session given at the [Deep Learning for Med
 
 The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
 
-The hands-on session followed a presentation. Check the [slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) or watch the [video](https://www.youtube.com/watch?v=y-PWcpzXkL0).
+The hands-on session followed a lecture on the topic. 
+* [Slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) 
+* [Video](https://www.youtube.com/watch?v=y-PWcpzXkL0)
 
 *Authors:* (version 2023) L Amador, E Chen, N Ducros, H-J Ling, K Mom, J Puig, T Grenier, E Saillard,      
 *Authors:* (version 2021): N Ducros, T Leuliet, A Lorente Mur, Louise Friot-Giroux
