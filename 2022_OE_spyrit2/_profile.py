@@ -31,7 +31,7 @@ meas = HadamSplit(M, H, Ord)
 
 noise = Poisson(meas, alpha)
 #noise  = NoNoise(meas)    # noiseless
-prep  = SplitPoisson(alpha, M, H*H)
+prep  = SplitPoisson(alpha, meas)
 pinet = PinvNet(noise, prep)
 denoi = Unet()
 dcnet = DCNet(noise, prep, Cov, denoi)

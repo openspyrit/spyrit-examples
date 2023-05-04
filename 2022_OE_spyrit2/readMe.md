@@ -1,46 +1,40 @@
 # OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging 
 
-This repository contains the code that produces the results reported in
+The code in the current folder allows to reproduce the results that are reported in
 
-> G. Beneti-Martin, L Mahieu-Williame, T Baudier, N Ducros, "OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging," Preprint, (2022). [HAL (open access PDF)](https://hal.science/hal-03910077).
+> G. Beneti-Martin, L Mahieu-Williame, T Baudier, N Ducros, "OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging," Optics Express, Vol. 31, No. 10, (2023). 
+
+*DOI (open access):* https://doi.org/10.1364/OE.483937
+
+*Preprint (main PDF):* https://hal.science/hal-03910077
+
+*Preprint (supplemental document):* https://hal.science/hal-XXXXXXX 
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Install the dependencies
 
-1. We recommend creating a virtual (e.g., conda) environment first.
+1. We recommend using a virtual (e.g., conda) environment.
 
     ```shell
     # conda install
     conda create --name new-env
     conda activate new-env
-    conda install spyder
-    conda install -c conda-forge matplotlib
-    conda install -c conda-forge jupyterlab
-    conda install -c anaconda scikit-image
-    conda install -c anaconda h5py 
-    conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c conda-forge
     ```
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Clone the spyrit package, and install the version in the  `towards_v2` branch: 
+1. Install the spyrit package (more details [here](https://github.com/openspyrit/spyrit)). Tested with spyrit 2.1.
 
     ```shell
-    git clone https://github.com/openspyrit/spyrit.git
-    cd spyrit
-    git checkout towards_v2
-    pip install -e .
+    pip install spyrit==2.1
     ```
     
-1. Clone the spas package: 
+1. Clone and install the spas package (more details [here](https://github.com/openspyrit/spas)). Tested with spas 1.2. 
 
     ```shell
-    git clone https://github.com/openspyrit/spas.git
-    cd spas
-    pip install -e .
+    pip install -e https://github.com/openspyrit/spas.git@1.2
     ```
-> Todo: Upate spas package to remove unwanted imports of ``reconstruct_nn``  
 
 ## Get the scripts, networks and raw data
 
@@ -51,16 +45,23 @@ This repository contains the code that produces the results reported in
     cd spyrit-examples/2022_OE_spyrit2/ 
     ```
     
-2. Download 
+2. Download models, statistics, and raw data
+
+Get all files by running `download_data.py`, e.g.,
+```shell
+python3 download_data.py
+```
+
+Otherwise, select
 
 * the models from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/638630794d15dd536f04831e) 
 
 * the covariance matrices from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/63d7f3620386da2747641e1b) 
 
-* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/6149c3ce29e3fc10d47dbffb). You can download the full folder with all subfolder or navigate to select a few of them.
+* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/6149c3ce29e3fc10d47dbffb).
 
 
-Unzip the folders into `/model/`, `/stat/`, and `/data/`, respectively. The directory structure should be
+The directory structure should be
 
 ```
 |---spyrit-examples
@@ -74,10 +75,11 @@ Unzip the folders into `/model/`, `/stat/`, and `/data/`, respectively. The dire
 |   |   |---fig8_recon.py
 |   |   |---fig8_mask.py
 |   |   |---
+|   |   |---recon
 ```
 
 
-## To train the network from scratch
+## Train the network from scratch
 ```powershell
 ./train.py --M 2048 --img_size 128 --batch_size 256
 ```

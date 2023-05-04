@@ -25,6 +25,7 @@ net_arch  = 'dc-net'   # ['pinv-net', 'dc-net']
 net_denoi = 'unet'     # ['unet', 'cnn']
 net_data  = 'imagenet'   # 'imagenet' or 'stl10'
 
+# Note that the names of the folders should be updated
 data_folder_list = [Path('usaf_x2'), 
                     Path('usaf_x12'),
                     Path('star_sector_x2'), 
