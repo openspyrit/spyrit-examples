@@ -24,16 +24,16 @@ The code in the current folder allows to reproduce the results that are reported
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
 
-1. Install the spyrit package (more details [here](https://github.com/openspyrit/spyrit)). Tested with spyrit 2.1.
+1. Install the spyrit package (more details [here](https://github.com/openspyrit/spyrit)). Tested with spyrit 2.1.0
 
     ```shell
-    pip install spyrit==2.1
+    pip install spyrit==2.1.0
     ```
     
-1. Clone and install the spas package (more details [here](https://github.com/openspyrit/spas)). Tested with spas 1.2. 
+1. Clone and install the spas package (more details [here](https://github.com/openspyrit/spas)). Tested with spas v1.4.
 
     ```shell
-    pip install -e https://github.com/openspyrit/spas.git@1.2
+    pip install -e git+https://github.com/openspyrit/spas.git@v1.4#egg=spas
     ```
 
 ## Get the scripts, networks and raw data
