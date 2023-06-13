@@ -20,15 +20,17 @@ from spyrit.core.prep import SplitPoisson
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 
+from meas_dev import Hadam1Split
 from recon_dev import DC1Net, Pinv1Net
 from statistics_dev import data_loaders_ImageNet
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Acquisition
-    parser.add_argument("--pattern_root", type=str, 
-                        default='./pattern/patterns_2023_03_13.npy', 
-                        help="Path to measurement patterns")
+    parser.add_argument("--pattern_root", type=str, default=None, 
+                        help="Path to measurement patterns or None")
+    parser.add_argument("--img_size",   type=int,   default=512,  help="Height / width dimension")
+    parser.add_argument("--M",          type=int,   default=128,  help="Number of patterns")
     
     # Network and training
     parser.add_argument("--data_root",  type=str,   default="./data/ILSVRC2012_v10102019", help="Path to the training dataset")
@@ -38,11 +40,11 @@ if __name__ == "__main__":
     parser.add_argument("--model_root", type=str,   default='./model/', help="Path to model saving files")
     
     parser.add_argument("--alpha",      type=float, default=10,   help="Mean maximum total number of photons")
-    parser.add_argument("--denoi",      type=str,   default="cnn", help="Choose among 'cnn','cnnbn', 'unet'")
+    parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
 
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=1,   help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int,   default=8, help="Size of each training batch")
+    parser.add_argument("--batch_size", type=int,   default=64, help="Size of each training batch")
     parser.add_argument("--reg",        type=float, default=1e-7, help="Regularisation Parameter")
     parser.add_argument("--lr",         type=float, default=1e-3, help="Learning Rate")
     parser.add_argument("--step_size",  type=int,   default=10,   help="Scheduler Step Size")
@@ -51,7 +53,10 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_interval", type=int, default=0, help="Interval between saving model checkpoints"
     )
     opt = parser.parse_args()
-    opt.model_root = Path(opt.pattern_root)
+    if opt.pattern_root == 'None':
+        opt.pattern_root = None
+    if opt.pattern_root is not None:
+        opt.pattern_root = Path(opt.pattern_root)
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
@@ -66,10 +71,16 @@ if __name__ == "__main__":
     print(f'Device: {device}')
     
     #==========================================================================
-    # 1. Loading and normalizing data
+    # 1. Loading patterns or readind size
     #==========================================================================
-    H =  np.load(opt.model_root)
-    M, img_size = H.shape
+    if opt.pattern_root is not None:
+        H =  np.load(opt.pattern_root)
+        H =  H/H.max()
+        M, img_size = H.shape
+        print(f'Patterns: max={H.max()}, min={H.min()}, mean={H.mean()}')
+    else:
+        M = opt.M 
+        img_size = opt.img_size
     
     print(f'{M} measurements, {img_size} columns per image')
     
@@ -92,7 +103,13 @@ if __name__ == "__main__":
     #==========================================================================
     # 3. Define a Neural Network
     #==========================================================================
-    meas = LinearSplit(H, pinv=True)
+    if opt.pattern_root is None:
+        meas = Hadam1Split(M, img_size)
+        patt_type = 'Hadam1'
+    else:
+        meas = LinearSplit(H, pinv=True)
+        patt_type = 'exp'
+    
     prep = SplitPoisson(opt.alpha, meas)
     #noise = Poisson(meas, opt.alpha)
     noise = PoissonApproxGauss(meas, opt.alpha) # faster than Poisson
@@ -146,8 +163,8 @@ if __name__ == "__main__":
     train_type = 'ph_{:g}'.format(opt.alpha) 
         
     #- training parameters
-    suffix = 'N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
-           img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
+    suffix = '{}_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
+           patt_type, img_size, M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
 
     title = opt.model_root / f'{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    
