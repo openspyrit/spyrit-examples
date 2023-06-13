@@ -12,62 +12,23 @@ collections.Callable = collections.abc.Callable
 
 fig_folder = './figure/'
 
-#%%
-import numpy as np
-from PIL import Image
-import sys
-sys.path.append('./fonction')
-from load_data import Select_data
-from matrix_tools import bining_colonne
-
-def load_data_pos_neg(Dir,Run,Nl,Nh,Nc):
-    
-    Path_files, list_files = Select_data(Dir,Run)
-    
-    Data_pos = np.zeros((Nl,Nh,Nc))
-    Data_neg = np.zeros((Nl,Nh,Nc))
-    
-    for i in range(0,2*Nh,2):       
-        Data_pos[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
-        Data_neg[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
-    
-    motif_pos = np.zeros((Nh,Nc))
-    motif_neg = np.zeros((Nh,Nc))
-    
-    for i in range(Nh):
-        motif_pos[i] = np.sum(motif_pos[1000:1048,i],0)
-        motif_neg[i] = np.sum(motif_neg[1000:1048,i],0)
-    
-    Bin_col = 4
-    motif_pos = bining_colonne(motif_pos, Bin_col)
-    motif_neg = bining_colonne(motif_neg, Bin_col)
-    
-    return motif_pos, motif_neg
-
-
-# DATA NOT IN THE WAREHOUSE!
-Dir = '../../data/2023_02_28_mRFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
-Run = 'RUN0002' 
-Nl = 2048 # number of lines of the imaging camera
-Nc = 2048 # number of columns of the imaging camera
-Nh = 128#64# #number of patterns acquired
-
-#load_data_pos_neg(Dir,Run,Nl,Nh,Nc)
-
 #%% Load experimental measurement matrix (after split compensation)
 from pathlib import Path
 from spyrit.misc.disp import imagesc, add_colorbar
 import matplotlib.pyplot as plt
 from spyrit.misc.walsh_hadamard import walsh_matrix
+import numpy as np
 
 M = 128
 N = 512
-mat_folder = r'.\data\2023_03_13_2023_03_14_eGFP_DsRed_3D\Reconstruction\Mat_rc'
+data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
+mat_folder = '/Reconstruction/Mat_rc/'
 
 # load
-H_exp = np.load(Path(mat_folder) / f'motifs_Hadamard_{M}_{N}.npy')
+H_exp = np.load(Path(data_folder + mat_folder) / f'motifs_Hadamard_{M}_{N}.npy')
 H_exp = np.flip(H_exp,1).copy() # copy() required to remove negatives strides
 H_exp /= H_exp[0,16:500].mean()
+H_exp = H_exp #/ H_exp[0,:]
 H_tar = walsh_matrix(N)
 H_tar = H_tar[:M]
 
@@ -83,7 +44,7 @@ im = axs[1].imshow(H_exp, cmap='gray')
 add_colorbar(im, 'bottom')
 axs[1].get_xaxis().set_visible(False)
 
-plt.savefig(Path(fig_folder) / 'patterns', bbox_inches='tight', dpi=600)
+#plt.savefig(Path(fig_folder) / 'patterns', bbox_inches='tight', dpi=600)
 
 #%% Simulate measuments
 import torch
@@ -96,9 +57,9 @@ import matplotlib.pyplot as plt
 
 M = 128
 N = 512
-alpha = 2500 # in photons/pixels
+alpha = 10 # in photons/pixels
 b = 0
-bs = 50 # batch size
+bs = 10 # batch size
 
 # A batch of images
 data_folder = '../../data/ILSVRC2012_v10102019'
@@ -111,8 +72,8 @@ linop_exp = LinearSplit(H_exp, pinv=True)
 noise_exp = Poisson(linop_exp, alpha)
 prep_exp = SplitPoisson(alpha, linop_exp)
 
-y = noise_exp(x)
-m = prep_exp(y)
+y_sim = noise_exp(x)
+m_sim = prep_exp(y_sim)
 
 fig, axs = plt.subplots(1, 3, figsize=(15,7))
 fig.suptitle(fr'M = {M}, N = {N}, $\alpha$ = {alpha}')
@@ -121,19 +82,65 @@ im = axs[0].imshow(x[b,:,:].cpu())
 axs[0].set_title('Ground-truth')
 plt.colorbar(im, ax=axs[0])
 
-im = axs[1].imshow(y[b,:,:].cpu())
+im = axs[1].imshow(y_sim[b,:,:].cpu())
 axs[1].set_title('Meas (raw)')
 plt.colorbar(im, ax=axs[1])
 
-im = axs[2].imshow(m[b,:,:].cpu())
+im = axs[2].imshow(m_sim[b,:,:].cpu())
 axs[2].set_title('Meas (after prep)')
 plt.colorbar(im, ax=axs[2])
+#plt.savefig(Path(fig_folder) / 'measurements', bbox_inches='tight', dpi=600)
 
-plt.savefig(Path(fig_folder) / 'measurements', bbox_inches='tight', dpi=600)
+#%% Load prep data
+data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
+Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_03_13/'
+Run = 'RUN0004' 
+Ns = int(Run[-1])-1
+save_folder = '/Preprocess/'
+Nl, Nh, Nc = 512, 128, 128
+
+filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
+prep_pos = np.load(Path(data_folder+save_folder) / filename)
+
+filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
+prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+
+# spectral dimension comes first
+prep_pos = np.moveaxis(prep_pos, -1, 0)
+prep_neg = np.moveaxis(prep_neg, -1, 0)
+
+nc, nl, nh = prep_neg.shape
+y_exp = np.zeros((nc, nl, 2*nh))
+y_exp[:,:,::2]  = prep_pos#/np.expand_dims(prep_pos[:,:,0], axis=2)
+y_exp[:,:,1::2] = prep_neg#/np.expand_dims(prep_pos[:,:,0], axis=2)
+y_exp = torch.from_numpy(y_exp)
+
+
+y_exp = y_exp[55:65,:,:].to(torch.float32)
+m_exp = prep_exp(y_exp)
+
+b = 0
+
+fig, axs = plt.subplots(1, 2)#, figsize=(15,7))
+fig.suptitle(fr'M = {M}, N = {N}, $\alpha$ = {alpha}')
+
+im = axs[0].imshow(y_exp[b,:,:].cpu())
+axs[0].set_title('Meas (raw)')
+plt.colorbar(im, ax=axs[0])
+
+im = axs[1].imshow(m_exp[b,:,:].cpu())
+axs[1].set_title('Meas (after prep)')
+plt.colorbar(im, ax=axs[1])
+#plt.savefig(Path(fig_folder) / 'measurements', bbox_inches='tight', dpi=600)
+
 
 #%% DC versus Tikhonov (target patterns, diagonal cov)
 from meas_dev import Hadam1Split
 from spyrit.misc.disp import imagepanel
+
+
+y = y_sim
+y = y_exp
 
 # Init
 linop_tar = Hadam1Split(M,N)
@@ -172,7 +179,7 @@ imagepanel(x[b,:,:].cpu(),
            f'{alpha:4g} photons | target patterns',
           'Ground-truth','Pinv-Net','DC-Net (target)','Tikhonov')
 
-plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Htar_cov_diag_{alpha}ph', bbox_inches='tight', dpi=600)
+#plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Htar_cov_diag_{alpha}ph', bbox_inches='tight', dpi=600)
 
 #%% DC versus Tikhonov (experimental patterns, diagonal cov)
 pinvnet_exp = Pinv1Net(noise_exp, prep_exp)
@@ -194,7 +201,7 @@ imagepanel(x[b,:,:].cpu(),
            f'{alpha:4g} photons | experimental patterns',
           'Ground-truth','Pinv-Net','DC-Net (target)','Tikhonov')
             
-plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Hexpe_cov_diag_{alpha}ph', bbox_inches='tight', dpi=600)
+#plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Hexpe_cov_diag_{alpha}ph', bbox_inches='tight', dpi=600)
 
 #%% DC versus Tikhonov (target patterns, ImageNet cov)
 # covariance prior in the image domain
@@ -226,7 +233,7 @@ imagepanel(x[b,:,:].cpu(),
            f'{alpha:4g} photons | target patterns',
           'Ground-truth','Pinv-Net','DC-Net (target)','Tikhonov')
 
-plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Htar_cov_imageNet_{alpha}ph', bbox_inches='tight', dpi=600)
+#plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Htar_cov_imageNet_{alpha}ph', bbox_inches='tight', dpi=600)
 
 #%% DC versus Tikhonov (experimental patterns, ImageNet cov)
 tiknet_exp = Tikho1Net(noise_exp, prep_exp, sigma)
@@ -248,17 +255,35 @@ imagepanel(x[b,:,:].cpu(),
            f'{alpha:4g} photons | experimental patterns',
           'Ground-truth','Pinv-Net','DC-Net (target)','Tikhonov')
 
-plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Hexpe_cov_imageNet_{alpha}ph', bbox_inches='tight', dpi=600)
+#plt.savefig(Path(fig_folder) / f'meas_Hexpe_rec_Hexpe_cov_imageNet_{alpha}ph', bbox_inches='tight', dpi=600)
 
 
-#%% Computation time
-import timeit
+#%% Compare with Seb's reconstruction
+data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
+rec_folder = '/Reconstruction/hyper_cube/'
+Run = 'RUN0004' 
+Nl, Nh, Nc = 512, 512, 128
+Ns = int(Run[-1])-1
 
-t = timeit.timeit(lambda: pinvnet_exp.reconstruct(y), number=100)
-print(f"Pinv-Net reconstruction ({device}, 100x {bs} images): {t:.3f} seconds")
+Pinv = np.linalg.pinv(np.transpose(H_exp/np.max(H_exp)))
+m_np = m_exp[b,:,:].cpu().numpy()
+rec_seb2 = np.dot(m_np,Pinv)
 
-t = timeit.timeit(lambda: dcnet.reconstruct(y), number=100)
-print(f"DC-Net reconstruction ({device}, 100x {bs} images): {t:.3f} seconds")
+filename = f'T{Ns}_{Run}_2023_03_13_Had_rc_pinv_{Nl}x{Nh}x{Nc}.npy'
+rec_seb = np.load(Path(data_folder+rec_folder) / filename)
 
-t = timeit.timeit(lambda: tiknet_exp.reconstruct(y), number=100)
-print(f"Tikho-Net reconstruction ({device}, 100x {bs} images): {t:.3f} seconds")
+f, axs = plt.subplots(1, 3)
+axs[0].set_title('Seb\'s pinv reconstruction')
+im = axs[0].imshow(rec_seb[:,:,b+55], cmap='gray') 
+add_colorbar(im, 'bottom')
+axs[0].get_xaxis().set_visible(False)
+
+axs[1].set_title('Nico\'s reconstrcution')
+im = axs[1].imshow(x_pinv[b,:,:].cpu(), cmap='gray') 
+add_colorbar(im, 'bottom')
+axs[1].get_xaxis().set_visible(False)
+
+axs[2].set_title('Seb\'s pinv reconstruction 2')
+im = axs[2].imshow(rec_seb2, cmap='gray') 
+add_colorbar(im, 'bottom')
+axs[2].get_xaxis().set_visible(False)

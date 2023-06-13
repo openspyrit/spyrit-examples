@@ -137,6 +137,40 @@ class Pinv1Net(nn.Module):
         x = self.denoi(x)                       
         
         return x
+    
+    def reconstruct_expe(self, x):
+        r""" Reconstruction step of a reconstruction network
+        
+        Same as :meth:`reconstruct` reconstruct except that:
+            
+        1. The preprocessing step estimates the image intensity for normalization
+        
+        2. The output images are "denormalized", i.e., have units of photon counts
+            
+        Args:
+            :attr:`x`: raw measurement vectors
+        
+        Shape:
+            :attr:`x`: Raw measurement vectors with shape :math:`(*,2M)`
+            
+            :attr:`output`: :math:`(*,W)`
+
+        """   
+        # Preprocessing
+        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op) # shape x = [b*c, M]
+        print(N0_est)
+    
+        # measurements to image domain processing
+        x = self.pinv(x, self.acqu.meas_op)               # shape x = [b*c,N]
+        
+        # Image-domain denoising
+        x = self.denoi(x)                               # shape x = [b*c,1,h,w]
+        print(x.max())
+        
+        # Denormalization 
+        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
+                                                  self.acqu.meas_op.w)
+        return x
 
 # =============================================================================    
 class DC1Net(nn.Module):
