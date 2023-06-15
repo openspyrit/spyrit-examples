@@ -19,9 +19,10 @@ from spyrit.core.meas import LinearSplit
 from spyrit.core.prep import SplitPoisson
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
+from spyrit.misc.walsh_hadamard import walsh_matrix
 
 from meas_dev import Hadam1Split
-from recon_dev import DC1Net, Pinv1Net
+from recon_dev import DC1Net, Pinv1Net, Tikho1Net
 from statistics_dev import data_loaders_ImageNet
 
 if __name__ == "__main__":
@@ -93,17 +94,17 @@ if __name__ == "__main__":
     #==========================================================================
     # 2. Statistics of the training images
     #==========================================================================
-    # print('Loading covariance and mean')
-    # my_average_file = Path(opt.stat_root) / f'Average_1_{img_size}x{img_size}.npy'
-    # my_cov_file = Path(opt.stat_root) / f'Cov_1_{img_size}x{img_size}.npy'
-        
-    # Mean = np.load(my_average_file)
-    # Cov  = np.load(my_cov_file)
-
+    if opt.arch == 'dc-net' or opt.arch == 'tikho-net':
+        print('Loading covariance')#' and mean')
+        #my_average_file = Path(opt.stat_root) / f'Average_1_{img_size}x{img_size}.npy'
+        my_cov_file = Path(opt.stat_root) / f'Cov_1_{img_size}x{img_size}.npy'
+            
+        #Mean = np.load(my_average_file)
+        sigma  = np.load(my_cov_file)
     #==========================================================================
     # 3. Define a Neural Network
     #==========================================================================
-    if opt.pattern_root is None:
+    if opt.pattern_root is None or opt.arch == 'dc-net':
         meas = Hadam1Split(M, img_size)
         patt_type = 'Hadam1'
     else:
@@ -122,14 +123,18 @@ if __name__ == "__main__":
     elif opt.denoi == 'unet':   # Unet
         denoi = Unet()
     
-    # Global Architecture
-    #if opt.arch == 'dc-net':        # Denoised Completion Network         
-        # model = DCNet(noise, prep, Cov, denoi)
-        
-    if opt.arch == 'pinv-net':    # Pseudo Inverse Network
+    # -- Global Architecture
+    # a. Pseudo Inverse network
+    if opt.arch == 'pinv-net':   
         model = Pinv1Net(noise, prep, denoi)
-        
-    
+    # b. Denoised completion network    
+    elif opt.arch == 'dc-net':
+        H = walsh_matrix(img_size)
+        model = DC1Net(noise, prep, H @ sigma @ H, denoi)
+    # c. Tikhonov network
+    elif opt.arch == 'tikho-net':
+        model = Tikho1Net(noise, prep, sigma, denoi)
+            
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
