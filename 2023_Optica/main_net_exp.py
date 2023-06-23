@@ -99,7 +99,7 @@ plt.savefig(Path(fig_folder) / 'measurements', bbox_inches='tight', dpi=600)
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
-save_tag = True
+save_tag = False
 net_prefix = 'pinv-net_unet_imagenet_ph_10'
 net_suffix = 'N_512_M_128_epo_30_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07'
 

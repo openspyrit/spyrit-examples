@@ -84,7 +84,7 @@ Ns = int(Run[-1])+5
 save_folder = '/Preprocess/'
 Nl, Nh, Nc = 512, 128, 128
 
-channel = 10
+channel = 100 # 10, 55, 100
 
 save_folder = '/Preprocess/'
 filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
@@ -100,12 +100,12 @@ prep_neg = np.moveaxis(prep_neg, -1, 0)
 print(f'Pos data: range={prep_pos.max() - prep_pos.min()} counts; mean={prep_pos.mean()} counts')
 
 # param #1
-background  = prep_pos.min()
-gain = 1e6
+# background  = prep_pos.min()
+# gain = 1e6
 
 # param #2
-#background  = 0
-#gain = 1e0
+background  = 0
+gain = 1e0
 
 prep_pos = gain*(prep_pos - background)
 prep_neg = gain*(prep_neg - background)
@@ -160,8 +160,11 @@ pinvnet_tar.to(device)  # Mandantory when batchNorm is used
 pinvnet_tar.eval()
 
 # Reconstruction using target patterns ----------------------------------------
-fact_tar = 3e-8
-x_pinv = pinvnet_tar.reconstruct(y*fact_tar)
+# version bidouille
+#fact_tar = 2e-2
+#x_pinv = pinvnet_tar.reconstruct(y*fact_tar)
+
+x_pinv = pinvnet_tar.reconstruct_expe(y)
 x_pinv = x_pinv.view(-1,N,N).detach()
 
 # Plot
@@ -169,7 +172,7 @@ fig, axs = plt.subplots(1, 2, figsize=(10,5))
 fig.suptitle(f'Spectral channel: {channel}')
 
 im = axs[0].imshow(x_pinv[0,:,:].cpu())
-axs[0].set_title(f'Pinv, target patterns, {fact_tar}y')
+axs[0].set_title(f'Pinv, target patterns')
 plt.colorbar(im, ax=axs[0])
 
 # Reconstruction using target patterns
@@ -185,13 +188,17 @@ pinvnet_exp.to(device)  # Mandantory when batchNorm is used
 pinvnet_exp.eval()
 
 # Reconstruction using experimental patterns ----------------------------------
-fact_exp = 1.2e-8
-x_pinv = pinvnet_exp.reconstruct(y*fact_exp)
+# version bidouille
+# fact_exp = 1e-4
+# x_pinv = pinvnet_exp.reconstruct(y*fact_exp)
+
+x_pinv = pinvnet_exp.reconstruct_expe(y)
+
 x_pinv = x_pinv.view(-1,N,N).detach()
 
 # Plot
 im = axs[1].imshow(x_pinv[0,:,:].cpu())
-axs[1].set_title(f'Pinv, experimental patterns, {fact_exp}y')
+axs[1].set_title(f'Pinv, experimental patterns')
 plt.colorbar(im, ax=axs[1])
             
 if save_tag:

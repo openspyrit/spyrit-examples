@@ -157,20 +157,20 @@ class Pinv1Net(nn.Module):
 
         """   
         # Preprocessing
-        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op) # shape x = [b*c, M]
+        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
         print(N0_est)
     
         # measurements to image domain processing
-        x = self.pinv(x, self.acqu.meas_op)               # shape x = [b*c,N]
+        x = self.pinv(x, self.acqu.meas_op)             # shape: [*,N]
         
         # Image-domain denoising
-        x = self.denoi(x)                               # shape x = [b*c,1,h,w]
+        x = self.denoi(x)                               # shape: [*,h,w]
         print(x.max())
         
         # Denormalization 
         x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
                                                   self.acqu.meas_op.w)
-        return x
+        return x, N0_est
 
 # =============================================================================    
 class DC1Net(nn.Module):
@@ -305,6 +305,51 @@ class DC1Net(nn.Module):
         
         return x
 
+    def reconstruct_expe(self, x):
+        r""" Reconstruction step of a reconstruction network
+        
+        Same as :meth:`reconstruct` reconstruct except that:
+            
+        1. The preprocessing step estimates the image intensity for normalization
+        
+        2. The output images are "denormalized", i.e., have units of photon counts
+            
+        Args:
+            :attr:`x`: raw measurement vectors
+        
+        Shape:
+            :attr:`x`: Raw measurement vectors with shape :math:`(*,2M)`
+            
+            :attr:`output`: :math:`(*,W)`
+    
+        """
+        
+        # Preprocessing
+        var_noi = self.prep.sigma_expe(x)
+        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+        print(N0_est)
+        
+        x = x/self.prep.gain
+        norm = self.prep.gain*N0_est
+        
+        # variance of preprocessed measurements
+        var_noi = var_noi / norm**2
+        #var_noi = torch.div(var_noi, (norm.view(-1,1).expand(bc,self.Acq.meas_op.M))**2)
+        
+        # measurements to image domain processing
+        size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
+        x_0 = torch.zeros(size, device=x.device)
+        x = self.tikho(x, x_0, var_noi, self.acqu.meas_op)
+        
+        # Image-domain denoising
+        x = self.denoi(x)                               # shape: [*,h,w]
+        
+        # Denormalization 
+        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
+                                                  self.acqu.meas_op.w)
+        return x, N0_est
+        
+
 # =============================================================================
 class Tikhonov(nn.Module): 
 # ============================================================================= 
@@ -438,7 +483,7 @@ class Tikho1Net(nn.Module):
         x = self.reconstruct(x)             # shape x = [bc, 1, h,w]
         
         return x
-
+    
     def reconstruct(self, x):
         r""" ! update ! Reconstruction step of a reconstruction network
             
@@ -471,11 +516,56 @@ class Tikho1Net(nn.Module):
         cov_meas = torch.diag_embed(cov_meas) # 
         
         # measurements to image domain processing
-        #size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
-        #x_0 = torch.zeros(size, device=x.device)
         x = self.tikho(x, cov_meas)
         
         # Image domain denoising
         x = self.denoi(x)               
         
         return x
+    
+    def reconstruct_expe(self, x):
+        r""" ! update ! Reconstruction step of a reconstruction network
+            
+        Args:
+            :attr:`x`: raw measurement vectors
+        
+        Shape:
+            :attr:`x`: raw measurement vectors with shape :math:`(BC,2M)`
+            
+            :attr:`output`: reconstructed images with shape :math:`(BC,1,H,W)`
+        
+        Example:
+            >>> B, C, H, M = 10, 1, 64, 64**2
+            >>> Ord = np.ones((H,H))
+            >>> meas = HadamSplit(M, H, Ord)
+            >>> noise = NoNoise(meas)
+            >>> prep = SplitPoisson(1.0, M, H*H)
+            >>> sigma = np.random.random([H**2, H**2])
+            >>> recnet = DCNet(noise,prep,sigma)
+            >>> x = torch.rand((B*C,2*M), dtype=torch.float)
+            >>> z = recnet.reconstruct(x)
+            >>> print(z.shape)
+            torch.Size([10, 1, 64, 64])
+        """    
+        # Preprocessing
+        cov_meas = self.prep.sigma_expe(x)
+        
+        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+        x = x/self.prep.gain
+        norm = self.prep.gain*N0_est
+    
+        # covariance of measurements
+        cov_meas = cov_meas / norm**2
+        cov_meas = torch.diag_embed(cov_meas)
+        
+        # measurements to image domain processing
+        x = self.tikho(x, cov_meas)
+        
+        # Image domain denoising
+        x = self.denoi(x)
+
+        # Denormalization 
+        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
+                                                  self.acqu.meas_op.w)          
+        
+        return x, N0_est
