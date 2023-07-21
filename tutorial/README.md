@@ -5,7 +5,7 @@ Note: Notebooks may not open directly on github, but they can be downloaded and 
 
 ### DC DRUNet : Data completion with DRUNet denoising       [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_core_2d_drunet.ipynb)
 
-Image reconstruction with data completion and pretrained DRUNet denoising (DCDRUNet). DRUNet allows to provide the noise level as input, as it is trained for all possible noise levels ([0, 255]) in a wide range of datasets. For more details on DRUNet, please refer to [Deep Plug-and-Play Image Restoration](https://github.com/cszn/DPIR). 
+Image reconstruction with data completion and pretrained DRUNet denoising (DCDRUNet) for single pixel imaging. DRUNet allows to provide the noise level as input, as it is trained for all possible noise levels ([0, 255]) in a wide range of datasets. For more details on DRUNet, please refer to [Deep Plug-and-Play Image Restoration](https://github.com/cszn/DPIR). 
 
 
 ### Train reconstruction network        [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_colab.ipynb)
