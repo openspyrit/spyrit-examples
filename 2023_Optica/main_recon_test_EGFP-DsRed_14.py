@@ -28,6 +28,7 @@ mat_folder = '/Reconstruction/Mat_rc/'
 H_exp = np.load(Path(data_folder + mat_folder) / f'motifs_Hadamard_{M}_{N}.npy')
 H_exp = np.flip(H_exp,1).copy() # copy() required to remove negatives strides
 H_exp /= H_exp[0,16:500].mean()
+#H_exp /= np.linalg.norm(H_exp[0,16:500], np.inf)
 H_exp = H_exp #/ H_exp[0,:]
 H_tar = walsh_matrix(N)
 H_tar = H_tar[:M]
@@ -46,7 +47,7 @@ axs[1].get_xaxis().set_visible(False)
 
 #plt.savefig(Path(fig_folder) / 'patterns', bbox_inches='tight', dpi=600)
 
-#%% Simulate measuments
+#%% Init operators
 import torch
 from recon_dev import DC1Net, Pinv1Net, Tikho1Net
 from statistics_dev import data_loaders_ImageNet
@@ -57,13 +58,18 @@ import matplotlib.pyplot as plt
 
 M = 128
 N = 512
-alpha = 1e0 # in photons/pixels
+alpha = 10 # in photons/pixels
 b = 0
+nbin = 20*4
+mudark = 105.0
+sigdark = 5.0
+gain = 2.6
 
 # Raw measurement
 linop_exp = LinearSplit(H_exp, pinv=True)
 noise_exp = Poisson(linop_exp, alpha)
 prep_exp = SplitPoisson(alpha, linop_exp)
+prep_exp.set_expe(gain, mudark, sigdark, nbin)
 
 #%% Load prep data
 save_tag = False
@@ -82,9 +88,9 @@ filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
 prep_neg =  np.load(Path(data_folder+save_folder) / filename)
 
 # spectral dimension comes first
-prep_pos = np.moveaxis(prep_pos, -1, 0)
-prep_neg = np.moveaxis(prep_neg, -1, 0)
-
+background  = (2**15-1)*nbin # data to tiff conversion problem, takes binning into account
+prep_pos = np.moveaxis(prep_pos, -1, 0) - background
+prep_neg = np.moveaxis(prep_neg, -1, 0) - background
 
 print(f'Pos data: range={prep_pos.max() - prep_pos.min()} counts; mean={prep_pos.mean()} counts')
 
@@ -96,10 +102,12 @@ y_exp = torch.from_numpy(y_exp)
 
 y_exp = y_exp[55:65,:,:].to(torch.float32)
 m_exp = prep_exp(y_exp)
+m_exp_2, alpha_est = prep_exp.forward_expe2(y_exp, linop_exp, (-2,-1))
+alpha_est = alpha_est[b,:,:].numpy().squeeze()
 
 b = 0
 
-fig, axs = plt.subplots(1, 2)#, figsize=(15,7))
+fig, axs = plt.subplots(1, 3)#, figsize=(15,7))
 fig.suptitle(fr'M = {M}, N = {N}')
 
 im = axs[0].imshow(y_exp[b,:,:].cpu())
@@ -107,70 +115,17 @@ axs[0].set_title('Meas (raw)')
 plt.colorbar(im, ax=axs[0])
 
 im = axs[1].imshow(m_exp[b,:,:].cpu())
-axs[1].set_title('Meas (after prep)')
+axs[1].set_title('Meas (pos neg only)')
 plt.colorbar(im, ax=axs[1])
+
+im = axs[2].imshow(m_exp_2[b,:,:].cpu())
+axs[2].set_title(fr'Meas (full prep, $\beta^*=${alpha_est:.3})')
+plt.colorbar(im, ax=axs[2])
 
 if save_tag:
     save_folder = Path(fig_folder) / Path(data_subfolder)
     Path(save_folder).mkdir(parents=True, exist_ok=True)
     plt.savefig(save_folder / f'T{Ns}_{Run}_raw_measurements', bbox_inches='tight', dpi=600)
-    
-#%% Load prep data
-save_tag = False
-
-
-save_folder = '/Preprocess/'
-filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-prep_pos = np.load(Path(data_folder+save_folder) / filename)
-
-filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-prep_neg =  np.load(Path(data_folder+save_folder) / filename)
-
-# spectral dimension comes first
-prep_pos = np.moveaxis(prep_pos, -1, 0)
-prep_neg = np.moveaxis(prep_neg, -1, 0)
-
-
-print(f'Pos data: range={prep_pos.max() - prep_pos.min()} counts; mean={prep_pos.mean()} counts')
-
-# param #1
-background  = prep_pos.min()
-gain = 1e6
-
-# param #2
-#background  = 0
-#gain = 1e0
-
-prep_pos = gain*(prep_pos - background)
-prep_neg = gain*(prep_neg - background)
-
-
-nc, nl, nh = prep_neg.shape
-y_exp = np.zeros((nc, nl, 2*nh))
-y_exp[:,:,::2]  = prep_pos #/np.expand_dims(prep_pos[:,:,0], axis=2)
-y_exp[:,:,1::2] = prep_neg #/np.expand_dims(prep_pos[:,:,0], axis=2)
-y_exp = torch.from_numpy(y_exp)
-
-y_exp = y_exp[55:65,:,:].to(torch.float32)
-m_exp = prep_exp(y_exp)
-
-b = 0
-
-fig, axs = plt.subplots(1, 2)#, figsize=(15,7))
-fig.suptitle(fr'M = {M}, N = {N}')
-
-im = axs[0].imshow(y_exp[b,:,:].cpu())
-axs[0].set_title('Meas (raw)')
-plt.colorbar(im, ax=axs[0])
-
-im = axs[1].imshow(m_exp[b,:,:].cpu())
-axs[1].set_title('Meas (after prep)')
-plt.colorbar(im, ax=axs[1])
-
-if save_tag:
-    save_folder = Path(fig_folder) / Path(data_subfolder)
-    Path(save_folder).mkdir(parents=True, exist_ok=True)
-    plt.savefig(save_folder / f'T{Ns}_{Run}_measurements', bbox_inches='tight', dpi=600)
 
 #%% DC versus Tikhonov (target patterns, diagonal cov)
 from meas_dev import Hadam1Split
@@ -183,9 +138,10 @@ y = y_exp
 linop_tar = Hadam1Split(M,N)
 noise_tar = Poisson(linop_tar, alpha)
 prep_tar  = SplitPoisson(alpha, linop_tar)
+prep_tar.set_expe(gain=2.7, mudark=105.0, sigdark=5.0, nbin=20*4)
 
 # covariance prior in the image domain
-sigma = 1e1*np.eye(N)*N # diagonal, same as DC1Net
+sigma = np.eye(N)*N # diagonal, same as DC1Net
 
 # -- Reconstrcution using target patterns -------------------------------------
 H = walsh_matrix(N)
@@ -199,8 +155,8 @@ dcnet.to(device)
 pinvnet_exp.to(device)
 
 # Reconstruction
-x_dc  = dcnet.reconstruct(y)
-x_pinv = pinvnet_exp.reconstruct(y)
+x_dc, _  = dcnet.reconstruct_expe(y)
+x_pinv,_ = pinvnet_exp.reconstruct_expe(y)
 
 # Plot
 fig, axs = plt.subplots(1, 2, figsize=(13,7))
@@ -219,10 +175,8 @@ if save_tag:
     Path(save_folder).mkdir(parents=True, exist_ok=True)
     plt.savefig(save_folder / f'T{Ns}_{Run}_pinv_dc.png', bbox_inches='tight', dpi=600)
 
-#%% DC versus Tikhonov (expe patterns)
-sigma = 1e1*np.eye(N)*N # diagonal, same as DC1Net
-tiknet_exp = Tikho1Net(noise_exp, prep_exp, sigma)
-x_tik_diag  = tiknet_exp.reconstruct(y)
+#%% Tikhonov (expe patterns)
+b = 9
 
 # covariance prior in the image domain
 stat_folder = './stat/'
@@ -231,34 +185,41 @@ mean_file   = f'Average_1_{N}x{N}.npy'
 mean  = np.load(Path(stat_folder) / mean_file)
 sigma = np.load(Path(stat_folder) / cov_file)
 
-# param #1
-#sigma /= 1e-7
+# Diagonal cov
+#sigma_diag = np.eye(N)*N # diagonal, same as DC1Net
+sigma_diag = np.diag(np.diag(sigma)) # diagonal, same as DC1Net
+tiknet_exp = Tikho1Net(noise_exp, prep_exp, sigma_diag)
+x_tik_diag, beta_diag  = tiknet_exp.reconstruct_expe(y)
+beta_diag = beta_diag[b,:,:].cpu().numpy().squeeze()
 
-# param 2
-sigma /= 1e-9
-
-
+# Full cov
 tiknet_exp = Tikho1Net(noise_exp, prep_exp, sigma)
 tiknet_exp.to(device)
 
 # Reconstruction
 x_tik_full = tiknet_exp.reconstruct(y)
+x_tik_full_2, beta_full = tiknet_exp.reconstruct_expe(y)
+beta_full = beta_full[b,:,:].cpu().numpy().squeeze()
 
 # Plot
-b = 0
-
-fig, axs = plt.subplots(1, 2, figsize=(13,7))
+fig, axs = plt.subplots(1, 3, figsize=(13,7))
 #fig.suptitle(fr'M = {M}, N = {N}')
 
 im = axs[0].imshow(x_tik_diag[b,:,:].cpu())
-axs[0].set_title('Tikho Eye')
+axs[0].set_title(fr'Tikho Eye Cov with calibration ($\alpha^*=${beta_diag:.3})')
 plt.colorbar(im, ax=axs[0])
 
 im = axs[1].imshow(x_tik_full[b,:,:].cpu())
-axs[1].set_title('Tikho Full')
+axs[1].set_title('Tikho Full Cov no calibration')
 plt.colorbar(im, ax=axs[1])
+
+im = axs[2].imshow(x_tik_full_2[b,:,:].cpu())
+axs[2].set_title(fr'Tikho Full Cov with calibration ($\alpha^*=${beta_full:.3})')
+plt.colorbar(im, ax=axs[2])
 
 if save_tag:
     save_folder = Path(fig_folder) / Path(data_subfolder)
     Path(save_folder).mkdir(parents=True, exist_ok=True)
     plt.savefig(save_folder / f'T{Ns}_{Run}_tikho.png', bbox_inches='tight', dpi=600)
+    
+    
