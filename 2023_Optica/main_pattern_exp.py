@@ -61,3 +61,20 @@ for ax, ix in zip(axs, ind):
         a.set_title(f'Patterns #{i}')
         
 plt.savefig(Path(fig_folder) / 'patterns_profiles', bbox_inches='tight', dpi=600)
+
+#%% plot 1d
+fig_folder = './figure/'
+
+ind = [[0,1,2],[6,12,46]]
+
+f, axs = plt.subplots(2, 3, figsize=(15,7))
+for ax, ix in zip(axs, ind):
+    for a,i in zip(ax, ix):
+        print(i)
+        print(a)
+        a.plot(H_tar[i,:])
+        a.plot(H_exp[i,:])
+        a.plot(np.where(H_exp[i,:] > 0, H_exp[i,:], 0) + np.where(H_exp[i,:] < 0, -H_exp[i,:], 0))
+        a.set_title(f'Patterns #{i}')
+        
+plt.savefig(Path(fig_folder) / 'patterns_profiles_sum', bbox_inches='tight', dpi=600)
