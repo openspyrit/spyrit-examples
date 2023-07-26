@@ -27,10 +27,6 @@ def data_loaders_ImageNet(train_root, val_root=None, img_size=64,
     #    
     transform = torchvision.transforms.Compose(
         [torchvision.transforms.functional.to_grayscale,
-         #torchvision.transforms.RandomCrop(size=(img_size, img_size), 
-                                           #pad_if_needed=True, 
-                                           #padding_mode='edge'
-         #                                  ),
          torchvision.transforms.Resize(img_size),
          torchvision.transforms.CenterCrop(img_size),
          torchvision.transforms.ToTensor(),
@@ -138,12 +134,7 @@ def cov_walsh1(dataloader, mean, device, n_loop=1):
     
     return cov
 
-def stat_walsh1(dataloader, device, root, n_loop=1):
-    """ 
-    nloop > 1 is relevant for dataloaders with random crops such as that 
-    provided by data_loaders_ImageNet
-        
-    """
+def stat_walsh1(dataloader, device:torch.device, root, n_loop:int=1):
     # Get dimensions and estimate total number of images in the dataset
     inputs, _ = next(iter(dataloader))
     (_, _, nx, ny) = inputs.shape
@@ -179,7 +170,6 @@ def stat_walsh1(dataloader, device, root, n_loop=1):
     
     return mean, cov
 
-
 def mean_1(dataloader, device, n_loop=1):
     """ 
     nloop > 1 is relevant for dataloaders with random crops such as that 
@@ -194,12 +184,10 @@ def mean_1(dataloader, device, n_loop=1):
     
     # Init
     n = 0
-    H = wh.walsh_matrix(ny).astype(np.float32, copy=False)
     mean = torch.zeros(ny, dtype=torch.float32)
     
     # Send to device (e.g., cuda)
     mean = mean.to(device)
-    H = torch.from_numpy(H).to(device)
     
     # Compute Mean 
     # Accumulate sum over all the image columns in the database
@@ -220,7 +208,7 @@ def mean_1(dataloader, device, n_loop=1):
     mean = mean/n/nx
     mean = torch.squeeze(mean)
     
-    return mean 
+    return mean
 
 def cov_1(dataloader, mean, device, n_loop=1):
     """ 
