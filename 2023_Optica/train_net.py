@@ -76,7 +76,7 @@ if __name__ == "__main__":
     #==========================================================================
     if opt.pattern_root is not None:
         H =  np.load(opt.pattern_root)
-        H =  H/H.max()
+        H /= H[0,16:500].mean()
         M, img_size = H.shape
         print(f'Patterns: max={H.max()}, min={H.min()}, mean={H.mean()}')
     else:
