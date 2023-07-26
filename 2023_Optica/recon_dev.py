@@ -157,20 +157,20 @@ class Pinv1Net(nn.Module):
 
         """   
         # Preprocessing
-        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
-        print(N0_est)
+        #x, norm = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+                
+        # Alternative where the mean is computed on each row
+        x, norm = self.prep.forward_expe2(x, self.acqu.meas_op) # shape: [*, M]
     
         # measurements to image domain processing
         x = self.pinv(x, self.acqu.meas_op)             # shape: [*,N]
         
         # Image-domain denoising
         x = self.denoi(x)                               # shape: [*,h,w]
-        print(x.max())
         
         # Denormalization 
-        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
-                                                  self.acqu.meas_op.w)
-        return x, N0_est
+        x = self.prep.denormalize_expe(x, norm)
+        return x, norm
 
 # =============================================================================    
 class DC1Net(nn.Module):
@@ -326,7 +326,7 @@ class DC1Net(nn.Module):
         
         # Preprocessing
         var_noi = self.prep.sigma_expe(x)
-        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+        x, N0_est = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
         print(N0_est)
         
         x = x/self.prep.gain
@@ -345,8 +345,7 @@ class DC1Net(nn.Module):
         x = self.denoi(x)                               # shape: [*,h,w]
         
         # Denormalization 
-        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
-                                                  self.acqu.meas_op.w)
+        x = self.prep.denormalize_expe(x, N0_est)
         return x, N0_est
         
 
@@ -371,12 +370,9 @@ class Tikhonov(nn.Module):
     Args:
         - :attr:`A` (torch.tensor): measurement matrix with shape :math:`(M, N)`
         
-        - :attr:`Sigma` (torch.tensor):  noise covariance with shape :math:`(M, M)` ???
-        
         - :attr:`Sigma` (torch.tensor):  covariance prior with shape :math:`(N, N)`
-    
         
-    Attributes:
+    Attributes: !Update!
         :attr:`B`: The learnable completion layer initialized as 
         :math:`\Sigma_1 \Sigma_{21}^{-1}`. This layer is a :class:`nn.Linear`
         
@@ -411,12 +407,10 @@ class Tikhonov(nn.Module):
         covariance :math:`\Sigma_\alpha` is diagonal, the matrix inversion 
         involded in the computation of :math:`y_1` is straigtforward.
         
-        
         Args:
             - :attr:`x`: A batch of measurement vectors :math:`y`
             - :attr:`x_0`: A batch of prior images :math:`x_0`
-            - :attr:`var`: A batch of measurement noise variances :math:`\Sigma_\alpha`
-            - :attr:`meas_op`: A measurement operator that provides :math:`GF` and :math:`F^{-1}`
+            - :attr:`cov`: A batch of measurement noise variances :math:`\Sigma_\alpha`
             
         Shape:
             - :attr:`x`: :math:`(*, M)`
@@ -424,7 +418,7 @@ class Tikhonov(nn.Module):
             - :attr:`var` :math:`(*, M)`
             - Output: :math:`(*, N)`
             
-        Example:
+        Example: !Update!
             >>> B, H, M = 85, 32, 512
             >>> sigma = np.random.random([H**2, H**2])
             >>> recon_op = TikhonovMeasurementPriorDiag(sigma, M)
@@ -515,6 +509,8 @@ class Tikho1Net(nn.Module):
         # covariance of measurements
         cov_meas = torch.diag_embed(cov_meas) # 
         
+        #print(cov_meas)
+        
         # measurements to image domain processing
         x = self.tikho(x, cov_meas)
         
@@ -549,14 +545,19 @@ class Tikho1Net(nn.Module):
         """    
         # Preprocessing
         cov_meas = self.prep.sigma_expe(x)
+        # print(cov_meas)
+        # print(self.prep.nbin, self.prep.mudark)
+        #x, norm = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
         
-        x, N0_est = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
-        x = x/self.prep.gain
-        norm = self.prep.gain*N0_est
+        # Alternative where the mean is computed on each row
+        x, norm = self.prep.forward_expe2(x, self.acqu.meas_op) # shape: [*, M]
+
     
         # covariance of measurements
         cov_meas = cov_meas / norm**2
         cov_meas = torch.diag_embed(cov_meas)
+        
+        #print(cov_meas)
         
         # measurements to image domain processing
         x = self.tikho(x, cov_meas)
@@ -565,7 +566,6 @@ class Tikho1Net(nn.Module):
         x = self.denoi(x)
 
         # Denormalization 
-        x = self.prep.denormalize_expe(x, N0_est, self.acqu.meas_op.h, 
-                                                  self.acqu.meas_op.w)          
+        x = self.prep.denormalize_expe(x, norm)          
         
-        return x, N0_est
+        return x, norm
