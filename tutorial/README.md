@@ -11,9 +11,9 @@ Image reconstruction with different methods for single pixel imaging. We compare
 - DCDRUNet: Data completion network with pretrained DRUNet denoising. DRUNet allows to provide the noise level as input, as it is trained for all possible noise levels ([0, 255]) in a wide range of datasets. For more details on DRUNet, please refer to [Deep Plug-and-Play Image Restoration](https://github.com/cszn/DPIR). 
 
 
-### Train reconstruction network        [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_colab.ipynb)
+### Train reconstruction network        [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_split_meas_colab.ipynb)
 
-Shows how to train a reconstruction network selecting acquisition, network and training parameters. Current networks: 
+Shows how to train a reconstruction network selecting acquisition, network and training parameters, for the case of split measurements. Current networks: 
 - 'dc-net': Denoised Completion Network (DCNet). 
 - 'pinv-net': Pseudo Inverse Network (PinvNet).
 - 'upgd':  Unrolled proximal gradient descent (UPGD). 
