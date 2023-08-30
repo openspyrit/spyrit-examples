@@ -133,6 +133,7 @@ if __name__ == "__main__":
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
+    """
     # Define other parameters (for testing)
     if True:
         opt.meas = 'hadam-pos'
@@ -141,6 +142,7 @@ if __name__ == "__main__":
         opt.N0 = 1.0        # ph/pixel m
         opt.arch = 'pinv-net' # Network architecture
         opt.denoi = 'cnn' 
+    """
 
     print(opt)
 
