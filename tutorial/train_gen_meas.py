@@ -40,10 +40,10 @@ def get_meas_operator(opt, Ord):
     """
     Define the most used measurement definitions
     """
-    if opt.meas == 'hadam_split':
+    if opt.meas == 'hadam-split':
         # Hadamard split operator given Ord
         meas_op = HadamSplit(opt.M, opt.img_size, Ord)
-    elif opt.meas == 'hadam_pos':
+    elif opt.meas == 'hadam-pos':
         # Hadamard positive operator with cartesian subsampling
         from spyrit.misc.walsh_hadamard import walsh2_matrix
         from spyrit.misc.sampling import Permutation_Matrix
@@ -62,7 +62,7 @@ def get_meas_operator(opt, Ord):
         H = F[:opt.M,:]
 
         meas_op = Linear(H, pinv=True)  
-        return meas_op
+    return meas_op
 
 def get_noise_operator(opt, meas_op):
     """
@@ -73,34 +73,34 @@ def get_noise_operator(opt, meas_op):
         noise_op = NoNoise(meas_op)        
     else:
         # Poisson noise
-        if opt.noise == 'gauss_approx':
+        if opt.noise == 'gauss-approx':
             noise_op = PoissonApproxGauss(meas_op, opt.N0) # faster than Poisson
         elif opt.noise == 'poisson':
-            noise = Poisson(meas_op, opt.N0)        
-        elif opt.noise == 'dir-poisson':
-            prep_op = DirectPoisson(opt.N0, meas_op)   # "Undo" the NoNoise operator
+            noise_op = Poisson(meas_op, opt.N0)        
     return noise_op
 
 def get_prep_operator(opt, meas_op):
     """
     Define the most used preprocessing definitions
     """
-    if opt.noise == 'split-poisson':
+    if opt.prep == 'split-poisson':
         prep_op = SplitPoisson(opt.N0, meas_op) 
-    elif opt.meas == 'dir-poisson':
+    elif opt.prep == 'dir-poisson':
         from spyrit.core.prep import DirectPoisson
         prep_op = DirectPoisson(opt.N0, meas_op)   # "Undo" the NoNoise operator
     return prep_op
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # Forward model
+    parser.add_argument("--meas",       type=str, default="hadam-split",   help="Measurement type: 'hadam-split', 'hadam-pos'")
+    parser.add_argument("--noise",      type=str, default="poisson",   help="Noise types: 'poisson', 'gauss-approx', 'no-noise'")
+    parser.add_argument("--prep",       type=str, default="split-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
+
     # Acquisition
     parser.add_argument("--img_size",   type=int,   default=64,   help="Height / width dimension")
     parser.add_argument("--M",          type=int,   default=512,  help="Number of patterns")
-    parser.add_argument("--subs",       type=str,   default="var",  help="Among 'var','rect'")
-    parser.add_argument("--meas",       type=float, default="hadam_split",   help="Measurement type: 'hadam_split', 'hadam_pos'")
-    parser.add_argument("--noise",      type=float, default="poisson",   help="Noise types: 'poisson', 'poisson-dir', 'gauss_approx', 'no_noise'")
-    parser.add_argument("--prep",       type=float, default="split-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
+    parser.add_argument("--subs",       type=str,   default="rect",  help="Among 'var','rect'")
 
     # Network and training
     parser.add_argument("--data",       type=str,   default="stl10", help="stl10 or imagenet")
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_root",  type=str,   default="./data/", help="Path to the dataset")
     
     parser.add_argument("--N0",         type=float, default=10,   help="Mean maximum total number of photons")
-    parser.add_argument("--stat_root",  type=str,   default="./stat/", help="Path to precomputed data")
+    parser.add_argument("--stat_root",  type=str,   default="", help="Path to precomputed data covariance and mean")
     parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net',")
     parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
     parser.add_argument("--device",     type=str,   default="", help="Choose among 'cuda','cpu'")
@@ -133,8 +133,17 @@ if __name__ == "__main__":
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
+    # Define other parameters (for testing)
+    if True:
+        opt.meas = 'hadam-pos'
+        opt.noise = 'no-noise' # noise type
+        opt.prep = 'dir-poisson'    # preprocessing type
+        opt.N0 = 1.0        # ph/pixel m
+        opt.arch = 'pinv-net' # Network architecture
+        opt.denoi = 'cnn' 
+
     print(opt)
-    
+
     #==========================================================================
     # 0. Setting up parameters for training
     #==========================================================================
@@ -170,16 +179,23 @@ if __name__ == "__main__":
     #==========================================================================
     # 2. Statistics of the training images
     #==========================================================================
-    print('Loading covariance and mean')
-    if opt.img_size == 64:
-        my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+    if opt.stat_root:
+        # Load covariance and mean from path
+        print('Loading covariance and mean')
+        if opt.img_size == 64:
+            my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        else:
+            my_average_file = Path(opt.stat_root) / ('Average_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            my_cov_file = Path(opt.stat_root) / ('Cov_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            
+        Mean = np.load(my_average_file)
+        Cov  = np.load(my_cov_file)
     else:
-        my_average_file = Path(opt.stat_root) / ('Average_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        my_cov_file = Path(opt.stat_root) / ('Cov_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        
-    Mean = np.load(my_average_file)
-    Cov  = np.load(my_cov_file)
+        # Covariance not provided, set it to the identity
+        if opt.arch == 'dc-net':
+            Cov = np.eye(opt.img_size**2)
+            print("Seting Cov matrix to the identity: Not optimal!!!")
 
     #==========================================================================
     # 3. Subsampling
