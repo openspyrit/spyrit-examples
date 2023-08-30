@@ -11,6 +11,10 @@ Some of research contributions based on the SPYRIT toolbox
 
 > G. Beneti-Martin, L Mahieu-Williame, T Baudier, N Ducros, "OpenSpyrit: an Ecosystem for Reproducible Single-Pixel Hyperspectral Imaging," Optics Express, Vol. 31, No. 10, (2023). [DOI](https://doi.org/10.1364/OE.483937).
 
+* [List of colab notebooks](./tutorial/) 
+
+Tutorials to simulate data, reconstruct and train a reconstruction network. It covers different measurement types (linear, Hadamard split), reconstruction networks (pinvNet, DCNet, unrolled proximal gradient descent), and denoising networks (CNN, UNet, DRUNet). 
+
 ### 2022
 
 * [ISTE Book Chapter](./deprecated/2022_ISTE/) (ISTE, 2022)
