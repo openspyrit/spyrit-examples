@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # Forward model
     parser.add_argument("--meas",       type=str, default="hadam-split",   help="Measurement type: 'hadam-split', 'hadam-pos'")
     parser.add_argument("--noise",      type=str, default="poisson",   help="Noise types: 'poisson', 'gauss-approx', 'no-noise'")
-    parser.add_argument("--prep",       type=str, default="split-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
+    parser.add_argument("--prep",       type=str, default="dir-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
 
     # Acquisition
     parser.add_argument("--img_size",   type=int,   default=64,   help="Height / width dimension")
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         # Covariance not provided, set it to the identity
         if opt.arch == 'dc-net':
             Cov = np.eye(opt.img_size**2)
-            print("Seting Cov matrix to the identity: Not optimal!!!")
+            print("Seting Cov matrix to the identity: Not optimal for dc-net!!!")
 
     #==========================================================================
     # 3. Subsampling
