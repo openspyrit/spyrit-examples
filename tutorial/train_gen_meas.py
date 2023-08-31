@@ -93,7 +93,7 @@ def get_prep_operator(opt, meas_op):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Forward model
-    parser.add_argument("--meas",       type=str, default="hadam-split",   help="Measurement type: 'hadam-split', 'hadam-pos'")
+    parser.add_argument("--meas",       type=str, default="hadam-pos",   help="Measurement type: 'hadam-split', 'hadam-pos'")
     parser.add_argument("--noise",      type=str, default="poisson",   help="Noise types: 'poisson', 'gauss-approx', 'no-noise'")
     parser.add_argument("--prep",       type=str, default="dir-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
 
@@ -133,16 +133,18 @@ if __name__ == "__main__":
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
-    """
     # Define other parameters (for testing)
     if True:
         opt.meas = 'hadam-pos'
         opt.noise = 'no-noise' # noise type
         opt.prep = 'dir-poisson'    # preprocessing type
         opt.N0 = 1.0        # ph/pixel m
+        opt.M = opt.img_size**2 // 4
         opt.arch = 'pinv-net' # Network architecture
         opt.denoi = 'cnn' 
-    """
+        name_run = "stdl10_hadampos"
+        now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        opt.tb_path = f'runs/runs_{name_run}_n{int(opt.N0)}_m{opt.M}/{now}'
 
     print(opt)
 
