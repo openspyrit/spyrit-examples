@@ -134,7 +134,7 @@ if __name__ == "__main__":
     opt.data_root = Path(opt.data_root)
     
     # Define other parameters (for testing)
-    if True:
+    if False:
         opt.meas = 'hadam-pos'
         opt.noise = 'no-noise' # noise type
         opt.prep = 'dir-poisson'    # preprocessing type
