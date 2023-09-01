@@ -26,7 +26,7 @@ It is called by the tutorials below.
 This notebook shows to train in colab a reconstruction network for linear measurements. We take the example of Hadamard positive matrix, but this can be changed by the desired matrix. It set the requirements, install spyrit and spyrit-examples in colab, define all the parameters and calls *train_gen_meas.py*. 
 
 
-### Train reconstruction network for split measurements [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_split_meas_colab.ipynb)
+### tuto_train_split_meas_colab.ipynb: Train reconstruction network for split measurements [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_split_meas_colab.ipynb)
 
 Shows how to train in colab a reconstruction network selecting acquisition, network and training parameters, for the case of split measurements. This notebook set the requirements, install spyrit and spyrit-examples, define all the parameters and calls *train_split_meas.py*. 
 
@@ -34,3 +34,7 @@ Current networks:
 - 'dc-net': Denoised Completion Network (DCNet). 
 - 'pinv-net': Pseudo Inverse Network (PinvNet).
 - 'upgd':  Unrolled proximal gradient descent (UPGD). 
+
+### launch_tensorboard_colab.ipynb: Launch tensorboard [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/launch_tensorboard_colab.ipynb)
+Tutorial to launch tensorboard simultaneously to training in another notebook. 
+
