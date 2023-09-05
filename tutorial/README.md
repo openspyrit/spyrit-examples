@@ -4,14 +4,14 @@ The following tutorials show how to simulate data, perform image reconstruction 
 > [!WARNING]
 > Notebooks may not open on github, but they can be run locally directly on colab (this requires a google account).
 
-## 1. Comparison of single-pixel image reconstructions (`tuto_core_2d_drunet.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_core_2d_drunet.ipynb)     
+## 1. Comparison of single-pixel image reconstructions (`tuto_core_2d_drunet.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/tuto_core_2d_drunet.ipynb)     
 
 We compare several single-pixel image reconstruction methods: 
 - *PinvNet*: Pseudoinverse
 - *DCNet*: Denoised completion network with UNet denoising (see [ here](https://doi.org/10.1364/OE.424228))
 - *DCDRUNet*: Denoised completion network with pretrained DRUNet denoising. DRUNet allows to provide the noise level as input, as it is trained for all possible noise levels ([0, 255]) in a wide range of datasets. For more details on DRUNet, please refer to [Deep Plug-and-Play Image Restoration](https://github.com/cszn/DPIR). 
 
-## 2. Training a reconstruction network for linear measurements (`tuto_train_lin_meas_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_lin_meas_colab.ipynb)
+## 2. Training a reconstruction network for linear measurements (`tuto_train_lin_meas_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/tuto_train_lin_meas_colab.ipynb)
 
 This notebook shows how to train a reconstruction network for linear measurements. We take the Hadamard positive matrix as an example, but any measurement matrix can be considered. It sets up the requirements, installs spyrit and spyrit-examples in colab, defines all parameters and calls `train_gen_meas.py`. 
 
@@ -21,7 +21,7 @@ The `train_gen_meas.py` function allows to parse different data types, networks 
 - Optimisation
 - Use of Tensorboard
 
-## 3. Training a reconstruction network for linear split (pos/neg) measurements (`tuto_train_split_meas_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/tuto_train_split_meas_colab.ipynb)
+## 3. Training a reconstruction network for linear split (pos/neg) measurements (`tuto_train_split_meas_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/tuto_train_split_meas_colab.ipynb)
 
 This notebook shows how to train a reconstruction network in the case of a linear forward operator split into its positive and negative components, as often encountered in single pixel imaging.
 
@@ -32,6 +32,6 @@ The following methods are considered
 
 The notebook is mainly based on `train_split_meas.py`.
 
-## 4. Launch tensorboard (`launch_tensorboard_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/tutorials/tutorial/launch_tensorboard_colab.ipynb)
+## 4. Launch tensorboard (`launch_tensorboard_colab.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/launch_tensorboard_colab.ipynb)
 Tutorial to launch tensorboard simultaneously to training in another notebook. 
 
