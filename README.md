@@ -46,3 +46,9 @@ Some of educational material based on the SPYRIT toolbox
 * [Deep image reconstruction using the PyTorch and SPyRiT packages](./deprecated/2021_DLMIS_Hands-on/readMe.md) (DLMIS 21)
 
 > N Ducros, T Leuliet, A Lorente Mur, L Friot--Giroux. Hands-on session 3.1.  [Deep Learning for Medical Imaging School 2021](https://deepimaging2021.sciencesconf.org/).
+
+
+##  List of colab notebooks
+Tutorials to simulate data, reconstruct and train a reconstruction network. It covers different measurement types (linear, Hadamard split), reconstruction networks (pinvNet, DCNet, unrolled proximal gradient descent), and denoising networks (CNN, UNet, DRUNet). 
+
+* [List of colab notebooks](./tutorial/) 
