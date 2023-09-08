@@ -109,11 +109,14 @@ if __name__ == "__main__":
     
     parser.add_argument("--N0",         type=float, default=10,   help="Mean maximum total number of photons")
     parser.add_argument("--stat_root",  type=str,   default="", help="Path to precomputed data covariance and mean")
-    parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net',")
+    parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net', 'upgd")
     parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
     parser.add_argument("--device",     type=str,   default="", help="Choose among 'cuda','cpu'")
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
+    # Specific models parameters
+    parser.add_argument("--upgd_iter",   type=int,   default=6,    help="Number of unrolled iterations for UPGD")
+    parser.add_argument("--upgd_lamb",   type=float, default=1e-5, help="Initial step size parameters for UPGD")
 
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=30,   help="Number of training epochs")
@@ -130,6 +133,8 @@ if __name__ == "__main__":
     parser.add_argument("--tb_prof",    type=bool,   default=False, help="Profiler for code with Tensorboard")
 
     opt = parser.parse_args()
+    if os.path.exists(opt.model_root) is False:
+        os.makedirs(opt.model_root)
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
@@ -244,7 +249,12 @@ if __name__ == "__main__":
         model = PinvNet(noise_op, prep_op, denoi)
 
     elif opt.arch == 'upgd':        # Unrolled Proximal Gradient Descent
-        model = UPGD(noise_op, prep_op, denoi, num_iter=2)
+        if opt.meas == 'hadam-split':
+            split = True
+        else:
+            split = False
+        model = UPGD(noise_op, prep_op, denoi, 
+                     num_iter=opt.upgd_iter, lamb=opt.upgd_lamb, split=split)
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -282,6 +292,8 @@ if __name__ == "__main__":
     suffix = 'N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
            opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
+    if opt.arch == 'upgd':
+        suffix += '_uit_{}_la_{}'.format(opt.upgd_iter, opt.upgd_lamb)
 
     title = opt.model_root / f'{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    
     print(title)
