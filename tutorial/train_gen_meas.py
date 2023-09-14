@@ -289,8 +289,8 @@ if __name__ == "__main__":
     train_type = 'N0_{:g}'.format(opt.N0) 
         
     #- training parameters
-    suffix = 'N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
-           opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
+    suffix = 'm_{}_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
+           opt.meas, opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
     if opt.arch == 'upgd':
         suffix += '_uit_{}_la_{}'.format(opt.upgd_iter, opt.upgd_lamb)
