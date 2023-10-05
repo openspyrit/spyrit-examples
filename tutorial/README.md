@@ -4,7 +4,7 @@ The following tutorials show how to simulate data, perform image reconstruction 
 > [!WARNING]
 > Notebooks may not open on github, but they can be run locally directly on colab (this requires a google account).
 
-## 1. Data simulation and image reconstruction for linear measurements using pinvNet with a CCN denoiser (`tuto_pinvnet_cnn.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/tuto_pinvnet_cnn.ipynb)     
+## 1. Data simulation and image reconstruction for linear measurements using pinvNet with a CNN denoiser (`tuto_pinvnet_cnn.ipynb`) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openspyrit/spyrit-examples/blob/master/tutorial/tuto_pinvnet_cnn.ipynb)     
 
 We simulate data for a linear forward operator and perform image reconstruction using PinvNet with a CNN denoising layer. The forward operator is chosen as the positive part of a Hadamard matrix, yet any linear operator can be used instead. The forward operator, the pseudo-inverse reconstruction and the denoiser are layers of PinvNet, where only the last layer has learnable parameters. 
 
