@@ -32,7 +32,6 @@ from spyrit.core.noise import NoNoise
 from spyrit.core.prep import DirectPoisson
 from spyrit.core.noise import Poisson
 
-
 # pip install -e git+https://github.com/openspyrit/spas.git@v1.4#egg=spas
 # python3 ./spyrit-examples/2022_OE_spyrit2/download_data.py
 
@@ -253,8 +252,10 @@ if __name__ == "__main__":
             split = True
         else:
             split = False
+        #model = UPGD(noise_op, prep_op, denoi, 
+        #             num_iter=opt.upgd_iter, lamb=opt.upgd_lamb, split=split)
         model = UPGD(noise_op, prep_op, denoi, 
-                     num_iter=opt.upgd_iter, lamb=opt.upgd_lamb, split=split)
+                     num_iter=opt.upgd_iter, lamb=opt.upgd_lamb)
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")

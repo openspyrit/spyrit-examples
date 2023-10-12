@@ -19,12 +19,12 @@ data = 'stl10'
 arch = 'upgd' # Network architecture
 upgd_iter = 1 # Number of UPGD iterations
 denoi = 'cnn' # Denoiser architecture
-num_epochs = 2
+num_epochs = 20
 #checkpoint_model = './model' # Path to previous trained model
 checkpoint_interval = 1     # Interval to save the model
 #
 # Tensorboard logs path
-name_run = "stdl10_hadpos_upgd6"
+name_run = "stdl10_hadpos_upgd_1ter_lapos"
 mode_tb = True 
 if (mode_tb is True):
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
