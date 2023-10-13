@@ -131,7 +131,7 @@ if save_tag:
     filename = f'measurement_matrix_{Nl}_{Nh}_neg.npy'
     np.save(Path(data_folder+save_folder) / filename, H_neg)
     filename = f'measurement_matrix_{Nl}_{Nh}.npy'
-    np.save(Path(data_folder+save_folder) / filename, H_neg)
+    np.save(Path(data_folder+save_folder) / filename, H_pos - H_neg)
     # figure
     filename = f'measurement_matrix_{Nl}_{Nh}.png'
     plt.savefig(Path(data_folder+save_folder)/filename, bbox_inches='tight', dpi=600)

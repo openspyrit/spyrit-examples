@@ -91,7 +91,7 @@ for z in range(z1,z2):
 #%% Unmixing
 from pysptools import abundance_maps
 
-member_list = ['DsRed','mRFP','Autofluo','Noise'] #['Dsred','mRFP','AF']
+member_list = ['DsRed','mRFP','Autofluo']  # member_list = ['DsRed','mRFP','Autofluo','Noise'] 
 
 method_unmix = 'NNLS' # 'NNLS''_UCLS'
 Nm = 4
@@ -149,7 +149,7 @@ save_tag = True
 # unmixing
 if save_tag:
     # create folder
-    save_path = Path(load_path + '/Unmixing/' + folder_unmix)
+    save_path = Path(load_path + '/Unmixing_2/' + folder_unmix)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -165,7 +165,7 @@ if save_tag:
 # filtering
 if save_tag:    
     # create folder
-    save_path = Path(load_path + '/Filtering/' + folder_filter)
+    save_path = Path(load_path + '/Filtering_2/' + folder_filter)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -183,7 +183,7 @@ save_fig = True
 
 if save_fig:
     # create folder
-    save_path = Path(load_path + '/Unmixing/' + folder_unmix)
+    save_path = Path(load_path + '/Unmixing_2/' + folder_unmix)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -210,11 +210,11 @@ for z, t in enumerate(T_list):
         plt.close(fig)
 
 # unmixing: spectra
+col = ['r', 'g', 'b', 'c']  # color list
+
 fig, axs = plt.subplots()
-axs.plot(L_lambda, U[0], 'r', label = member_list[0])
-axs.plot(L_lambda, U[1], 'g', label = member_list[1])
-axs.plot(L_lambda, U[2], 'b', label = member_list[2])
-axs.plot(L_lambda, U[3], 'c', label = member_list[3])
+for m in range(len(member_list)):
+    axs.plot(L_lambda, U[m], col[m], label = member_list[m])
 axs.legend()
 plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
@@ -230,7 +230,7 @@ save_fig = True
 
 if save_fig:
     # create folder
-    save_path = Path(load_path + '/Filtering/' + folder_filter)
+    save_path = Path(load_path + '/Filtering_2/' + folder_filter)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)

@@ -8,7 +8,8 @@ This code generates the figures for the paper draft and allow to study the data 
 
 ## Install the dependencies
 
-1. See env.yaml
+* `main_unmix_*.py` run under the `pysptools` environnement (see `pysptools.yaml`)
+* The other scripts run under the `??` environnement (see `??.yaml`)
 
 ## Get the notebooks and the data
 
