@@ -25,7 +25,7 @@ num_epochs = 2
 checkpoint_interval = 1     # Interval to save the model
 #
 # Tensorboard logs path
-name_run = "stdl10_hadpos_upgd"
+name_run = "stdl10_splitmeas_upgd_2it_lammonolearn_2ep"
 mode_tb = True
 if (mode_tb is True):
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
@@ -41,7 +41,7 @@ print(f"Current path: {os.getcwd()}")
 # Run train.py
 #!python3 train_gen_meas.py --meas 'hadam-pos' --noise 'no-noise' --prep 'dir-poisson'--N0 1 --M 1024 --data_root './data/' --data 'stl10' --stat_root '' --tb_path 'runs/hadam-pos_no-noise_1' --arch 'pinv-net' --denoi 'cnn' --num_epochs 30
 #subprocess.run(['python3', 'train_gen_meas.py', '--tb_path', tb_path])
-subprocess.run(['python3', '/home/abascal/Projects/openspyrit/spyrit-examples/tutorial/train_gen_meas.py', '--meas', meas, '--noise', noise, '--prep', prep,
+subprocess.run(['python3', '~/Projects/openspyrit/spyrit-examples/tutorial/train_gen_meas.py', '--meas', meas, '--noise', noise, '--prep', prep,
                 '--data_root', data_root, '--data', data, '--stat_root', stat_root,
                 '--N0', str(N0), '--M', str(M), '--subs', subs, '--img_size', str(img_size),
                 '--arch', arch, '--denoi', denoi, '--num_epochs', str(num_epochs),
