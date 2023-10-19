@@ -61,7 +61,7 @@ Nc = 128 # number of channels
 
 T_list = range(1,27)    # slice indices
 load_path = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D'
-recon = 'pinv'  # 'pinv' 'tikhonet50_div1.5'
+recon = 'tikhonet50_div1.5'  # 'pinv' 'tikhonet50_div1.5'
 
 # all slices are unmixed jointly!
 Nz = T_list.stop - T_list.start + 1
@@ -91,21 +91,24 @@ from matplotlib.patches import Rectangle
 
 # Area where the autofluorescence is estimated, which corresponds to the "sac vitellin"
 x1,x2 = 220,260
-y1,y2 = 335,345
-z1,z2 = 1,6
+y1,y2 = 335,355
+z1,z2 = 1,5
 
 spec_fluo = np.mean(xyzl_cube[x1:x2, y1:y2, z1:z2,:], axis=(0,1,2))
 
 # plot autofluorescence area
-for z in range(z1,z2):
-    fig, axs = plt.subplots()
-    axs.imshow(xyzl_cube[:,:,z,64])
-    axs.set_title(f'Autofluorescence estimation area; x in [{x1}-{x2}]; y in [{y1}-{y2}]')
-    axs.set_xlabel('y-axis')
-    axs.set_ylabel('x-axis')
-    # Create a Rectangle patch
-    axs.add_patch(Rectangle((y1, x1), y2-y1+1, x2-x1+1, linewidth=1, edgecolor='r', facecolor='none'))
+fig, axs = plt.subplots(1, z2-z1, figsize=(2*(z2-z1),z2-z1))
 
+for i, z in enumerate(range(z1,z2)):
+    axs[i].imshow(xyzl_cube[:,:,z,64])
+    axs[i].set_xlabel('y-axis')
+    axs[i].set_ylabel('x-axis')
+    # Create a Rectangle patch
+    axs[i].add_patch(Rectangle((y1, x1), y2-y1+1, x2-x1+1, linewidth=1, edgecolor='r', facecolor='none'))
+    
+fig.suptitle(f'Autofluorescence estimation area; x in [{x1}-{x2}]; y in [{y1}-{y2}]')
+
+    
 #%% Manual registration (compensate for sample shift during acquisition)
 x_shift = 36
 y_shift = 12
@@ -122,7 +125,8 @@ xyzl_cube_reg[:, :, 13:, :] = xyzl_cube[x_shift:,      y_shift:,      13:,  :]
 #%% Unmixing
 from pysptools import abundance_maps
 
-member_list = ['DsRed','EGFP','Autofluo','Noise'] #['Dsred','mRFP','AF']
+member_list = ['DsRed','EGFP','Autofluo'] #['DsRed','EGFP','Autofluo','Noise']
+unmixing_folder = '/Unmixing_2/'
 
 method_unmix = 'NNLS' # 'NNLS''_UCLS'
 Nm = 4
@@ -156,6 +160,8 @@ abond_unmix_4D = np.reshape(Abondance,(Nl,Nh,Nz,Nm))
 #%% Separate fluorophores simulating two band-pass filters
 Nf = 2 # number of filter
 
+filtering_folder = '/Filtering_2/'
+
 filter_list = ['green','red']
 l_green_1, l_green_2 =  6,  18 # green filter band
 l_red_1,   l_red_2   = 99, 111 # red filter band
@@ -180,7 +186,7 @@ save_tag = True
 # unmixing
 if save_tag:
     # create folder
-    save_path = Path(load_path + '/Unmixing/' + folder_unmix)
+    save_path = Path(load_path + unmixing_folder + folder_unmix)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -196,7 +202,7 @@ if save_tag:
 # filtering
 if save_tag:    
     # create folder
-    save_path = Path(load_path + '/Filtering/' + folder_filter)
+    save_path = Path(load_path + filtering_folder + folder_filter)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -209,12 +215,13 @@ if save_tag:
     filename = 'spectra.npy'
     np.save(save_path / filename, Filt_sep)
 
-#%% Plot Unmixing
+#%% Plot and save unmixing results
 save_fig = True
+save_ext = ['svg'] # ['pdf', 'svg', 'png']
 
 if save_fig:
     # create folder
-    save_path = Path(load_path + '/Unmixing/' + folder_unmix)
+    save_path = Path(load_path + unmixing_folder + folder_unmix)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -223,7 +230,7 @@ if save_fig:
 # loop over all z-slices
 for z, t in enumerate(T_list):
     # Plot
-    fig, axs = plt.subplots(1, 4, figsize=(10,5))
+    fig, axs = plt.subplots(1, len(member_list), figsize=(2*len(member_list),len(member_list)))
     
     # loop over all members/fluorophores
     for m, member in  enumerate(member_list):
@@ -235,17 +242,19 @@ for z, t in enumerate(T_list):
     noaxis(axs)
     
     if save_fig:
-        filename = f'T{t}_abondance.png'
-        print(filename)
-        plt.savefig(save_path / filename, bbox_inches='tight', dpi=600)
+        filename = f'T{t}_abondance'
+        for ext in save_ext:
+            filename_with_ext = filename + '.' + ext
+            print(filename_with_ext)
+            plt.savefig(save_path / filename_with_ext, bbox_inches='tight', dpi=600)
         plt.close(fig)
 
 # unmixing: spectra
+col = ['r', 'g', 'b', 'c']  # color list
+
 fig, axs = plt.subplots()
-axs.plot(L_lambda, U[0], 'r', label = member_list[0])
-axs.plot(L_lambda, U[1], 'g', label = member_list[1])
-axs.plot(L_lambda, U[2], 'b', label = member_list[2])
-axs.plot(L_lambda, U[3], 'c', label = member_list[3])
+for m in range(len(member_list)):
+    axs.plot(L_lambda, U[m], col[m], label = member_list[m])
 axs.plot(L_lambda, Filt_notch, 'k', ls = 'dashed', label = 'notch filter')
 axs.fill_between(L_lambda, Filt_notch, 1, color='k', alpha=.1)
 axs.legend()
@@ -253,17 +262,40 @@ plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
 
 if save_fig:       
-    filename = 'spectra.png'
-    print(filename)
-    plt.savefig(save_path / filename, bbox_inches='tight', dpi=600)
+    filename = 'spectra'
+    for ext in save_ext:
+        filename_with_ext = filename + '.' + ext
+        print(filename_with_ext)
+        plt.savefig(save_path / filename_with_ext, bbox_inches='tight', dpi=600)
     plt.close()
+    
+#%% plot autofluorescence area
+fig, axs = plt.subplots(1, z2-z1, figsize=(2*(z2-z1),z2-z1))
+
+for i, z in enumerate(range(z1,z2)):
+    axs[i].imshow(xyzl_cube[:,:,z,64])
+    axs[i].set_xlabel('y-axis')
+    axs[i].set_ylabel('x-axis')
+    # Create a Rectangle patch
+    axs[i].add_patch(Rectangle((y1, x1), y2-y1+1, x2-x1+1, linewidth=1, edgecolor='r', facecolor='none'))
+    
+fig.suptitle(f'Autofluorescence estimation area; x in [{x1}-{x2}]; y in [{y1}-{y2}]')
+
+save_ext = ['svg'] # ['pdf', 'svg', 'png']
+filename = 'autofluorescence'
+for ext in save_ext:
+    filename_with_ext = filename + '.' + ext
+    print(filename_with_ext)
+    plt.savefig(save_path / filename_with_ext, bbox_inches='tight', dpi=600)
+plt.close(fig)
 
 #%% Plot Filtering
 save_fig = True
+save_ext = ['svg'] # ['pdf', 'svg', 'png']
 
 if save_fig:
     # create folder
-    save_path = Path(load_path + '/Filtering/' + folder_filter)
+    save_path = Path(load_path + filtering_folder + folder_filter)
     print(save_path)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -284,9 +316,11 @@ for z, t in enumerate(T_list):
     noaxis(axs)
     
     if save_fig:
-        filename = f'T{t}_abondance.png'
-        print(filename)
-        plt.savefig(save_path / filename, bbox_inches='tight', dpi=600)
+        filename = f'T{t}_abondance'
+        for ext in save_ext:
+            filename_with_ext = filename + '.' + ext
+            print(filename_with_ext)
+            plt.savefig(save_path / filename_with_ext, bbox_inches='tight', dpi=600)
         plt.close(fig)
         
 # Spectra
@@ -305,7 +339,9 @@ plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
 
 if save_fig:      
-    filename = 'spectra.png'
-    print(filename)
-    plt.savefig(save_path / filename, bbox_inches='tight', dpi=600)
+    filename = 'spectra'
+    for ext in save_ext:
+        filename_with_ext = filename + '.' + ext
+        print(filename_with_ext)
+        plt.savefig(save_path / filename_with_ext, bbox_inches='tight', dpi=600)
     plt.close()
