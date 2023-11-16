@@ -187,7 +187,7 @@ if __name__ == "__main__":
         # Check if there is a train folder within the data_root
         data_root = os.path.join(opt.data_root, 'train')
         if not os.path.isdir(data_root):
-            raise Exception('There is no train folder within the data_root')
+            data_root = opt.data_root
         # Check if there is a val folder within the data_root
         data_val_root = os.path.join(opt.data_root, 'val')
         if not os.path.isdir(data_val_root):
