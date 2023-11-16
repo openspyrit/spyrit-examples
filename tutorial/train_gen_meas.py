@@ -26,7 +26,7 @@ from spyrit.core.prep import SplitPoisson
 from spyrit.core.recon import DCNet, PinvNet, UPGD
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
-from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10
+from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10, data_loaders_img_folder
 
 from spyrit.core.noise import NoNoise
 from spyrit.core.prep import DirectPoisson
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--subs",       type=str,   default="rect",  help="Among 'var','rect'")
 
     # Network and training
-    parser.add_argument("--data",       type=str,   default="stl10", help="stl10 or imagenet")
+    parser.add_argument("--data",       type=str,   default="stl10", help="stl10, imagenet, folder")
     parser.add_argument("--model_root", type=str,   default='./model/', help="Path to model saving files")
     parser.add_argument("--data_root",  type=str,   default="./data/", help="Path to the dataset")
     
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
     # Specific models parameters
-    parser.add_argument("--upgd_iter",   type=int,   default=6,    help="Number of unrolled iterations for UPGD")
+    parser.add_argument("--upgd_iter",   type=int,   default=3,    help="Number of unrolled iterations for UPGD")
     parser.add_argument("--upgd_lamb",   type=float, default=1e-5, help="Initial step size parameters for UPGD")
 
     # Optimisation
@@ -177,13 +177,29 @@ if __name__ == "__main__":
         #opt.tb_path = f'runs/runs_stdl10_n100_m1024/{now}'
 
     elif opt.data == 'imagenet':
-        dataloaders = data_loaders_ImageNet(opt.data_root / 'test', 
+        dataloaders = data_loaders_ImageNet(opt.data_root / 'train', 
                                         opt.data_root / 'val', 
                                         img_size=opt.img_size, 
                                         batch_size=opt.batch_size, 
                                         seed=7,
                                         shuffle=True)
-   
+    elif opt.data == 'folder':
+        # Check if there is a train folder within the data_root
+        data_root = os.path.join(opt.data_root, 'train')
+        if not os.path.isdir(data_root):
+            raise Exception('There is no train folder within the data_root')
+        # Check if there is a val folder within the data_root
+        data_val_root = os.path.join(opt.data_root, 'val')
+        if not os.path.isdir(data_val_root):
+            print('There is no val folder within the data_root, splitting data in the train folder!')
+            data_val_root = None
+        dataloaders = data_loaders_img_folder(data_root=data_root,
+                                        data_val_root=data_val_root, 
+                                        img_size=opt.img_size, 
+                                        batch_size=opt.batch_size, 
+                                        shuffle=True)
+
+
     #==========================================================================
     # 2. Statistics of the training images
     #==========================================================================
@@ -293,6 +309,7 @@ if __name__ == "__main__":
     suffix = 'm_{}_N_{}_M_{}_epo_{}_lr_{}_sss_{}_sdr_{}_bs_{}_reg_{}'.format(\
            opt.meas, opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
+    # suffix for UPGD iterations
     if opt.arch == 'upgd':
         suffix += '_uit_{}_la_{}'.format(opt.upgd_iter, opt.upgd_lamb)
 
