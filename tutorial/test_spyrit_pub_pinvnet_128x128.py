@@ -13,9 +13,9 @@ N0 = 10.0        # ph/pixel max: number of counts
 img_size = 128   # image size
 M =  img_size**2 // 4  # Num measurements = subsampled by factor 4
 subs = 'rect' # subsampling types: 'var': high variance, 'rect': low frequency
-data = 'stl10' # imagenet', 'stl10', 'folder': load from provided folder
-data_root = '../../data/' # '../../data/natural'
-stat_root = '../../stat/'  # stat root path (where the cov is stored, required for split meas)
+data = 'imagenet' # imagenet', 'stl10', 'folder': load from provided folder
+data_root = '../../data/ILSVRC2012_v10102019/' # '../../data/natural'
+stat_root = '../../stat/ILSVRC2012_v10102019'  # stat root path (where the cov is stored, required for split meas)
 #
 arch = 'pinv-net' # Network architecture
 denoi = 'unet' # Denoiser architecture
@@ -44,7 +44,7 @@ print(f"Current path: {os.getcwd()}")
 # Run train.py
 #!python3 train_gen_meas.py --meas 'hadam-pos' --noise 'no-noise' --prep 'dir-poisson'--N0 1 --M 1024 --data_root './data/' --data 'stl10' --stat_root '' --tb_path 'runs/hadam-pos_no-noise_1' --arch 'pinv-net' --denoi 'cnn' --num_epochs 30
 #subprocess.run(['python3', 'train_gen_meas.py', '--tb_path', tb_path])
-subprocess.run(['python3', '/home/abascal/Projects/openspyrit/spyrit-examples/tutorial/train_gen_meas.py', '--meas', meas, '--noise', noise, '--prep', prep,
+subprocess.run(['python3', 'train_gen_meas.py', '--meas', meas, '--noise', noise, '--prep', prep,
                 '--data_root', data_root, '--data', data, '--stat_root', stat_root,
                 '--N0', str(N0), '--M', str(M), '--subs', subs, '--img_size', str(img_size),
                 '--arch', arch, '--denoi', denoi, '--num_epochs', str(num_epochs),

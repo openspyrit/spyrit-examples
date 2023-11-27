@@ -177,7 +177,7 @@ if __name__ == "__main__":
         #opt.tb_path = f'runs/runs_stdl10_n100_m1024/{now}'
 
     elif opt.data == 'imagenet':
-        dataloaders = data_loaders_ImageNet(opt.data_root / 'train', 
+        dataloaders = data_loaders_ImageNet(opt.data_root / 'test', 
                                         opt.data_root / 'val', 
                                         img_size=opt.img_size, 
                                         batch_size=opt.batch_size, 
