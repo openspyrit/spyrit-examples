@@ -10,7 +10,7 @@ url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
 gc = girder_client.GirderClient(apiUrl=url)
 
 #%% Download the covariance matrix and mean image
-data_folder = './stat/'
+data_folder = '../../stat/oe_paper/'
 dataId_list = ['63935b584d15dd536f04849f', # for reconstruction (imageNet, 128)
             '63935a224d15dd536f048490', # for reconstruction (imageNet, 128)
             '63935b624d15dd536f0484a5', # for reconstruction (imageNet, 64)
@@ -22,7 +22,7 @@ for dataId in dataId_list:
     gc.downloadFile(dataId, data_folder + myfile['name'])
 
 #%% Download the models
-data_folder = './model/'
+data_folder = '../../model/oe_paper/'
 dataId_list = ['6410889f0386da274769778f',
             '641088930386da2747697789',
             '6410889a0386da274769778c',
@@ -37,7 +37,7 @@ for dataId in dataId_list:
     gc.downloadFile(dataId, data_folder + myfile['name'])
 
 #%% Download the raw data
-data_folder = './data/'
+data_folder = '../../data/'
 
 folderId_list = [
                 '637512e84d15dd536f048247', # bitten apple

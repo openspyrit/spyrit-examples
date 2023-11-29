@@ -46,14 +46,14 @@ M_list = [4096, 1024, 512] # for N_rec = 128
 #M_list = [4095, 1024, 512] # for N_rec = 64
 
 N0 = 10     # Check if we used 10 in the paper
-stat_folder_rec = Path('./stat/') # Path('../../stat/ILSVRC2012_v10102019/')
+stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
  
-save_root = Path('./recon/')
+save_root = Path('../../recon/')
 
 #%% covariance matrix and network filnames
 if N_rec==64:
@@ -96,7 +96,7 @@ for M in M_list:
     
     # Load trained DC-Net
     net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
-    title = './model/' + net_title
+    title = '../../model/oe_paper/' + net_title
     load_net(title, model, device, strict = False)
     model.eval()                    # Mandantory when batchNorm is used
     
@@ -107,7 +107,7 @@ for M in M_list:
     model.to(device)
     
     #%% Load expe data and unsplit
-    data_root = Path('data/')
+    data_root = Path('../../data/')
 
     data_file_prefix_list = ['zoom_x12_usaf_group5',
                              'zoom_x12_starsector',
