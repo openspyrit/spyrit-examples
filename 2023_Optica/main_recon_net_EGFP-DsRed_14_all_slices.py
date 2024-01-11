@@ -66,7 +66,6 @@ axs[1].get_xaxis().set_visible(False)
     
 #%% Init physics operators for experimental patterns
 import torch
-from recon_dev import Pinv1Net
 from spyrit.core.meas import LinearSplit
 from spyrit.core.prep import SplitPoisson
 from spyrit.core.noise import Poisson
@@ -88,11 +87,10 @@ from spyrit.core.train import load_net
 from recon_dev import Tikho1Net, Tikhonov
 
 save_rec = True
-save_fig = True
+save_fig = False
 
 div = 1.5
-
-alpha = 10
+alpha = 50
 channel = 10, 55, 100  # to be plotted
 Nl, Nh, Nc = 512, 128, 128 # shape of preprocessed data
 
@@ -100,7 +98,17 @@ Nl, Nh, Nc = 512, 128, 128 # shape of preprocessed data
 save_tag = False
 data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
 data_subfolder = 'data_2023_03_14/'
-T_list = range(1,7)    # slice indices
+
+
+prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
+recon = f'tikhonet{alpha}_div{div}_exp'
+save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}/'
+
+prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
+recon = f'tikhonet{alpha}_div{div}_registered_exp'
+save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}_registered/'
+
+T_list = range(1,27)    # slice indices
 
 # covariance prior in the image domain
 stat_folder = './stat/'
@@ -140,12 +148,11 @@ for t in T_list:
         Run = f'RUN{t-5:04}'
 
     # Load prep data
-    save_folder = '/Preprocess/'
     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    prep_pos = np.load(Path(data_folder+save_folder) / filename)
+    prep_pos = np.load(Path(data_folder+prep_folder) / filename)
     
     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+    prep_neg =  np.load(Path(data_folder+prep_folder) / filename)
     
     # spectral dimension comes first
     prep_pos = np.moveaxis(prep_pos, -1, 0)
@@ -187,13 +194,12 @@ for t in T_list:
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         
         if save_rec:
-            save_folder = 'Reconstruction/hypercube'  
             Path(data_folder+save_folder).mkdir(parents=True, exist_ok=True)
             
-            save_filename = filename[:-20].replace('Had', f'rec_tikhonet{alpha}_div{div}_exp') + f'_{N}x{N}x{nc}.npy'
+            save_filename = filename[:-20].replace('Had', 'rec_' + recon) + f'_{N}x{N}x{nc}.npy'
             np.save(Path(data_folder+save_folder) / save_filename, rec)
             
-            save_filename = filename[:-20].replace('Had', f'beta_tikhonet{alpha}_div{div}_exp') + f'_{N}x{N}x{nc}.npy'
+            save_filename = filename[:-20].replace('Had', 'beta_' + recon) + f'_{N}x{N}x{nc}.npy'
             np.save(Path(data_folder+save_folder) / save_filename, beta)
             
         # Plot
@@ -206,7 +212,7 @@ for t in T_list:
             plt.colorbar(im, ax=axs[i])
             
         if save_fig:
-            save_filename = filename[:-20].replace('Had',f'rec_tikhonet{alpha}_div{div}_exp') + f'_{N}x{N}x{nc}.png'
+            save_filename = filename[:-20].replace('Had', 'rec_' + recon) + f'_{N}x{N}x{nc}.png'
             plt.savefig(Path(data_folder+save_folder)/save_filename, bbox_inches='tight', dpi=600)
     
 del recnet
@@ -222,7 +228,15 @@ Nl, Nh, Nc = 512, 128, 128 # shape of preprocessed data
 
 # raw data
 data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
-T_list = range(21,27)    # slice indices
+T_list = range(1,27)    # slice indices
+
+prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
+recon = 'pinv_exp'
+save_folder = 'Reconstruction/hypercube/pinv/'
+
+prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
+recon = 'pinv_registered_exp'
+save_folder = 'Reconstruction/hypercube/pinv_registered/'
 
 # Load net
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -244,12 +258,11 @@ for t in T_list:
         Run = f'RUN{t-5:04}'
 
     # Load prep data
-    save_folder = '/Preprocess/'
     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    prep_pos = np.load(Path(data_folder+save_folder) / filename)
+    prep_pos = np.load(Path(data_folder+prep_folder) / filename)
     
     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+    prep_neg =  np.load(Path(data_folder+prep_folder) / filename)
     
     # spectral dimension comes first
     prep_pos = np.moveaxis(prep_pos, -1, 0)
@@ -290,14 +303,13 @@ for t in T_list:
                     
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         
-        if save_rec:
-            save_folder = 'Reconstruction/hypercube'  
+        if save_rec: 
             Path(data_folder+save_folder).mkdir(parents=True, exist_ok=True)
             
-            save_filename = filename[:-20].replace('Had', 'rec_pinv_exp') + f'_{N}x{N}x{nc}.npy'
+            save_filename = filename[:-20].replace('Had', 'rec_' + recon) + f'_{N}x{N}x{nc}.npy'
             np.save(Path(data_folder+save_folder) / save_filename, rec)
             
-            save_filename = filename[:-20].replace('Had', 'beta_pinv_exp') + f'_{N}x{N}x{nc}.npy'
+            save_filename = filename[:-20].replace('Had', 'beta' + recon) + f'_{N}x{N}x{nc}.npy'
             np.save(Path(data_folder+save_folder) / save_filename, beta)
             
         # Plot
@@ -312,7 +324,7 @@ for t in T_list:
         noaxis(axs)
             
         if save_fig:
-            save_filename = filename[:-20].replace('Had','rec_pinv_exp') + f'_{N}x{N}x{nc}.png'
+            save_filename = filename[:-20].replace('Had','rec_' + recon) + f'_{N}x{N}x{nc}.png'
             plt.savefig(Path(data_folder+save_folder)/save_filename, bbox_inches='tight', dpi=600)
     
 del recnet
