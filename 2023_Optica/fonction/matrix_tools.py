@@ -32,7 +32,7 @@ def smooth(y, box_pts):
 
 
 def bining_line(Mat,n):
-	"""Bin the lines of a 2D matrix
+	"""Bin the lines (first dimension) of an array
     
 	Args:
 		Mat (np.darray): Nl by Nc matrix
@@ -48,11 +48,11 @@ def bining_line(Mat,n):
 
 	"""
 
-	(Nl,Nc) = np.shape(Mat)
-	M_out = np.zeros((Nl//n,Nc))
+	(Nl, Nc) = (Mat.shape[0], Mat.shape[1])    # (Nl,Nc) = np.shape(Mat)
+	M_out = np.zeros((Nl//n,) + Mat.shape[1:]) # M_out = np.zeros((Nl//n,Nc))
 	for i in range(0,Nl,n):
 		for j in range(n):
-    			M_out[i//n] += Mat[i+j]
+			M_out[i//n] += Mat[i+j]
 	return(M_out)
 
 def bining_colonne(Mat,n):
