@@ -5,3 +5,4 @@
 **/data*
 **/stat/*
 **/runs/*
+__pycache__/
