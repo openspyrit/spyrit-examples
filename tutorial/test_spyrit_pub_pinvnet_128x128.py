@@ -27,7 +27,7 @@ checkpoint_interval = 5     # Interval to save the model
 
 # Tensorboard logs path
 name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_{arch}_{denoi}"
-name_run = "test"
+#name_run = "test"
 mode_tb = True
 if (mode_tb is True):
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
