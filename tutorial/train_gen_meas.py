@@ -23,7 +23,7 @@ import datetime
 from spyrit.core.noise import PoissonApproxGauss
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet, UPGD
+from spyrit.core.recon import DCNet, PinvNet, UPGD, LearnedPGD
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10, data_loaders_img_folder
@@ -271,7 +271,10 @@ if __name__ == "__main__":
         #model = UPGD(noise_op, prep_op, denoi, 
         #             num_iter=opt.upgd_iter, lamb=opt.upgd_lamb, split=split)
         model = UPGD(noise_op, prep_op, denoi, 
-                     num_iter=opt.upgd_iter, lamb=opt.upgd_lamb)
+                     num_iter=opt.upgd_iter)
+    elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
+        model = LearnedPGD(noise_op, prep_op, denoi,
+                     iter_stop=opt.upgd_iter)  
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
