@@ -254,7 +254,8 @@ if __name__ == "__main__":
         denoi = ConvNetBN()
     elif opt.denoi == 'unet':   # Unet
         denoi = Unet()
-    
+    elif opt.denoi == 'cnn-diff':   # Diff CNN per iteration
+        denoi = nn.ModuleList([ConvNet() for _ in range(opt.upgd_iter+1)])
     
     # Global Architecture
     if opt.arch == 'dc-net':        # Denoised Completion Network
