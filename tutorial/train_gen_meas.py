@@ -314,9 +314,10 @@ if __name__ == "__main__":
            opt.meas, opt.img_size, opt.M, opt.num_epochs, opt.lr, opt.step_size,\
            opt.gamma, opt.batch_size, opt.reg)
     # suffix for UPGD iterations
-    if opt.arch == 'upgd':
-        suffix += '_uit_{}_la_{}'.format(opt.upgd_iter, opt.upgd_lamb)
-
+    if opt.arch == 'upgd' or opt.arch == 'lpgd':
+        suffix += '_uit_{}'.format(opt.upgd_iter)
+    if opt.checkpoint_model:
+        suffix += '_cont'
     title = opt.model_root / f'{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    
     print(title)
     
