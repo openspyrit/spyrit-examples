@@ -116,6 +116,7 @@ if __name__ == "__main__":
     # Specific models parameters
     parser.add_argument("--upgd_iter",   type=int,   default=3,    help="Number of unrolled iterations for UPGD")
     parser.add_argument("--upgd_lamb",   type=float, default=1e-5, help="Initial step size parameters for UPGD")
+    parser.add_argument("--upgd_lamb_grad",   type=bool, default=False, help="Learnable step size parameters for UPGD")
 
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=30,   help="Number of training epochs")
@@ -275,7 +276,7 @@ if __name__ == "__main__":
                      num_iter=opt.upgd_iter)
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
-                     iter_stop=opt.upgd_iter)  
+                     iter_stop=opt.upgd_iter, gamma_grad=opt.upgd_lamb_grad)  
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -285,6 +286,7 @@ if __name__ == "__main__":
     
     if opt.checkpoint_model:
         model.load_state_dict(torch.load(opt.checkpoint_model))
+        print(f'Loaded model from {opt.checkpoint_model}')
 
     #==========================================================================
     # 4. Define a Loss function optimizer and scheduler

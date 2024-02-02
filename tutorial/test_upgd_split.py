@@ -13,7 +13,7 @@ N0 = 10.0        # ph/pixel max: number of counts
 img_size = 64   # image size
 M =  img_size**2 // 4  # Num measurements = subsampled by factor 4
 subs = 'rect' # subsampling types: 'var': high variance, 'rect': low frequency
-data_root = './data/'  # data root path (where the data is downloaded)
+data_root = '../../data/'  # data root path (where the data is downloaded)
 data = 'stl10' #'stl10', 'imagenet' 
 #stat_root = './stat/'  # stat root path (where the cov is stored, required for split meas)
 stat_root = '../../stat/ILSVRC2012_v10102019/'
@@ -27,6 +27,8 @@ batch_size = 256
 # Path to previous trained model
 checkpoint_model = './model/lpgd_unet_stl10_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth' 
 checkpoint_interval = 10     # Interval to save the model
+# Learneable stepsize
+upgd_lamb_grad = True
 #
 # Tensorboard logs path
 name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_{arch}_{denoi}_iter{upgd_iter}_fix_sev"
@@ -54,6 +56,7 @@ subprocess.run(['python3', 'train_gen_meas.py', '--meas', meas, '--noise', noise
                 '--arch', arch, '--denoi', denoi, '--num_epochs', str(num_epochs),
                 '--batch_size', str(batch_size),
                 '--upgd_iter', str(upgd_iter),
+                '--upgd_lamb_grad', str(upgd_lamb_grad),
                 '--tb_path', tb_path,
                 '--checkpoint_interval', str(checkpoint_interval), 
                 '--checkpoint_model', checkpoint_model])
