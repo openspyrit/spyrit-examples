@@ -25,7 +25,7 @@ from spyrit.misc.statistics import Cov2Var
 from spyrit.core.noise import Poisson 
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet
+from spyrit.core.recon import DCNet, PinvNet, LearnedPGD
 from spyrit.core.train import load_net
 from spyrit.core.nnet import Unet
 from spyrit.misc.sampling import reorder, Permutation_Matrix
@@ -44,7 +44,8 @@ N_acq = 64
 # for reconstruction
 N_rec = 128  # 128 or 64
 M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
-#M_list = [4095, 1024, 512] # for N_rec = 64
+#N_rec = 64
+#M_list = [1024]
 
 N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
@@ -66,7 +67,7 @@ name_pinvnet = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_l
 # DCNet
 mode_dcnet = False
 # DRUNet
-mode_pinvnet_drunet = True
+mode_pinvnet_drunet = False
 if mode_pinvnet_drunet:
     #from spyrit.external.drunet import DRUNet
     from drunet import DRUNet
@@ -74,8 +75,20 @@ if mode_pinvnet_drunet:
     model_drunet_path = "../../model"
     name_drunet = 'drunet_gray.pth'
 
+# GD
+mode_gd = True
+if mode_gd:
+    gd_iter = 30
+    name_save_details = f'gd{gd_iter}'
+
+# GD WSL (normalized by variance)
+mode_gd_wls = False
+if mode_gd_wls:
+    gd_wsl_iter = 30
+    name_save_details = f'gd_wsl{gd_wsl_iter}'
+
 #%% Parameters for simulated images 
-mode_sim = False
+mode_sim = True
 if mode_sim:
     path_natural_images = '../../images'
     img_max = 1
@@ -116,6 +129,7 @@ if mode_sim:
     x = x[img_id:img_id+1,:,:,:]
     x = x.detach().clone()
     b,c,h,w = x.shape
+    x_gt = np.copy(x)
 
     # plot
     x_plot = x.view(-1,h,h).cpu().numpy() 
@@ -196,6 +210,75 @@ for M in M_list:
         model_pinvnet_drunet = PinvNet(noise, prep, denoi_drunet)
         model_pinvnet_drunet.to(device)
 
+    if mode_gd:
+        model_gd = LearnedPGD(noise, prep, iter_stop = gd_iter, gt=x_gt)
+        model_gd.eval()
+        model_gd.to(device)
+    if mode_gd_wls:
+        model_gd_wls = LearnedPGD(noise, 
+                                  prep, 
+                                  iter_stop = gd_wsl_iter, 
+                                  wls=True,
+                                  gt=x_gt)
+        model_gd_wls.eval()
+        model_gd_wls.to(device)
+    #%% simulations
+    if mode_sim:
+        name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}'
+        x = x.view(b * c, h * w)
+        y = noise(x.to(device))
+        with torch.no_grad():
+            if mode_dcnet:
+                rec_sim_gpu = model.reconstruct(y.to(device))
+            if mode_gd:
+                model_gd.log_inner_fidelity = True
+                model_gd.step_estimation = True
+                rec_sim_gpu = model_gd.reconstruct(y.to(device))
+            if mode_gd_wls:
+                model_gd_wls.log_inner_fidelity = True
+                model_gd_wls.wls = True
+                model_gd_wls.step_estimation = False
+                rec_sim_gpu = model_gd_wls.reconstruct(y.to(device))
+            
+            rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
+            rec_sim = rec_sim.reshape(N_rec, N_rec)
+        
+        fig , axs = plt.subplots(1,1)
+        im = axs.imshow(x_gt[0,0,:,:], cmap='gray')
+        noaxis(axs)
+        add_colorbar(im, 'bottom')
+
+        fig , axs = plt.subplots(1,1)
+        im = axs.imshow(rec_sim, cmap='gray')
+        noaxis(axs)
+        add_colorbar(im, 'bottom')
+
+        if 'name_save_details' in globals():
+            name_save = name_save + '_' + name_save_details
+        full_path = save_root / (name_save + '.pdf')
+        fig.savefig(full_path, bbox_inches='tight', dpi=600)
+
+        # 
+        if False:
+            data_fidelity = model_gd_wls.data_fidelity
+            mse = model_gd_wls.mse            # Normalize by norm x_gt
+            #np.linalg.norm(x_gt-rec_sim)/np.linalg.norm(x_gt)
+            mse = np.array(mse)/np.linalg.norm(x_gt)
+            # Data fidelity
+            fig=plt.figure(); plt.plot(data_fidelity, label='GD')
+            plt.ylabel('Data fidelity')
+            plt.xlabel('Iterations')
+            full_path = save_root / (name_save + '_data_fidelity.png')
+            fig.savefig(full_path, bbox_inches='tight', dpi=600)
+            # MSE
+            fig=plt.figure(); plt.plot(mse, label='GD')
+            plt.ylabel('NMSE')
+            plt.xlabel('Iterations')
+            # yaxis from 0 to 10
+            plt.ylim(0,1)
+            full_path = save_root / (name_save + '_nmse.png')
+            fig.savefig(full_path, bbox_inches='tight', dpi=600)
+
 
     #%% Load expe data and unsplit
     data_root = Path('../../data/')
@@ -255,7 +338,7 @@ for M in M_list:
                 add_colorbar(im, 'bottom')
                 
                 full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + '.pdf')
-                fig.savefig(full_path, bbox_inches='tight')        
+                fig.savefig(full_path, bbox_inches='tight')  
         
         #%% pseudo inverse
         if M==4096:
@@ -300,20 +383,7 @@ for M in M_list:
                     
                     full_path = save_root / (data_file_prefix + '_' + f'pinvnet_drunet_n{noise_level}_{N_rec}' + '.pdf')
                     fig.savefig(full_path, bbox_inches='tight', dpi=600)      
-
-        
-        #%% simulations
-        if mode_sim:
-            x = x.view(b * c, h * w)
-            y = noise(x.to(device))
-            with torch.no_grad():
-                rec_sim_gpu = model.reconstruct(y.to(device))
-                rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
             
-            fig , axs = plt.subplots(1,1)
-            im = axs.imshow(rec_sim, cmap='gray')
-            noaxis(axs)
-            add_colorbar(im, 'bottom')
 
-            full_path = save_root / (data_file_prefix + '_' + f'sim{img_id}_{N_rec}' + '.pdf')
-            fig.savefig(full_path, bbox_inches='tight', dpi=600)
+            
+        
