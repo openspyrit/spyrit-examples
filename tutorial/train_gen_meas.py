@@ -114,9 +114,9 @@ if __name__ == "__main__":
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
     # Specific models parameters
-    parser.add_argument("--upgd_iter",   type=int,   default=3,    help="Number of unrolled iterations for UPGD")
-    parser.add_argument("--upgd_lamb",   type=float, default=1e-5, help="Initial step size parameters for UPGD")
-    parser.add_argument("--upgd_lamb_grad",   type=bool, default=False, help="Learnable step size parameters for UPGD")
+    parser.add_argument("--unfold_iter",   type=int,   default=3,    help="Number of unrolled iterations")
+#    parser.add_argument("--unfold_step_size",   type=str, default="custom", help="Step size parameter. Default to custom 1/N")
+    parser.add_argument("--unfold_step_grad",   type=bool, default=False, help="Learnable step size")
 
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=30,   help="Number of training epochs")
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     elif opt.denoi == 'unet':   # Unet
         denoi = Unet()
     elif opt.denoi == 'cnn-diff':   # Diff CNN per iteration
-        denoi = nn.ModuleList([ConvNet() for _ in range(opt.upgd_iter+1)])
+        denoi = nn.ModuleList([ConvNet() for _ in range(opt.unfold_iter+1)])
     
     # Global Architecture
     if opt.arch == 'dc-net':        # Denoised Completion Network
@@ -271,12 +271,12 @@ if __name__ == "__main__":
         else:
             split = False
         #model = UPGD(noise_op, prep_op, denoi, 
-        #             num_iter=opt.upgd_iter, lamb=opt.upgd_lamb, split=split)
+        #             num_iter=opt.unfold_iter, lamb=opt.upgd_lamb, split=split)
         model = UPGD(noise_op, prep_op, denoi, 
-                     num_iter=opt.upgd_iter)
+                     num_iter=opt.unfold_iter)
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
-                     iter_stop=opt.upgd_iter, gamma_grad=opt.upgd_lamb_grad)  
+                     iter_stop=opt.unfold_iter, gamma_grad=opt.unfold_step_grad)  
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -317,7 +317,7 @@ if __name__ == "__main__":
            opt.gamma, opt.batch_size, opt.reg)
     # suffix for UPGD iterations
     if opt.arch == 'upgd' or opt.arch == 'lpgd':
-        suffix += '_uit_{}'.format(opt.upgd_iter)
+        suffix += '_uit_{}'.format(opt.unfold_iter)
     if opt.checkpoint_model:
         suffix += '_cont'
     title = opt.model_root / f'{opt.arch}_{opt.denoi}_{opt.data}_{train_type}_{suffix}'    

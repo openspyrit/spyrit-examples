@@ -25,13 +25,14 @@ denoi = 'unet' # Denoiser architecture
 num_epochs = 1
 batch_size = 256
 # Path to previous trained model
-checkpoint_model = './model/lpgd_unet_stl10_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth' 
+checkpoint_model = ""
+#checkpoint_model = './model/lpgd_unet_stl10_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth' 
 checkpoint_interval = 10     # Interval to save the model
 # Learneable stepsize
 upgd_lamb_grad = True
 #
 # Tensorboard logs path
-name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_{arch}_{denoi}_iter{upgd_iter}_fix_sev"
+name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_{arch}_{denoi}_iter{upgd_iter}_fix"
 if checkpoint_model != '':
     name_run += '_cont'
 mode_tb = True
