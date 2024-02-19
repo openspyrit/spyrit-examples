@@ -54,7 +54,11 @@ net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
- 
+
+# limits for plotting images
+vmin = -1
+vmax = 1 
+
 save_root = Path('../../recon/')
 
 # Select methods for reconstruction
@@ -76,10 +80,16 @@ if mode_pinvnet_drunet:
     name_drunet = 'drunet_gray.pth'
 
 # GD
-mode_gd = True
+mode_gd = False
 if mode_gd:
     gd_iter = 30
     name_save_details = f'gd{gd_iter}'
+
+# GD Project to Zero
+mode_gd_proj = False
+if mode_gd_proj:
+    gd_proj_iter = 30
+    name_save_details = f'gd_proj{gd_proj_iter}'
 
 # GD WSL (normalized by variance)
 mode_gd_wls = False
@@ -87,12 +97,22 @@ if mode_gd_wls:
     gd_wsl_iter = 30
     name_save_details = f'gd_wsl{gd_wsl_iter}'
 
+# GD WSL Project to Zero
+mode_gd_wls_proj = False
+if mode_gd_wls_proj:
+    gd_wsl_proj_iter = 30
+    name_save_details = f'gd_wsl_proj{gd_wsl_proj_iter}'
+
+# LPGD unet fix stepsize
+mode_lpgd = True
+if mode_lpgd:
+    lpgd_iter = 3
+    name_save_details = f'lpgd{lpgd_iter}'
+
 #%% Parameters for simulated images 
 mode_sim = True
 if mode_sim:
     path_natural_images = '../../images'
-    img_max = 1
-    img_min = -1
 
     import torchvision
     def transform_gray_norm(img_size, crop_type = 'center'): 
@@ -126,6 +146,7 @@ if mode_sim:
 
     # Select image
     img_id = 4
+
     x = x[img_id:img_id+1,:,:,:]
     x = x.detach().clone()
     b,c,h,w = x.shape
@@ -134,8 +155,12 @@ if mode_sim:
     # plot
     x_plot = x.view(-1,h,h).cpu().numpy() 
     fig = plt.figure(figsize=(7,7))
-    plt.imshow(x_plot[0,:,:], cmap='gray', vmin=img_min, vmax=img_max)
+    im = plt.imshow(x_plot[0,:,:], cmap='gray', vmin=vmin, vmax=vmax)
     plt.axis('off')
+    add_colorbar(im, 'bottom')
+
+    full_path = save_root / (f'sim{img_id}_{N_rec}' + '_gt.pdf')
+    fig.savefig(full_path, bbox_inches='tight', dpi=600)
 
 #%% covariance matrix and network filnames
 if N_rec==64:
@@ -166,14 +191,16 @@ for M in M_list:
         
     elif net_order == 'var':
         Ord_rec = Cov2Var(Cov_rec)
+
+
+    name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}_{net_order}'
         
     # Init network  
     meas = HadamSplit(M, N_rec, Ord_rec)
     noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
     prep  = SplitPoisson(N0, meas)    
-    denoi = Unet()
-    denoi_pinv = Unet()
     if mode_dcnet:
+        denoi = Unet()    
         model = DCNet(noise, prep, Cov_rec, denoi)
         
         # Load trained DC-Net
@@ -190,6 +217,8 @@ for M in M_list:
         model_pinv.to(device)        
         
     if mode_pinv_unet:
+        denoi_pinv = Unet()
+
         # Load trained Pinv-Net
         model_pinv_unet = PinvNet(noise, prep, denoi_pinv)
         load_net(os.path.join(model_pinvnet_path, name_pinvnet), model_pinv_unet, device, strict = False)
@@ -214,6 +243,17 @@ for M in M_list:
         model_gd = LearnedPGD(noise, prep, iter_stop = gd_iter, gt=x_gt)
         model_gd.eval()
         model_gd.to(device)
+    if mode_gd_proj:
+        from spyrit.core.nnet import ProjectToZero
+        denoi_proj = ProjectToZero()
+        model_gd_proj = LearnedPGD(noise, 
+                                   prep, 
+                                   iter_stop = gd_proj_iter, 
+                                   wls=False,
+                                   gt=x_gt,
+                                   denoi=denoi_proj)
+        model_gd_proj.eval()
+        model_gd_proj.to(device)
     if mode_gd_wls:
         model_gd_wls = LearnedPGD(noise, 
                                   prep, 
@@ -222,9 +262,30 @@ for M in M_list:
                                   gt=x_gt)
         model_gd_wls.eval()
         model_gd_wls.to(device)
+    if mode_gd_wls_proj:
+        from spyrit.core.nnet import ProjectToZero
+        denoi_proj = ProjectToZero()
+        model_gd_wls_proj = LearnedPGD(noise,
+                                  prep,
+                                  iter_stop = gd_wsl_proj_iter,
+                                  wls=True,
+                                  gt=x_gt,
+                                  denoi=denoi_proj)
+        model_gd_wls_proj.eval()
+        model_gd_wls_proj.to(device)
+    if mode_lpgd:
+        denoi_lpgd = Unet()
+        model_lpgd = LearnedPGD(noise, 
+                                prep,
+                                iter_stop = lpgd_iter,
+                                wls=False,
+                                gt=x_gt,
+                                denoi=denoi_lpgd)      
+        model_lpgd.eval()
+        model_lpgd.to(device)                          
+        
     #%% simulations
     if mode_sim:
-        name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}'
         x = x.view(b * c, h * w)
         y = noise(x.to(device))
         with torch.no_grad():
@@ -234,22 +295,37 @@ for M in M_list:
                 model_gd.log_inner_fidelity = True
                 model_gd.step_estimation = True
                 rec_sim_gpu = model_gd.reconstruct(y.to(device))
+                data_fidelity = model_gd.data_fidelity
+                mse = model_gd.mse       
+            if mode_gd_proj:
+                model_gd_proj.log_inner_fidelity = True
+                rec_sim_gpu = model_gd_proj.reconstruct(y.to(device))
+                data_fidelity = model_gd_proj.data_fidelity
+                mse = model_gd_proj.mse
             if mode_gd_wls:
                 model_gd_wls.log_inner_fidelity = True
                 model_gd_wls.wls = True
                 model_gd_wls.step_estimation = False
                 rec_sim_gpu = model_gd_wls.reconstruct(y.to(device))
+                data_fidelity = model_gd_wls.data_fidelity
+                mse = model_gd_wls.mse                
+            if mode_gd_wls_proj:
+                model_gd_wls_proj.log_inner_fidelity = True
+                model_gd_wls_proj.wls = True
+                rec_sim_gpu = model_gd_wls_proj.reconstruct(y.to(device))
+                data_fidelity = model_gd_wls_proj.data_fidelity
+                mse = model_gd_wls_proj.mse
+            if mode_lpgd:
+                model_lpgd.log_inner_fidelity = True
+                rec_sim_gpu = model_lpgd.reconstruct(y.to(device))
+                data_fidelity = model_lpgd.data_fidelity
+                mse = model_lpgd.mse
             
             rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
             rec_sim = rec_sim.reshape(N_rec, N_rec)
         
         fig , axs = plt.subplots(1,1)
-        im = axs.imshow(x_gt[0,0,:,:], cmap='gray')
-        noaxis(axs)
-        add_colorbar(im, 'bottom')
-
-        fig , axs = plt.subplots(1,1)
-        im = axs.imshow(rec_sim, cmap='gray')
+        im = axs.imshow(rec_sim, cmap='gray', vmin=vmin, vmax=vmax)
         noaxis(axs)
         add_colorbar(im, 'bottom')
 
@@ -259,9 +335,7 @@ for M in M_list:
         fig.savefig(full_path, bbox_inches='tight', dpi=600)
 
         # 
-        if False:
-            data_fidelity = model_gd_wls.data_fidelity
-            mse = model_gd_wls.mse            # Normalize by norm x_gt
+        if True:
             #np.linalg.norm(x_gt-rec_sim)/np.linalg.norm(x_gt)
             mse = np.array(mse)/np.linalg.norm(x_gt)
             # Data fidelity
