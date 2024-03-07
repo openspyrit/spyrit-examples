@@ -34,6 +34,8 @@ from spyrit.misc.disp import add_colorbar, noaxis
 
 from spas import read_metadata, spectral_slicing
 
+torch.manual_seed(0)
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f'Torch device: {device}')
 
@@ -106,8 +108,15 @@ if mode_gd_wls_proj:
 # LPGD unet fix stepsize
 mode_lpgd = True
 if mode_lpgd:
-    lpgd_iter = 3
+    lpgd_iter = 5
     name_save_details = f'lpgd{lpgd_iter}'
+
+# LPGD diff stepsize
+mode_lpgd_diff = False
+if mode_lpgd_diff:
+    lpgd_iter = 3
+    name_save_details = f'lpgd_diffstep{lpgd_iter}'
+
 
 #%% Parameters for simulated images 
 mode_sim = True
@@ -240,7 +249,11 @@ for M in M_list:
         model_pinvnet_drunet.to(device)
 
     if mode_gd:
-        model_gd = LearnedPGD(noise, prep, iter_stop = gd_iter, gt=x_gt)
+        model_gd = LearnedPGD(noise, 
+                              prep, 
+                              iter_stop = gd_iter, 
+                              step_estimation=False,
+                              gt=x_gt)
         model_gd.eval()
         model_gd.to(device)
     if mode_gd_proj:
@@ -259,6 +272,7 @@ for M in M_list:
                                   prep, 
                                   iter_stop = gd_wsl_iter, 
                                   wls=True,
+                                  step_estimation=True,
                                   gt=x_gt)
         model_gd_wls.eval()
         model_gd_wls.to(device)
@@ -282,7 +296,7 @@ for M in M_list:
                                 gt=x_gt,
                                 denoi=denoi_lpgd)      
         model_lpgd.eval()
-        model_lpgd.to(device)                          
+        model_lpgd.to(device)          
         
     #%% simulations
     if mode_sim:
@@ -293,7 +307,7 @@ for M in M_list:
                 rec_sim_gpu = model.reconstruct(y.to(device))
             if mode_gd:
                 model_gd.log_inner_fidelity = True
-                model_gd.step_estimation = True
+                model_gd.step_estimation = False
                 rec_sim_gpu = model_gd.reconstruct(y.to(device))
                 data_fidelity = model_gd.data_fidelity
                 mse = model_gd.mse       
@@ -325,7 +339,8 @@ for M in M_list:
             rec_sim = rec_sim.reshape(N_rec, N_rec)
         
         fig , axs = plt.subplots(1,1)
-        im = axs.imshow(rec_sim, cmap='gray', vmin=vmin, vmax=vmax)
+        #im = axs.imshow(rec_sim, cmap='gray', vmin=vmin, vmax=vmax)
+        im = axs.imshow(rec_sim, cmap='gray')
         noaxis(axs)
         add_colorbar(im, 'bottom')
 

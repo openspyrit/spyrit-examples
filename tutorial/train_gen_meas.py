@@ -23,7 +23,7 @@ import datetime
 from spyrit.core.noise import PoissonApproxGauss
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet, UPGD, LearnedPGD
+from spyrit.core.recon import DCNet, PinvNet, LearnedPGD
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10, data_loaders_img_folder
@@ -265,19 +265,10 @@ if __name__ == "__main__":
     elif opt.arch == 'pinv-net':    # Pseudo Inverse Network
         model = PinvNet(noise_op, prep_op, denoi)
 
-    elif opt.arch == 'upgd':        # Unrolled Proximal Gradient Descent
-        if opt.meas == 'hadam-split':
-            split = True
-        else:
-            split = False
-        #model = UPGD(noise_op, prep_op, denoi, 
-        #             num_iter=opt.unfold_iter, lamb=opt.upgd_lamb, split=split)
-        model = UPGD(noise_op, prep_op, denoi, 
-                     num_iter=opt.unfold_iter)
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
                      iter_stop=opt.unfold_iter, gamma_grad=opt.unfold_step_grad)  
-    
+
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
