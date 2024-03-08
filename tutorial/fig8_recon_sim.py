@@ -82,7 +82,7 @@ if mode_pinvnet_drunet:
     name_drunet = 'drunet_gray.pth'
 
 # GD
-mode_gd = False
+mode_gd = True
 if mode_gd:
     gd_iter = 30
     name_save_details = f'gd{gd_iter}'
@@ -106,7 +106,7 @@ if mode_gd_wls_proj:
     name_save_details = f'gd_wsl_proj{gd_wsl_proj_iter}'
 
 # LPGD unet fix stepsize
-mode_lpgd = True
+mode_lpgd = False
 if mode_lpgd:
     lpgd_iter = 5
     name_save_details = f'lpgd{lpgd_iter}'
@@ -306,33 +306,33 @@ for M in M_list:
             if mode_dcnet:
                 rec_sim_gpu = model.reconstruct(y.to(device))
             if mode_gd:
-                model_gd.log_inner_fidelity = True
+                model_gd.log_fidelity = True
                 model_gd.step_estimation = False
                 rec_sim_gpu = model_gd.reconstruct(y.to(device))
-                data_fidelity = model_gd.data_fidelity
+                data_fidelity = model_gd.cost
                 mse = model_gd.mse       
             if mode_gd_proj:
-                model_gd_proj.log_inner_fidelity = True
+                model_gd_proj.log_fidelity = True
                 rec_sim_gpu = model_gd_proj.reconstruct(y.to(device))
-                data_fidelity = model_gd_proj.data_fidelity
+                data_fidelity = model_gd_proj.cost
                 mse = model_gd_proj.mse
             if mode_gd_wls:
-                model_gd_wls.log_inner_fidelity = True
+                model_gd_wls.log_fidelity = True
                 model_gd_wls.wls = True
                 model_gd_wls.step_estimation = False
                 rec_sim_gpu = model_gd_wls.reconstruct(y.to(device))
-                data_fidelity = model_gd_wls.data_fidelity
+                data_fidelity = model_gd_wls.cost
                 mse = model_gd_wls.mse                
             if mode_gd_wls_proj:
-                model_gd_wls_proj.log_inner_fidelity = True
+                model_gd_wls_proj.log_fidelity = True
                 model_gd_wls_proj.wls = True
                 rec_sim_gpu = model_gd_wls_proj.reconstruct(y.to(device))
-                data_fidelity = model_gd_wls_proj.data_fidelity
+                data_fidelity = model_gd_wls_proj.cost
                 mse = model_gd_wls_proj.mse
             if mode_lpgd:
-                model_lpgd.log_inner_fidelity = True
+                model_lpgd.log_fidelity = True
                 rec_sim_gpu = model_lpgd.reconstruct(y.to(device))
-                data_fidelity = model_lpgd.data_fidelity
+                data_fidelity = model_lpgd.cost
                 mse = model_lpgd.mse
             
             rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()

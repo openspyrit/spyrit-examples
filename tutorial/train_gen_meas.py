@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
-                     iter_stop=opt.unfold_iter, gamma_grad=opt.unfold_step_grad)  
+                     iter_stop=opt.unfold_iter, step_grad=opt.unfold_step_grad)  
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")

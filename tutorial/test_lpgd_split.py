@@ -13,13 +13,13 @@ N0 = 10.0        # ph/pixel max: number of counts
 img_size = 64   # image size
 M =  img_size**2 // 4  # Num measurements = subsampled by factor 4
 subs = 'rect' # subsampling types: 'var': high variance, 'rect': low frequency
-data_root = '../../data/'  # data root path (where the data is downloaded)
-data = 'stl10' #'stl10', 'imagenet' 
+data = 'imagenet' #'stl10', 'imagenet' 
+#data_root = '../../data/'  # data root path (where the data is downloaded)
 #stat_root = './stat/'  # stat root path (where the cov is stored, required for split meas)
 stat_root = '../../stat/ILSVRC2012_v10102019/'
-#data_root = '../../data/ILSVRC2012_v10102019/'
+data_root = '../../data/ILSVRC2012_v10102019/'
 #
-arch = 'lpgd' # Network architecture:  'upgd', 'lpgd
+arch = 'lpgd' # Network architecture:  'lpgd
 unfold_iter = 2 # Number of UPGD iterations
 denoi = 'unet' # Denoiser architecture
 num_epochs = 30
@@ -42,7 +42,6 @@ if (mode_tb is True):
     print(f"Tensorboard logdir {tb_path}")
 else:
     tb_path = ""    
-tb_prof = False # False
 
 print(f"Current path: {os.getcwd()}")
 
