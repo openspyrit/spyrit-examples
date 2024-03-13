@@ -21,13 +21,15 @@ from pathlib import Path
 import collections
 collections.Callable = collections.abc.Callable
 
+import torchvision
+
 from spyrit.misc.statistics import Cov2Var
 from spyrit.core.noise import Poisson 
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
 from spyrit.core.recon import DCNet, PinvNet, LearnedPGD
 from spyrit.core.train import load_net
-from spyrit.core.nnet import Unet
+from spyrit.core.nnet import Unet, ConvNet, Identity
 from spyrit.misc.sampling import reorder, Permutation_Matrix
 from spyrit.misc.disp import add_colorbar, noaxis
 
@@ -52,10 +54,18 @@ M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
 N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
-net_arch    = 'dc-net'      # ['dc-net','pinv-net']
-net_denoi   = 'unet'        # ['unet', 'cnn']
+mode_sim = True # Reconstruct simulated images in addition to exp
+
+net_arch    = 'lpgd'      # ['dc-net','pinv-net', 'lpgd']
+net_denoi   = 'I'        # ['unet', 'cnn', 'drunet', 'P0', 'I']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
+
+# LPGD Variations 
+log_fidelity = False
+step_estimation = False
+wls = True
+lpgd_iter = 30
 
 # limits for plotting images
 vmin = -1
@@ -63,86 +73,117 @@ vmax = 1
 
 save_root = Path('../../recon/')
 
-# Select methods for reconstruction
-# Pinv
-mode_pinv = False
-# Pinv-UNet
-mode_pinv_unet = False
-model_pinvnet_path = "../../model"    
-name_pinvnet = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
-# DCNet
-mode_dcnet = False
-# DRUNet
-mode_pinvnet_drunet = False
-if mode_pinvnet_drunet:
-    #from spyrit.external.drunet import DRUNet
-    from drunet import DRUNet
-    noise_level = 30
-    model_drunet_path = "../../model"
-    name_drunet = 'drunet_gray.pth'
+# Network paths
+if net_arch == 'pinv-net':
+    model_path = "../../model"    
+    model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
+elif net_arch == 'dc-net':
+    # Load trained DC-Net
+    model_path = '../../model/oe_paper/' 
+    #model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}' # Defined later
+elif net_arch == 'drunet':
+    model__path = "../../model"
+    model_name = 'drunet_gray.pth'
 
-# GD
-mode_gd = True
-if mode_gd:
-    gd_iter = 30
-    name_save_details = f'gd{gd_iter}'
+# Name save
+name_save_details = f'{net_arch}_{net_denoi}'
+if net_arch == 'lpgd':
+    name_save_details = name_save_details + f'_it{lpgd_iter}'
+    if wls:
+        name_save_details = name_save_details + '_wls'
+# ---------------------------------------------------------
+# Reconstruction functions
+def init_denoi(net_denoi):
+    if net_denoi == 'unet':
+        denoi = Unet()
+    elif net_denoi == 'cnn':
+        denoi = ConvNet() 
+    elif net_denoi == 'drunet':
+        from drunet import DRUNet
+        denoi = denoi.to(device)
+        denoi = DRUNet()          
+        denoi.load_state_dict(torch.load(os.path.join(model_path, model_name)), strict=False) 
+        # load_net(os.path.join(model_path, model_name), denoi, device, strict = False)  
+    elif net_denoi == 'P0':
+        from spyrit.core.nnet import ProjectToZero
+        denoi = ProjectToZero()
+    elif net_denoi == 'I':
+        denoi = Identity()
+    return denoi    
 
-# GD Project to Zero
-mode_gd_proj = False
-if mode_gd_proj:
-    gd_proj_iter = 30
-    name_save_details = f'gd_proj{gd_proj_iter}'
+def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None):
+    # Denoiser
+    if net_denoi:
+        denoi = init_denoi(net_denoi)
 
-# GD WSL (normalized by variance)
-mode_gd_wls = False
-if mode_gd_wls:
-    gd_wsl_iter = 30
-    name_save_details = f'gd_wsl{gd_wsl_iter}'
+    # Reconstruction network
+    if net_arch == 'dc-net':
+        model = DCNet(noise, prep, Cov_rec, denoi)
+        if net_denoi:
+           load_net(os.path.join(model_path, model_name), model, device, strict = False)
+    elif net_arch == 'pinv-net':
+        model = PinvNet(noise, prep, denoi)
+    elif net_arch == 'lpgd':
+        model = LearnedPGD(noise, 
+                              prep, 
+                              iter_stop = lpgd_iter, 
+                              wls=wls,
+                              step_estimation=step_estimation,
+                              gt=x_gt)
+    model.eval()    # Mandantory when batchNorm is used
+    model.to(device)
+    return model
 
-# GD WSL Project to Zero
-mode_gd_wls_proj = False
-if mode_gd_wls_proj:
-    gd_wsl_proj_iter = 30
-    name_save_details = f'gd_wsl_proj{gd_wsl_proj_iter}'
+# Reconstruction: set attributes and reconstruct
+def reconstruct(model, y, device, log_fidelity= False, step_estimation = False, wls = False):
+    with torch.no_grad():
+        # Not all models have these attributes
+        if step_estimation:
+            model.step_estimation = step_estimation
+        if log_fidelity:
+            model.log_fidelity = log_fidelity
+        if wls:
+            model.wls = wls
 
-# LPGD unet fix stepsize
-mode_lpgd = False
-if mode_lpgd:
-    lpgd_iter = 5
-    name_save_details = f'lpgd{lpgd_iter}'
+        rec_sim_gpu = model.reconstruct(y.to(device))
+        
+        if log_fidelity:
+            data_fidelity = model.cost
+        else:
+            data_fidelity = None
+        if hasattr(model, 'mse'):
+            mse = model.mse
+        else:
+            mse = None
+        
+        rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
+        rec_sim = rec_sim.reshape(N_rec, N_rec)
+    return rec_sim, data_fidelity, mse
 
-# LPGD diff stepsize
-mode_lpgd_diff = False
-if mode_lpgd_diff:
-    lpgd_iter = 3
-    name_save_details = f'lpgd_diffstep{lpgd_iter}'
-
-
+# ---------------------------------------------------------
 #%% Parameters for simulated images 
-mode_sim = True
+def transform_gray_norm(img_size, crop_type = 'center'): 
+    """ 
+    Args:
+        img_size=int, image size
+    
+    Create torchvision transform for natural images (stl10, imagenet):
+    convert them to grayscale, then to tensor, and normalize between [-1, 1]
+    """
+
+    if crop_type=='center':
+        transforms_resize = [torchvision.transforms.Resize(img_size), 
+                            torchvision.transforms.CenterCrop(img_size)]                           
+
+    transform = torchvision.transforms.Compose(
+        [torchvision.transforms.functional.to_grayscale,
+        *transforms_resize,
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize([0.5], [0.5])])
+    return transform
+
 if mode_sim:
     path_natural_images = '../../images'
-
-    import torchvision
-    def transform_gray_norm(img_size, crop_type = 'center'): 
-        """ 
-        Args:
-            img_size=int, image size
-        
-        Create torchvision transform for natural images (stl10, imagenet):
-        convert them to grayscale, then to tensor, and normalize between [-1, 1]
-        """
-
-        if crop_type=='center':
-            transforms_resize = [torchvision.transforms.Resize(img_size), 
-                                torchvision.transforms.CenterCrop(img_size)]                           
-
-        transform = torchvision.transforms.Compose(
-            [torchvision.transforms.functional.to_grayscale,
-            *transforms_resize,
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize([0.5], [0.5])])
-        return transform
 
     # Create dataset and loader (expects class folder 'images/test/')
     #from spyrit.misc.statistics import transform_gray_norm
@@ -171,6 +212,7 @@ if mode_sim:
     full_path = save_root / (f'sim{img_id}_{N_rec}' + '_gt.pdf')
     fig.savefig(full_path, bbox_inches='tight', dpi=600)
 
+# ---------------------------------------------------------
 #%% covariance matrix and network filnames
 if N_rec==64:
     cov_rec_file= stat_folder_rec/ ('Cov_{}x{}'.format(N_rec, N_rec)+'.npy')
@@ -178,8 +220,7 @@ elif N_rec==128:
     cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy')
     
 #%% Networks
-for M in M_list:
-    
+for M in M_list:    
     if (N_rec == 128) and (M == 4096):
         net_order   = 'rect'
     else:
@@ -187,6 +228,9 @@ for M in M_list:
 
     net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
     
+    if net_arch == 'dc-net':
+        model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
+
     #%% Init and load trained network
     # Covariance in hadamard domain
     Cov_rec = np.load(cov_rec_file)
@@ -201,142 +245,23 @@ for M in M_list:
     elif net_order == 'var':
         Ord_rec = Cov2Var(Cov_rec)
 
-
-    name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}_{net_order}'
-        
+    name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}_{net_order}'        
+    # ---------------------------------------------------------
     # Init network  
     meas = HadamSplit(M, N_rec, Ord_rec)
     noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
     prep  = SplitPoisson(N0, meas)    
-    if mode_dcnet:
-        denoi = Unet()    
-        model = DCNet(noise, prep, Cov_rec, denoi)
-        
-        # Load trained DC-Net
-        net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
-        title = '../../model/oe_paper/' + net_title
-        load_net(title, model, device, strict = False)
-        model.eval()                    # Mandantory when batchNorm is used
 
-        #model.prep.set_expe()
-        model.to(device)
-    
-    if mode_pinv:
-        model_pinv = PinvNet(noise, prep)
-        model_pinv.to(device)        
-        
-    if mode_pinv_unet:
-        denoi_pinv = Unet()
-
-        # Load trained Pinv-Net
-        model_pinv_unet = PinvNet(noise, prep, denoi_pinv)
-        load_net(os.path.join(model_pinvnet_path, name_pinvnet), model_pinv_unet, device, strict = False)
-        model_pinv_unet.eval()      
-        model_pinv_unet.to(device)
-
-    if mode_pinvnet_drunet:
-        # DRUNet(noise_level=5, n_channels=1, nc=[64, 128, 256, 512], nb=4, act_mode='R', downsample_mode='strideconv', upsample_mode='convtranspose')
-        denoi_drunet = DRUNet()#noise_level=noise_level, n_channels=1)
-
-        # Set the device for DRUNet
-        denoi_drunet = denoi_drunet.to(device)
-        # Load pretrained weights
-        denoi_drunet.load_state_dict(torch.load(os.path.join(model_drunet_path, name_drunet)), strict=False)               
-        denoi_drunet.eval()
-
-        # Define DCNet with DRUNet denoising
-        model_pinvnet_drunet = PinvNet(noise, prep, denoi_drunet)
-        model_pinvnet_drunet.to(device)
-
-    if mode_gd:
-        model_gd = LearnedPGD(noise, 
-                              prep, 
-                              iter_stop = gd_iter, 
-                              step_estimation=False,
-                              gt=x_gt)
-        model_gd.eval()
-        model_gd.to(device)
-    if mode_gd_proj:
-        from spyrit.core.nnet import ProjectToZero
-        denoi_proj = ProjectToZero()
-        model_gd_proj = LearnedPGD(noise, 
-                                   prep, 
-                                   iter_stop = gd_proj_iter, 
-                                   wls=False,
-                                   gt=x_gt,
-                                   denoi=denoi_proj)
-        model_gd_proj.eval()
-        model_gd_proj.to(device)
-    if mode_gd_wls:
-        model_gd_wls = LearnedPGD(noise, 
-                                  prep, 
-                                  iter_stop = gd_wsl_iter, 
-                                  wls=True,
-                                  step_estimation=True,
-                                  gt=x_gt)
-        model_gd_wls.eval()
-        model_gd_wls.to(device)
-    if mode_gd_wls_proj:
-        from spyrit.core.nnet import ProjectToZero
-        denoi_proj = ProjectToZero()
-        model_gd_wls_proj = LearnedPGD(noise,
-                                  prep,
-                                  iter_stop = gd_wsl_proj_iter,
-                                  wls=True,
-                                  gt=x_gt,
-                                  denoi=denoi_proj)
-        model_gd_wls_proj.eval()
-        model_gd_wls_proj.to(device)
-    if mode_lpgd:
-        denoi_lpgd = Unet()
-        model_lpgd = LearnedPGD(noise, 
-                                prep,
-                                iter_stop = lpgd_iter,
-                                wls=False,
-                                gt=x_gt,
-                                denoi=denoi_lpgd)      
-        model_lpgd.eval()
-        model_lpgd.to(device)          
-        
+    model = init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi)
+    # ---------------------------------------------------------        
     #%% simulations
     if mode_sim:
         x = x.view(b * c, h * w)
         y = noise(x.to(device))
+    
+    if mode_sim:
         with torch.no_grad():
-            if mode_dcnet:
-                rec_sim_gpu = model.reconstruct(y.to(device))
-            if mode_gd:
-                model_gd.log_fidelity = True
-                model_gd.step_estimation = False
-                rec_sim_gpu = model_gd.reconstruct(y.to(device))
-                data_fidelity = model_gd.cost
-                mse = model_gd.mse       
-            if mode_gd_proj:
-                model_gd_proj.log_fidelity = True
-                rec_sim_gpu = model_gd_proj.reconstruct(y.to(device))
-                data_fidelity = model_gd_proj.cost
-                mse = model_gd_proj.mse
-            if mode_gd_wls:
-                model_gd_wls.log_fidelity = True
-                model_gd_wls.wls = True
-                model_gd_wls.step_estimation = False
-                rec_sim_gpu = model_gd_wls.reconstruct(y.to(device))
-                data_fidelity = model_gd_wls.cost
-                mse = model_gd_wls.mse                
-            if mode_gd_wls_proj:
-                model_gd_wls_proj.log_fidelity = True
-                model_gd_wls_proj.wls = True
-                rec_sim_gpu = model_gd_wls_proj.reconstruct(y.to(device))
-                data_fidelity = model_gd_wls_proj.cost
-                mse = model_gd_wls_proj.mse
-            if mode_lpgd:
-                model_lpgd.log_fidelity = True
-                rec_sim_gpu = model_lpgd.reconstruct(y.to(device))
-                data_fidelity = model_lpgd.cost
-                mse = model_lpgd.mse
-            
-            rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
-            rec_sim = rec_sim.reshape(N_rec, N_rec)
+            rec_sim, data_fidelity, mse = reconstruct(model, y, device, log_fidelity, step_estimation, wls)
         
         fig , axs = plt.subplots(1,1)
         #im = axs.imshow(rec_sim, cmap='gray', vmin=vmin, vmax=vmax)
@@ -348,18 +273,18 @@ for M in M_list:
             name_save = name_save + '_' + name_save_details
         full_path = save_root / (name_save + '.pdf')
         fig.savefig(full_path, bbox_inches='tight', dpi=600)
-
         # 
-        if True:
+        if log_fidelity:
             #np.linalg.norm(x_gt-rec_sim)/np.linalg.norm(x_gt)
-            mse = np.array(mse)/np.linalg.norm(x_gt)
             # Data fidelity
             fig=plt.figure(); plt.plot(data_fidelity, label='GD')
             plt.ylabel('Data fidelity')
             plt.xlabel('Iterations')
             full_path = save_root / (name_save + '_data_fidelity.png')
             fig.savefig(full_path, bbox_inches='tight', dpi=600)
+        if hasattr(model, 'mse'):
             # MSE
+            mse = np.array(mse)/np.linalg.norm(x_gt)
             fig=plt.figure(); plt.plot(mse, label='GD')
             plt.ylabel('NMSE')
             plt.xlabel('Iterations')
@@ -377,6 +302,7 @@ for M in M_list:
                              'tomato_slice_2_zoomx2',
                              'tomato_slice_2_zoomx12',
                              ]
+    
     
     #%% Load data
     for data_file_prefix in data_file_prefix_list:
@@ -413,7 +339,7 @@ for M in M_list:
         with torch.no_grad():
             m = torch.Tensor(meas_slice[:2*M,:]).to(device)
             
-            if mode_dcnet:
+            if True:  # all methods?
                 rec_gpu = model.reconstruct_expe(m)
                 rec = rec_gpu.cpu().detach().numpy().squeeze()
             
@@ -426,53 +352,10 @@ for M in M_list:
                 noaxis(axs)
                 add_colorbar(im, 'bottom')
                 
-                full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + '.pdf')
+                full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.pdf')
                 fig.savefig(full_path, bbox_inches='tight')  
         
-        #%% pseudo inverse
-        if M==4096:
-            if mode_pinv:                    
-                rec_pinv_gpu = model_pinv.reconstruct_expe(m)
-                rec_pinv = rec_pinv_gpu.cpu().detach().numpy().squeeze()
             
-                fig , axs = plt.subplots(1,1)
-                im = axs.imshow(rec_pinv, cmap='gray')
-                noaxis(axs)
-                add_colorbar(im, 'bottom')
-                
-                full_path = save_root / (data_file_prefix + '_' + f'pinv_{N_rec}' + '.pdf')
-                fig.savefig(full_path, bbox_inches='tight', dpi=600)
-
-            #% pseudo inverse + unet   
-            if mode_pinv_unet:
-                with torch.no_grad():            
-                    rec_pinv_unet_gpu = model_pinv_unet.reconstruct_expe(m)
-                    rec_pinv_unet = rec_pinv_unet_gpu.cpu().detach().numpy().squeeze()
-                
-                    fig , axs = plt.subplots(1,1)
-                    im = axs.imshow(rec_pinv_unet, cmap='gray')
-                    noaxis(axs)
-                    add_colorbar(im, 'bottom')
-                    
-                    full_path = save_root / (data_file_prefix + '_' + f'pinv_unet_{N_rec}' + '.pdf')
-                    fig.savefig(full_path, bbox_inches='tight', dpi=600) 
-
-            #% pseudo inverse + drunet
-            if mode_pinvnet_drunet:
-                # Set noise level
-                denoi_drunet.set_noise_level(noise_level)
-                with torch.no_grad():            
-                    rec_pinvnet_drunet_gpu = model_pinvnet_drunet.reconstruct_expe(m)
-                    rec_pinvnet_drunet = rec_pinvnet_drunet_gpu.cpu().detach().numpy().squeeze()
-                
-                    fig , axs = plt.subplots(1,1)
-                    im = axs.imshow(rec_pinvnet_drunet, cmap='gray')
-                    noaxis(axs)
-                    add_colorbar(im, 'bottom')
-                    
-                    full_path = save_root / (data_file_prefix + '_' + f'pinvnet_drunet_n{noise_level}_{N_rec}' + '.pdf')
-                    fig.savefig(full_path, bbox_inches='tight', dpi=600)      
-            
-
+    
             
         
