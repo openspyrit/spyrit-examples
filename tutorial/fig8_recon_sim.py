@@ -57,15 +57,14 @@ stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10
 mode_sim = True # Reconstruct simulated images in addition to exp
 
 net_arch    = 'lpgd'      # ['dc-net','pinv-net', 'lpgd']
-net_denoi   = 'I'        # ['unet', 'cnn', 'drunet', 'P0', 'I']
+net_denoi   = 'unet'        # ['unet', 'cnn', 'drunet', 'P0', 'I']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
 
-# LPGD Variations 
+# Parameters for LPGD
 log_fidelity = False
 step_estimation = False
-wls = True
-lpgd_iter = 30
+wls = False
 
 # limits for plotting images
 vmin = -1
@@ -76,7 +75,8 @@ save_root = Path('../../recon/')
 # Network paths
 if net_arch == 'pinv-net':
     model_path = "../../model"    
-    model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
+    #model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
+    model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07"
 elif net_arch == 'dc-net':
     # Load trained DC-Net
     model_path = '../../model/oe_paper/' 
@@ -84,6 +84,16 @@ elif net_arch == 'dc-net':
 elif net_arch == 'drunet':
     model__path = "../../model"
     model_name = 'drunet_gray.pth'
+elif net_arch == 'lpgd':
+    model_path = "../../model/"
+    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3"
+    #model_name = "lpgd_cnn_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_uit_3"
+
+    # LPGD Variations 
+    log_fidelity = True
+    step_estimation = False
+    wls = False
+    lpgd_iter = 3
 
 # Name save
 name_save_details = f'{net_arch}_{net_denoi}'
@@ -118,18 +128,19 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
 
     # Reconstruction network
     if net_arch == 'dc-net':
-        model = DCNet(noise, prep, Cov_rec, denoi)
-        if net_denoi:
-           load_net(os.path.join(model_path, model_name), model, device, strict = False)
+        model = DCNet(noise, prep, Cov_rec, denoi)        
     elif net_arch == 'pinv-net':
         model = PinvNet(noise, prep, denoi)
     elif net_arch == 'lpgd':
         model = LearnedPGD(noise, 
                               prep, 
+                              denoi,
                               iter_stop = lpgd_iter, 
                               wls=wls,
                               step_estimation=step_estimation,
                               gt=x_gt)
+    if net_denoi:
+        load_net(os.path.join(model_path, model_name), model, device, strict = False)
     model.eval()    # Mandantory when batchNorm is used
     model.to(device)
     return model
