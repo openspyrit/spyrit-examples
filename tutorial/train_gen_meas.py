@@ -89,6 +89,11 @@ def get_prep_operator(opt, meas_op):
         prep_op = DirectPoisson(opt.N0, meas_op)   # "Undo" the NoNoise operator
     return prep_op
 
+def boolean_string(s):
+    if s not in {'False', 'True'}:
+        raise ValueError('Not a valid boolean string')
+    return s == 'True'
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Forward model
@@ -116,7 +121,9 @@ if __name__ == "__main__":
     # Specific models parameters
     parser.add_argument("--unfold_iter",   type=int,   default=3,    help="Number of unrolled iterations")
 #    parser.add_argument("--unfold_step_size",   type=str, default="custom", help="Step size parameter. Default to custom 1/N")
-    parser.add_argument("--unfold_step_grad",   type=bool, default=False, help="Learnable step size")
+    parser.add_argument("--unfold_step_grad", type=boolean_string,   default=False, help="Learnable step size")
+    parser.add_argument("--unfold_step_decay",   type=float, default=1, help="Step size decay")
+    parser.add_argument("--wls",        type=boolean_string,   default=False, help="Weighted least squares")
 
     # Optimisation
     parser.add_argument("--num_epochs", type=int,   default=30,   help="Number of training epochs")
@@ -130,7 +137,7 @@ if __name__ == "__main__":
     
     # Tensorboard
     parser.add_argument("--tb_path",    type=str,   default=False, help="Relative path for Tensorboard experiment tracking logs")
-    parser.add_argument("--tb_prof",    type=bool,   default=False, help="Profiler for code with Tensorboard")
+    parser.add_argument("--tb_prof",    type=str,   default=False, help="Profiler for code with Tensorboard")
 
     opt = parser.parse_args()
     if os.path.exists(opt.model_root) is False:
@@ -267,7 +274,8 @@ if __name__ == "__main__":
 
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
-                     iter_stop=opt.unfold_iter, step_grad=opt.unfold_step_grad)  
+                     iter_stop=opt.unfold_iter, step_grad=opt.unfold_step_grad, step_decay=opt.unfold_step_decay,
+                     wls=opt.wls)  
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
