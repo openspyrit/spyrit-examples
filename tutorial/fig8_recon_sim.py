@@ -17,6 +17,7 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 from pathlib import Path
+import pickle
 # get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
@@ -38,9 +39,6 @@ from spas import read_metadata, spectral_slicing
 
 torch.manual_seed(0)
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(f'Torch device: {device}')
-
 #%% user-defined
 # used for acquisition
 N_acq = 64
@@ -55,13 +53,15 @@ N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 mode_sim = True # Reconstruct simulated images in addition to exp
+mode_sim_crop = True
 
-net_arch    = 'lpgd'      # ['dc-net','pinv-net', 'lpgd']
+net_arch    = 'pinv-net'      # ['dc-net','pinv-net', 'lpgd']
 net_denoi   = 'unet'        # ['unet', 'cnn', 'drunet', 'P0', 'I']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
 
-# Parameters for LPGD
+# Reconstruction parameters
+metrics = True # Compute metrics: MSE
 log_fidelity = False
 step_estimation = False
 wls = False
@@ -73,10 +73,13 @@ vmax = 1
 save_root = Path('../../recon/')
 
 # Network paths
+model_specs = ""
 if net_arch == 'pinv-net':
     model_path = "../../model"    
     #model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
-    model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07"
+    #model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07"
+    model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_cont"
+    model_specs = "_cont15"
 elif net_arch == 'dc-net':
     # Load trained DC-Net
     model_path = '../../model/oe_paper/' 
@@ -85,22 +88,45 @@ elif net_arch == 'drunet':
     model__path = "../../model"
     model_name = 'drunet_gray.pth'
 elif net_arch == 'lpgd':
-    model_path = "../../model/"
-    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3"
+    model_path = "../../model"
+    # cnn epoch 1!!!
     #model_name = "lpgd_cnn_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_uit_3"
+    #
+    # unet it3 
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3"
+    #model_specs = "_15ep"    
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_cont"
+    #model_specs = "_cont15ep"
+    #
+    # unet it6
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6"
+    #
+    # decay
+    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-7"
 
     # LPGD Variations 
     log_fidelity = True
     step_estimation = False
     wls = False
     lpgd_iter = 3
+    step_decay = 0.7 # 1 for no decay
+else:
+    raise ValueError(f'Network architecture {net_arch} not recognized')
 
 # Name save
-name_save_details = f'{net_arch}_{net_denoi}'
+name_save_details = f'{net_arch}_{net_denoi}{model_specs}'
 if net_arch == 'lpgd':
     name_save_details = name_save_details + f'_it{lpgd_iter}'
     if wls:
         name_save_details = name_save_details + '_wls'
+    if step_decay != 1:
+        name_save_details = name_save_details + f'_sdec{step_decay}'
+
+if net_arch == 'dc-net':
+    device = torch.device("cpu")
+else:
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f'Torch device: {device}')
 # ---------------------------------------------------------
 # Reconstruction functions
 def init_denoi(net_denoi):
@@ -138,15 +164,23 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
                               iter_stop = lpgd_iter, 
                               wls=wls,
                               step_estimation=step_estimation,
+                              step_decay=step_decay,
                               gt=x_gt)
-    if net_denoi:
+    if net_denoi != 'I' and net_denoi != 'P0':
         load_net(os.path.join(model_path, model_name), model, device, strict = False)
     model.eval()    # Mandantory when batchNorm is used
     model.to(device)
     return model
 
+def compute_mse(x, x_gt):
+    if isinstance(x, np.ndarray):
+        #torch.linalg.norm(x - x_gt)/ 
+        mse = np.linalg.norm(x - x_gt)
+        mse = np.array(mse)/np.linalg.norm(x_gt)
+    return mse
+
 # Reconstruction: set attributes and reconstruct
-def reconstruct(model, y, device, log_fidelity= False, step_estimation = False, wls = False):
+def reconstruct(model, y, device, log_fidelity= False, step_estimation = False, wls = False, metrics = False):
     with torch.no_grad():
         # Not all models have these attributes
         if step_estimation:
@@ -166,10 +200,21 @@ def reconstruct(model, y, device, log_fidelity= False, step_estimation = False, 
             mse = model.mse
         else:
             mse = None
+
+        # Metrics 
+        if metrics:
+            rec_sim = rec_sim_gpu.cpu().detach().numpy()
+            mse = compute_mse(rec_sim, x_gt)
         
         rec_sim = rec_sim_gpu.cpu().detach().numpy().squeeze()
         rec_sim = rec_sim.reshape(N_rec, N_rec)
     return rec_sim, data_fidelity, mse
+
+def save_metrics(metric, path_save):
+    #path_save = path_save + '_metrics.pkl'
+    with open(path_save, 'wb') as f:
+        pickle.dump(metric, f)
+    print(f'Metrics saved as {os.path.abspath(path_save)}')
 
 # ---------------------------------------------------------
 #%% Parameters for simulated images 
@@ -193,12 +238,32 @@ def transform_gray_norm(img_size, crop_type = 'center'):
         torchvision.transforms.Normalize([0.5], [0.5])])
     return transform
 
+
+def transform_gray_norm_rand_crop(img_size, seed = 0, shuffle = True):
+    
+    torch.manual_seed(seed)  # reproductibility of random crop
+    #
+    transform = torchvision.transforms.Compose(
+        [
+            torchvision.transforms.functional.to_grayscale,
+            torchvision.transforms.RandomCrop(
+                size=(img_size, img_size), pad_if_needed=True, padding_mode="edge"
+            ),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize([0.5], [0.5]),
+        ]
+    )    
+    return transform
+
 if mode_sim:
     path_natural_images = '../../images'
 
     # Create dataset and loader (expects class folder 'images/test/')
     #from spyrit.misc.statistics import transform_gray_norm
-    transform = transform_gray_norm(N_rec)
+    if mode_sim_crop:
+        transform = transform_gray_norm_rand_crop(N_rec)
+    else:
+        transform = transform_gray_norm(N_rec)
     dataset = torchvision.datasets.ImageFolder(root=path_natural_images, transform=transform)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size = 7)
 
@@ -220,7 +285,10 @@ if mode_sim:
     plt.axis('off')
     add_colorbar(im, 'bottom')
 
-    full_path = save_root / (f'sim{img_id}_{N_rec}' + '_gt.pdf')
+    name_save_sim = f'sim{img_id}_{N_rec}_gt'
+    if mode_sim_crop:
+        name_save_sim = name_save_sim + '_crop'
+    full_path = save_root / (name_save_sim + '.pdf')
     fig.savefig(full_path, bbox_inches='tight', dpi=600)
 
 # ---------------------------------------------------------
@@ -256,7 +324,9 @@ for M in M_list:
     elif net_order == 'var':
         Ord_rec = Cov2Var(Cov_rec)
 
-    name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}_{net_order}'        
+    name_save = f'sim{img_id}_{N_rec}_N0_{N0}_M_{M}_{net_order}'      
+    if mode_sim_crop:
+        name_save = name_save + f'_crop'  
     # ---------------------------------------------------------
     # Init network  
     meas = HadamSplit(M, N_rec, Ord_rec)
@@ -272,7 +342,8 @@ for M in M_list:
     
     if mode_sim:
         with torch.no_grad():
-            rec_sim, data_fidelity, mse = reconstruct(model, y, device, log_fidelity, step_estimation, wls)
+            rec_sim, data_fidelity, mse = reconstruct(model, y, device, log_fidelity, 
+                                                      step_estimation, wls, metrics=True)
         
         fig , axs = plt.subplots(1,1)
         #im = axs.imshow(rec_sim, cmap='gray', vmin=vmin, vmax=vmax)
@@ -295,14 +366,21 @@ for M in M_list:
             fig.savefig(full_path, bbox_inches='tight', dpi=600)
         if hasattr(model, 'mse'):
             # MSE
+            mse = model.mse
             mse = np.array(mse)/np.linalg.norm(x_gt)
-            fig=plt.figure(); plt.plot(mse, label='GD')
+            fig=plt.figure(); 
+            plt.plot(mse)
             plt.ylabel('NMSE')
             plt.xlabel('Iterations')
             # yaxis from 0 to 10
             plt.ylim(0,1)
             full_path = save_root / (name_save + '_nmse.png')
             fig.savefig(full_path, bbox_inches='tight', dpi=600)
+
+        if metrics:    
+            print(f'MSE: {mse}')
+            # Save metrics
+            save_metrics(mse, save_root / (name_save + '_metrics.pkl'))
 
 
     #%% Load expe data and unsplit
