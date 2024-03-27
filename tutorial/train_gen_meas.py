@@ -119,6 +119,7 @@ if __name__ == "__main__":
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
     # Specific models parameters
+    parser.add_argument("--x0",         type=int,   default=0,    help="Initial estimate. 0: zero, 1: as given in the reconstruction class")
     parser.add_argument("--unfold_iter",   type=int,   default=3,    help="Number of unrolled iterations")
 #    parser.add_argument("--unfold_step_size",   type=str, default="custom", help="Step size parameter. Default to custom 1/N")
     parser.add_argument("--unfold_step_grad", type=boolean_string,   default=False, help="Learnable step size")
@@ -263,7 +264,11 @@ if __name__ == "__main__":
     elif opt.denoi == 'unet':   # Unet
         denoi = Unet()
     elif opt.denoi == 'cnn-diff':   # Diff CNN per iteration
-        denoi = nn.ModuleList([ConvNet() for _ in range(opt.unfold_iter+1)])
+        if opt.x0 == 0:
+            unfold_iter = opt.unfold_iter
+        else:
+            unfold_iter = opt.unfold_iter + 1
+        denoi = nn.ModuleList([ConvNet() for _ in range(unfold_iter)])
     
     # Global Architecture
     if opt.arch == 'dc-net':        # Denoised Completion Network
