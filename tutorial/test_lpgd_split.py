@@ -20,10 +20,16 @@ stat_root = '../../stat/ILSVRC2012_v10102019/'
 data_root = '../../data/ILSVRC2012_v10102019/'
 #
 arch = 'lpgd' # Network architecture:  'lpgd
-unfold_iter = 2 # Number of UPGD iterations
+unfold_iter = 1 # Number of UPGD iterations
 denoi = 'unet' # Denoiser architecture
+#
+wls = True
+#
+res_learn = True
+#
 num_epochs = 30
 batch_size = 128
+lr = 0.0001
 # Path to previous trained model
 checkpoint_model = ""
 #checkpoint_model = './model/lpgd_unet_stl10_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth' 
@@ -32,7 +38,15 @@ checkpoint_interval = 10     # Interval to save the model
 unfold_step_grad = False
 #
 # Tensorboard logs path
-name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_{arch}_{denoi}_iter{unfold_iter}"
+name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_bs{batch_size}_ep{num_epochs}_{arch}_{denoi}_lr{lr}"
+if arch == 'lpgd':
+    name_run += f"_unfold{unfold_iter}"
+    if unfold_step_grad:
+        name_run += "_stepgrad"
+    if wls:
+        name_run += "_wls"
+    if res_learn:
+        name_run += "_reslearn"
 if checkpoint_model != '':
     name_run += '_cont'
 mode_tb = True
@@ -59,7 +73,12 @@ subprocess.run(['python3', 'train_gen_meas.py', '--meas', meas, '--noise', noise
                 '--unfold_step_grad', str(unfold_step_grad),
                 '--tb_path', tb_path,
                 '--checkpoint_interval', str(checkpoint_interval), 
-                '--checkpoint_model', checkpoint_model])
+                '--checkpoint_model', checkpoint_model,
+                '--wls', str(wls),
+                '--res_learn', str(res_learn),
+                '--lr', str(lr),
+                ],
+                )
 
 # Get name of the current python file
 filename = os.path.basename(__file__)
