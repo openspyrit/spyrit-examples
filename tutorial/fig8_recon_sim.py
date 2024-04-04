@@ -53,10 +53,10 @@ N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 mode_sim = True # Reconstruct simulated images in addition to exp
-mode_sim_crop = True
+mode_sim_crop = False
 
-net_arch    = 'pinv-net'      # ['dc-net','pinv-net', 'lpgd']
-net_denoi   = 'unet'        # ['unet', 'cnn', 'drunet', 'P0', 'I']
+net_arch    = 'lpgd'      # ['dc-net','pinv-net', 'lpgd']
+net_denoi   = 'cnn'        # ['unet', 'cnn', 'cnn-diff', 'drunet', 'P0', 'I']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
 
@@ -65,6 +65,7 @@ metrics = True # Compute metrics: MSE
 log_fidelity = False
 step_estimation = False
 wls = False
+step_grad = False
 
 # limits for plotting images
 vmin = -1
@@ -89,9 +90,16 @@ elif net_arch == 'drunet':
     model_name = 'drunet_gray.pth'
 elif net_arch == 'lpgd':
     model_path = "../../model"
-    # cnn epoch 1!!!
-    #model_name = "lpgd_cnn_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_uit_3"
+    # cnn 1 it
+    model_name = "lpgd_cnn_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_1"
+    model_specs = ""
+    # cnn 
+    #model_name = "lpgd_cnn_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_uit_3" epoch 1!!!
+    #model_name = "lpgd_cnn-diff_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3"
     #
+    # unet 1it
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_1"
+    #model_specs = ""
     # unet it3 
     #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3"
     #model_specs = "_15ep"    
@@ -102,14 +110,21 @@ elif net_arch == 'lpgd':
     #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6"
     #
     # decay
-    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-7"
+    # 3 it
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-7"
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9"
+    # 6 it
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sdec0-9"
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sdec0-95"
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sgrad_sdec0-9_cont"
 
     # LPGD Variations 
     log_fidelity = True
     step_estimation = False
     wls = False
-    lpgd_iter = 3
-    step_decay = 0.7 # 1 for no decay
+    lpgd_iter = 1
+    step_decay = 1 # 1 for no decay
+    step_grad = False
 else:
     raise ValueError(f'Network architecture {net_arch} not recognized')
 
@@ -120,7 +135,9 @@ if net_arch == 'lpgd':
     if wls:
         name_save_details = name_save_details + '_wls'
     if step_decay != 1:
-        name_save_details = name_save_details + f'_sdec{step_decay}'
+        name_save_details = name_save_details + f'_sdec{step_decay}'.replace('.','')
+    if step_grad:
+        name_save_details = name_save_details + '_sgrad'
 
 if net_arch == 'dc-net':
     device = torch.device("cpu")
@@ -134,6 +151,9 @@ def init_denoi(net_denoi):
         denoi = Unet()
     elif net_denoi == 'cnn':
         denoi = ConvNet() 
+    elif net_denoi == 'cnn-diff':
+        import torch.nn as nn 
+        denoi = nn.ModuleList([ConvNet() for _ in range(lpgd_iter)])
     elif net_denoi == 'drunet':
         from drunet import DRUNet
         denoi = denoi.to(device)
@@ -165,7 +185,8 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
                               wls=wls,
                               step_estimation=step_estimation,
                               step_decay=step_decay,
-                              gt=x_gt)
+                              gt=x_gt,
+                              step_grad=step_grad)
     if net_denoi != 'I' and net_denoi != 'P0':
         load_net(os.path.join(model_path, model_name), model, device, strict = False)
     model.eval()    # Mandantory when batchNorm is used
