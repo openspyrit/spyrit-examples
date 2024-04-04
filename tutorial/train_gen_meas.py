@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net', 'upgd")
     parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
     parser.add_argument("--device",     type=str,   default="", help="Choose among 'cuda','cpu'")
+    parser.add_argument("--res_learn",  type=boolean_string, default=False, help="Residual learning")
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
     # Specific models parameters
@@ -280,7 +281,7 @@ if __name__ == "__main__":
     elif opt.arch == 'lpgd':        # Learned Proximal Gradient Descent
         model = LearnedPGD(noise_op, prep_op, denoi,
                      iter_stop=opt.unfold_iter, step_grad=opt.unfold_step_grad, step_decay=opt.unfold_step_decay,
-                     wls=opt.wls)  
+                     wls=opt.wls, res_learn=opt.res_learn)  
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
