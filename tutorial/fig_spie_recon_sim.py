@@ -61,7 +61,7 @@ net_data    = 'imagenet'    # 'imagenet'
 bs = 256
 
 # Noise level for drunet
-noise_level = 30
+noise_level = 25
 
 # Reconstruction parameters
 metrics = False # Compute metrics: MSE
@@ -101,13 +101,15 @@ elif net_arch == 'lpgd':
     model_path = "../../model"
     # decay
     # 3 it
-    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9"
+    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9"
+    # 6 it (run twice with gradient step estimation)
+    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sgrad_sdec0-9_cont"
 
     # LPGD Variations 
     log_fidelity = False
     step_estimation = False
     wls = False
-    lpgd_iter = 3
+    lpgd_iter = 6
     step_decay = 0.9 # 1 for no decay
     step_grad = False
 else:
@@ -157,10 +159,10 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
     # Denoiser
     if net_denoi:
         denoi = init_denoi(net_denoi)
-
+    
     # Reconstruction network
     if net_arch == 'dc-net':
-        model = DCNet(noise, prep, Cov_rec, denoi)        
+        model = DCNet(noise, prep, sigma=torch.tensor(Cov_rec), denoi=denoi)        
     elif net_arch == 'pinv-net':
         model = PinvNet(noise, prep, denoi)
     elif net_arch == 'lpgd':
