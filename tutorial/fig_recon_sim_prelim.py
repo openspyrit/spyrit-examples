@@ -53,15 +53,16 @@ N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 mode_sim = True # Reconstruct simulated images in addition to exp
+mode_exp = True
 mode_sim_crop = False
 
-net_arch    = 'dc-net'      # ['dc-net','pinv-net', 'lpgd']
-net_denoi   = 'unet'        # ['unet', 'cnn', 'cnn-diff', 'drunet', 'P0', 'I']
+net_arch    = 'pinv-net'      # ['dc-net','pinv-net', 'lpgd']
+net_denoi   = 'drunet'        # ['unet', 'cnn', 'cnn-diff', 'drunet', 'P0', 'I']
 net_data    = 'imagenet'    # 'imagenet'
 bs = 256
 
 # Noise level for drunet
-noise_level = 25
+noise_level = 40
 
 # Reconstruction parameters
 metrics = False # Compute metrics: MSE
@@ -128,6 +129,7 @@ if net_arch == 'lpgd':
         name_save_details = name_save_details + f'_sdec{step_decay}'.replace('.','')
     if step_grad:
         name_save_details = name_save_details + '_sgrad'
+    
 
 if net_arch == 'dc-net':
     device = torch.device("cpu")
@@ -365,8 +367,8 @@ for M in M_list:
     # noise error for drunet
     if net_denoi == 'drunet':
         denoi.set_noise_level(noise_level)
-        name_save = name_save + f'_noiselevel_{noise_level}'
-    # ---------------------------------------------------------        
+        name_save_details = name_save_details + f'_nlevel_{noise_level}'
+    ###########################################################################       
     #%% simulations
     if mode_sim:
         x = x.view(b * c, h * w)
@@ -424,69 +426,71 @@ for M in M_list:
                 # Save metrics
                 save_metrics(mse, save_root / (name_save_this + '_metrics.pkl'))
 
+    ###########################################################################
     #%% Load expe data and unsplit
-    data_root = Path('../../data/')
+    if mode_exp:
+        data_root = Path('../../data/')
 
-    data_file_prefix_list = ['zoom_x12_usaf_group5',
-                             'zoom_x12_starsector',
-                             'tomato_slice_2_zoomx2',
-                             'tomato_slice_2_zoomx12',
-                             ]
-    
-    
-    #%% Load data
-    for data_file_prefix in data_file_prefix_list:
+        data_file_prefix_list = ['zoom_x12_usaf_group5',
+                                'zoom_x12_starsector',
+                                'tomato_slice_2_zoomx2',
+                                'tomato_slice_2_zoomx12',
+                                ]
         
-        print(Path(data_file_prefix) / data_file_prefix)
         
-        # meta data
-        meta_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_metadata.json')
-        _, acquisition_parameters, _, _ = read_metadata(meta_path)
-        wavelengths = acquisition_parameters.wavelengths 
-        
-        # data
-        full_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_spectraldata.npz')
-        raw = np.load(full_path)
-        meas= raw['spectral_data']
-        
-        # reorder measurements to match with the reconstruction order
-        Ord_acq = -np.array(acquisition_parameters.patterns)[::2]//2   # pattern order
-        Ord_acq = np.reshape(Ord_acq, (N_acq,N_acq))                   # sampling map
-        
-        Perm_rec = Permutation_Matrix(Ord_rec)    # from natural order to reconstrcution order 
-        Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
-        meas = reorder(meas, Perm_acq, Perm_rec)
-        
-        #%% Reconstruct a single spectral slice from full reconstruction
-        wav_min = 579 
-        wav_max = 579.1
-        wav_num = 1
-        meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
-                                                        wavelengths, 
-                                                        wav_min, 
-                                                        wav_max, 
-                                                        wav_num)
-        with torch.no_grad():
-            m = torch.Tensor(meas_slice[:2*M,:]).to(device)
+        #%% Load data
+        for data_file_prefix in data_file_prefix_list:
             
-            if True:  # all methods?
-                rec_gpu = model.reconstruct_expe(m)
-                rec = rec_gpu.cpu().detach().numpy().squeeze()
+            print(Path(data_file_prefix) / data_file_prefix)
             
-                #%% Plot or save 
-                # rotate
-                #rec = np.rot90(rec,2)
+            # meta data
+            meta_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_metadata.json')
+            _, acquisition_parameters, _, _ = read_metadata(meta_path)
+            wavelengths = acquisition_parameters.wavelengths 
+            
+            # data
+            full_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_spectraldata.npz')
+            raw = np.load(full_path)
+            meas= raw['spectral_data']
+            
+            # reorder measurements to match with the reconstruction order
+            Ord_acq = -np.array(acquisition_parameters.patterns)[::2]//2   # pattern order
+            Ord_acq = np.reshape(Ord_acq, (N_acq,N_acq))                   # sampling map
+            
+            Perm_rec = Permutation_Matrix(Ord_rec)    # from natural order to reconstrcution order 
+            Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
+            meas = reorder(meas, Perm_acq, Perm_rec)
+            
+            #%% Reconstruct a single spectral slice from full reconstruction
+            wav_min = 579 
+            wav_max = 579.1
+            wav_num = 1
+            meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
+                                                            wavelengths, 
+                                                            wav_min, 
+                                                            wav_max, 
+                                                            wav_num)
+            with torch.no_grad():
+                m = torch.Tensor(meas_slice[:2*M,:]).to(device)
                 
-                fig , axs = plt.subplots(1,1)
-                im = axs.imshow(rec, cmap='gray')
-                noaxis(axs)
-                if colorbar:
-                    add_colorbar(im, 'bottom')
+                if True:  # all methods?
+                    rec_gpu = model.reconstruct_expe(m)
+                    rec = rec_gpu.cpu().detach().numpy().squeeze()
                 
-                full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
-                fig.savefig(full_path, bbox_inches='tight')  
-        
+                    #%% Plot or save 
+                    # rotate
+                    #rec = np.rot90(rec,2)
+                    
+                    fig , axs = plt.subplots(1,1)
+                    im = axs.imshow(rec, cmap='gray')
+                    noaxis(axs)
+                    if colorbar:
+                        add_colorbar(im, 'bottom')
+                    
+                    full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
+                    fig.savefig(full_path, bbox_inches='tight')  
             
-    
-            
+                
         
+                
+            
