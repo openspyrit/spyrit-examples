@@ -53,7 +53,7 @@ N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 mode_sim = True # Reconstruct simulated images in addition to exp
-mode_exp = False
+mode_exp = True
 mode_sim_crop = False
 
 # Reconstruction parameters
@@ -321,8 +321,8 @@ for model_specs in models_specs:
     # LPGD
     lpgd_iter = other_specs.get('lpgd_iter', None)
     step_decay = other_specs.get('step_decay', None)
-    wls = other_specs.get('wls', None)
-    step_grad = other_specs.get('step_grad', None)
+    wls = other_specs.get('wls', False)
+    step_grad = other_specs.get('step_grad', False)
     # DRUNet
     noise_level = other_specs.get('noise_level', None)
 
