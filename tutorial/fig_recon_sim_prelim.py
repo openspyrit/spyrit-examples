@@ -53,22 +53,14 @@ N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 mode_sim = True # Reconstruct simulated images in addition to exp
-mode_exp = True
+mode_exp = False
 mode_sim_crop = False
-
-net_arch    = 'pinv-net'      # ['dc-net','pinv-net', 'lpgd']
-net_denoi   = 'drunet'        # ['unet', 'cnn', 'cnn-diff', 'drunet', 'P0', 'I']
-net_data    = 'imagenet'    # 'imagenet'
-bs = 256
-
-# Noise level for drunet
-noise_level = 40
 
 # Reconstruction parameters
 metrics = False # Compute metrics: MSE
 log_fidelity = False
 step_estimation = False
-wls = False
+#wls = False
 step_grad = False
 
 # limits for plotting images
@@ -86,59 +78,71 @@ path_natural_images = '../../../../Nextcloud/spyrit_slides/spie/figures/target/'
 # Select image
 img_id = None # None: all images; 0: first image
 
-# Network paths
-model_specs = ""
-if net_arch == 'pinv-net':
-    model_path = "../../model"        
-    if net_denoi == 'drunet':
-        model_name = 'drunet_gray.pth'
-    else:
-        model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07'
-elif net_arch == 'dc-net':
-    # Load trained DC-Net
-    model_path = '../../model/oe_paper/' 
-    #model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}' # Defined later
-elif net_arch == 'lpgd':
-    model_path = "../../model"
-    # unet 1it
-    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_1"
+net_data    = 'imagenet'    # 'imagenet'
 
-    # decay
-    # 3 it
-    model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9"
-    # 6 it (run twice with gradient step estimation)
-    #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sgrad_sdec0-9_cont"
+bs = 256
 
-    # LPGD Variations 
-    log_fidelity = False
-    step_estimation = False
-    wls = False
-    lpgd_iter = 3
-    step_decay = 0.9 # 1 for no decay
-    step_grad = False
-else:
-    raise ValueError(f'Network architecture {net_arch} not recognized')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Name save
-name_save_details = f'{net_arch}_{net_denoi}{model_specs}'
-if net_arch == 'lpgd':
-    name_save_details = name_save_details + f'_it{lpgd_iter}'
-    if wls:
-        name_save_details = name_save_details + '_wls'
-    if step_decay != 1:
-        name_save_details = name_save_details + f'_sdec{step_decay}'.replace('.','')
-    if step_grad:
-        name_save_details = name_save_details + '_sgrad'
-    
-
-if net_arch == 'dc-net':
-    device = torch.device("cpu")
-else:
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(f'Torch device: {device}')
 # ---------------------------------------------------------
+# Models
+# (net_arch, net_denoi, other_specs). 
+# lpgd: other_specs=(lpgd_iter, step_decay, wls)
+# drunet: other_specs=(noise_level)
+models_specs = [ 
+                # DC-Net
+                {   'net_arch':'dc-net',   
+                    'net_denoi': 'unet', 
+                    'other_specs': {}, 
+                    'model_path': '../../model/oe_paper/',
+                    'model_name': '', # Taken from the data specifications
+                },
+                # Pinv-Net: previously used, now lpgd 1 iter
+                #{   'net_arch':'pinv-net', 
+                #    'net_denoi': 'unet', 
+                #    'other_specs': {}, 
+                #    'model_path': '../../model/', 
+                #    'model_name': 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07',
+                #},
+                # LPGD 1 it: Pinv
+                {   'net_arch':'lpgd',     
+                    'net_denoi': 'I',    
+                    'other_specs': {'lpgd_iter': 1, 'step_decay': 1,    'wls': False}, 
+                    'model_path': None,
+                    'model_name': None,
+                },
+                # LPGD 1 it: GD P0
+                #{'net_arch':'lpgd',     'net_denoi': 'P0',   'other_specs': None},
+                # LPGD 1 it Unet : Pinv-net
+                {   'net_arch':'lpgd',     
+                    'net_denoi': 'unet', 
+                    'other_specs': {'lpgd_iter': 1, 'step_decay': 1,    'wls': False},
+                    'model_path': '../../model/',
+                    'model_name': 'lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_1',
+                },
+                # LPGD 3 it Unet  decay
+                {   'net_arch':'lpgd',     
+                    'net_denoi': 'unet', 
+                    'other_specs': {'lpgd_iter': 3, 'step_decay': 0.9,  'wls': False},
+                    'model_path': '../../model/',
+                    'model_name': 'lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9',
+                },
+                # 6 it (run twice with gradient step estimation)
+                #model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_15_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_6_sgrad_sdec0-9_cont"
+                # DRUNet
+                {   'net_arch':'pinv-net', 
+                    'net_denoi':'drunet', 
+                    'other_specs': {'noise_level': 40},
+                    'model_path': '../../model/',
+                    'model_name': 'drunet_gray.pth',
+                },                
+                ]
+
+models_specs = models_specs[1:]
+
+######################################################
 # Reconstruction functions
-def init_denoi(net_denoi):
+def init_denoi(net_denoi, model_path = None, model_name = None, lpgd_iter = None,):
     if net_denoi == 'unet':
         denoi = Unet()
     elif net_denoi == 'cnn':
@@ -160,10 +164,12 @@ def init_denoi(net_denoi):
         denoi = Identity()
     return denoi    
 
-def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None):
+def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None, 
+                                model_path = None, model_name = None,
+                                lpgd_iter = None, step_decay = None, wls = False, step_grad = False):
     # Denoiser
     if net_denoi:
-        denoi = init_denoi(net_denoi)
+        denoi = init_denoi(net_denoi, model_path, model_name, lpgd_iter)
     
     # Reconstruction network
     if net_arch == 'dc-net':
@@ -230,6 +236,40 @@ def save_metrics(metric, path_save):
         pickle.dump(metric, f)
     print(f'Metrics saved as {os.path.abspath(path_save)}')
 
+def plot_data(data, ylabel=None, xlabel=None, path_save = None, ylim=None):
+    fig=plt.figure(); plt.plot(data)
+    if ylabel:
+        plt.ylabel(ylabel)
+    if xlabel:
+        plt.xlabel(xlabel)
+    if ylim:
+        plt.ylim(ylim)
+    if path_save:
+        fig.savefig(full_path, bbox_inches='tight', dpi=600)                
+
+def imshow_specs(x, vmin=None, vmax=None, colorbar=False, path_save=None):
+    if vmin is not None:
+        im = plt.imshow(x, cmap='gray', vmin=vmin, vmax=vmax)
+    else: 
+        im = plt.imshow(x, cmap='gray')
+    plt.axis('off')
+    if colorbar:
+        add_colorbar(im, 'bottom')
+    if path_save:
+        plt.savefig(path_save, bbox_inches='tight', dpi=600)
+
+# Sampling order
+def sampling_order(N_rec, M, net_order):
+    if net_order == 'rect':
+        Ord_rec = np.ones((N_rec, N_rec))
+        n_sub = math.ceil(M**0.5)
+        Ord_rec[:,n_sub:] = 0
+        Ord_rec[n_sub:,:] = 0
+        
+    elif net_order == 'var':
+        Ord_rec = Cov2Var(Cov_rec)
+    return Ord_rec
+
 # ---------------------------------------------------------
 #%% Parameters for simulated images 
 def transform_gray_norm(img_size, crop_type = 'center'): 
@@ -269,228 +309,221 @@ def transform_gray_norm_rand_crop(img_size, seed = 0, shuffle = True):
     )    
     return transform
 
-if mode_sim:
-    # Create dataset and loader (expects class folder 'images/test/')
-    #from spyrit.misc.statistics import transform_gray_norm
-    if mode_sim_crop:
-        transform = transform_gray_norm_rand_crop(N_rec)
-    else:
-        transform = transform_gray_norm(N_rec)
+######################################################
+# Loop over models
+for model_specs in models_specs:
+    # Model specifications
+    net_arch = model_specs['net_arch']
+    net_denoi = model_specs['net_denoi']
+    model_path = model_specs['model_path']
+    model_name = model_specs['model_name']
+    other_specs = model_specs['other_specs']
+    # LPGD
+    lpgd_iter = other_specs.get('lpgd_iter', None)
+    step_decay = other_specs.get('step_decay', None)
+    wls = other_specs.get('wls', None)
+    step_grad = other_specs.get('step_grad', None)
+    # DRUNet
+    noise_level = other_specs.get('noise_level', None)
 
-    # Check if the directory exists
-    if not os.path.isdir(path_natural_images):
-        print(f"Directory does not exist: {path_natural_images}")
-    dataset = torchvision.datasets.ImageFolder(root=path_natural_images, transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size = 7)
+    # Clear model to save memory
+    model, denoi = None, None 
 
-    x, _ = next(iter(dataloader))
-    print(f'Shape of input images: {x.shape}')
+    # Name save
+    name_save_details = f'{net_arch}_{net_denoi}'
+    if net_arch == 'lpgd':
+        name_save_details = name_save_details + f'_it{lpgd_iter}'
+        if wls:
+            name_save_details = name_save_details + '_wls'
+        if step_decay != 1:
+            name_save_details = name_save_details + f'_sdec{step_decay}'.replace('.','')
+        if step_grad:
+            name_save_details = name_save_details + '_sgrad'        
 
-    # Select image
-    if img_id is not None:
-        x = x[img_id:img_id+1,:,:,:]
-    x = x.detach().clone()
-    b,c,h,w = x.shape
-    x_gt = np.copy(x)
-
-    # plot
-    for i in range(b):
-        x_plot = x[i].view(-1,h,h).cpu().numpy() 
-        fig = plt.figure(figsize=(7,7))
-        if vmin is not None:
-            if i == 0:
-                im = plt.imshow(x_plot[0,:,:], cmap='gray', vmin=-1, vmax=0.4)
-            else:
-                im = plt.imshow(x_plot[0,:,:], cmap='gray', vmin=vmin, vmax=vmax)
-        else:
-            im = plt.imshow(x_plot[0,:,:], cmap='gray')
-        plt.axis('off')
-        if colorbar:
-          add_colorbar(im, 'bottom')
-
-        name_save_sim = f'sim{img_id}_{N_rec}_gt'
-        if mode_sim_crop:
-            name_save_sim = name_save_sim + '_crop'
-        if b > 1:
-            name_save_sim = name_save_sim + f'_{i}'
-        full_path = save_root / (name_save_sim + '.png')
-        fig.savefig(full_path, bbox_inches='tight', dpi=600)
-
-# ---------------------------------------------------------
-#%% covariance matrix and network filnames
-if N_rec==64:
-    cov_rec_file= stat_folder_rec/ ('Cov_{}x{}'.format(N_rec, N_rec)+'.npy')
-elif N_rec==128:
-    cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy')
-    
-#%% Networks
-for M in M_list:    
-    if (N_rec == 128) and (M == 4096):
-        net_order   = 'rect'
-    else:
-        net_order   = 'var'
-
-    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
-    
-    if net_arch == 'dc-net':
-        model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
-
-    #%% Init and load trained network
-    # Covariance in hadamard domain
-    Cov_rec = np.load(cov_rec_file)
-    
-    # Sampling order
-    if net_order == 'rect':
-        Ord_rec = np.ones((N_rec, N_rec))
-        n_sub = math.ceil(M**0.5)
-        Ord_rec[:,n_sub:] = 0
-        Ord_rec[n_sub:,:] = 0
-        
-    elif net_order == 'var':
-        Ord_rec = Cov2Var(Cov_rec)
-
-    if img_id is not None:
-        name_save = f'sim{img_id}'
-    else:
-        name_save = 'sim'
-    name_save = name_save + f'_{N_rec}_N0_{N0}_M_{M}_{net_order}'      
-    if mode_sim_crop:
-        name_save = name_save + f'_crop'  
     # ---------------------------------------------------------
-    # Init network  
-    meas = HadamSplit(M, N_rec, Ord_rec)
-    noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
-    prep  = SplitPoisson(N0, meas)    
-
-    model, denoi = init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi)
-
-    # noise error for drunet
-    if net_denoi == 'drunet':
-        denoi.set_noise_level(noise_level)
-        name_save_details = name_save_details + f'_nlevel_{noise_level}'
-    ###########################################################################       
-    #%% simulations
+    #%% Simulated images
     if mode_sim:
-        x = x.view(b * c, h * w)
-        y = noise(x.to(device))
-    
-    if mode_sim:
-        with torch.no_grad():
-            rec_sim, data_fidelity, mse = reconstruct(model, y, device, log_fidelity, 
-                                                      step_estimation, wls, metrics=metrics)
-        if 'name_save_details' in globals():
-            name_save = name_save + '_' + name_save_details
-        
-        for i in range(b):                
-            fig , axs = plt.subplots(1,1)
-            if vmin is None:
-                im = axs.imshow(rec_sim[i], cmap='gray')
-            else:
-                if i == 0:
-                    im = axs.imshow(rec_sim[i], cmap='gray', vmin=-1, vmax=0.4)
-                else:
-                    im = axs.imshow(rec_sim[i], cmap='gray', vmin=vmin, vmax=vmax)
+        # Create dataset and loader (expects class folder 'images/test/')
+        #from spyrit.misc.statistics import transform_gray_norm
+        if mode_sim_crop:
+            transform = transform_gray_norm_rand_crop(N_rec)
+        else:
+            transform = transform_gray_norm(N_rec)
 
-            noaxis(axs)
-            if colorbar:
-                add_colorbar(im, 'bottom')
+        # Check if the directory exists
+        if not os.path.isdir(path_natural_images):
+            print(f"Directory does not exist: {path_natural_images}")
+        dataset = torchvision.datasets.ImageFolder(root=path_natural_images, transform=transform)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size = 7)
 
+        x, _ = next(iter(dataloader))
+        print(f'Shape of input images: {x.shape}')
+
+        # Select image
+        if img_id is not None:
+            x = x[img_id:img_id+1,:,:,:]
+        x = x.detach().clone()
+        b,c,h,w = x.shape
+        x_gt = np.copy(x)
+
+        # plot
+        for i in range(b):
+            x_plot = x[i].view(-1,h,h).cpu().numpy() 
             if b > 1:
-                name_save_this = name_save + f'_{i}'
-            full_path = save_root / (name_save_this + '.png')
-            fig.savefig(full_path, bbox_inches='tight', dpi=600)
-            # 
-            if metrics:
-                if log_fidelity:
-                    #np.linalg.norm(x_gt-rec_sim)/np.linalg.norm(x_gt)
-                    # Data fidelity
-                    fig=plt.figure(); plt.plot(data_fidelity, label='GD')
-                    plt.ylabel('Data fidelity')
-                    plt.xlabel('Iterations')
-                    full_path = save_root / (name_save_this + '_data_fidelity.png')
-                    fig.savefig(full_path, bbox_inches='tight', dpi=600)
-                if hasattr(model, 'mse'):
-                    # MSE
-                    mse = model.mse
-                    mse = np.array(mse)/np.linalg.norm(x_gt)
-                    fig=plt.figure(); 
-                    plt.plot(mse)
-                    plt.ylabel('NMSE')
-                    plt.xlabel('Iterations')
-                    # yaxis from 0 to 10
-                    plt.ylim(0,1)
-                    full_path = save_root / (name_save_this + '_nmse.png')
-                    fig.savefig(full_path, bbox_inches='tight', dpi=600)
+                name_save_sim = f'sim{i}_{N_rec}_gt'
+            else:
+                name_save_sim = f'sim_{N_rec}_gt'
+            if mode_sim_crop:
+                name_save_sim = name_save_sim + '_crop'
+            full_path = save_root / (name_save_sim + '.png')
 
-                print(f'MSE: {mse}')
-                # Save metrics
-                save_metrics(mse, save_root / (name_save_this + '_metrics.pkl'))
+            if i == 0:
+                imshow_specs(x_plot[0,:,:], vmin=-1, vmax=0.4, colorbar=colorbar, path_save=full_path)
+            else:
+                imshow_specs(x_plot[0,:,:], vmin=vmin, vmax=vmax, colorbar=colorbar, path_save=full_path)
 
-    ###########################################################################
-    #%% Load expe data and unsplit
-    if mode_exp:
-        data_root = Path('../../data/')
-
-        data_file_prefix_list = ['zoom_x12_usaf_group5',
-                                'zoom_x12_starsector',
-                                'tomato_slice_2_zoomx2',
-                                'tomato_slice_2_zoomx12',
-                                ]
+    # ---------------------------------------------------------
+    #%% covariance matrix and network filnames
+    if N_rec==64:
+        cov_rec_file= stat_folder_rec/ ('Cov_{}x{}'.format(N_rec, N_rec)+'.npy')
+    elif N_rec==128:
+        cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy')
         
+    #%% Networks
+    for M in M_list:    
+        if (N_rec == 128) and (M == 4096):
+            net_order   = 'rect'
+        else:
+            net_order   = 'var'
+
+        net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
         
-        #%% Load data
-        for data_file_prefix in data_file_prefix_list:
-            
-            print(Path(data_file_prefix) / data_file_prefix)
-            
-            # meta data
-            meta_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_metadata.json')
-            _, acquisition_parameters, _, _ = read_metadata(meta_path)
-            wavelengths = acquisition_parameters.wavelengths 
-            
-            # data
-            full_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_spectraldata.npz')
-            raw = np.load(full_path)
-            meas= raw['spectral_data']
-            
-            # reorder measurements to match with the reconstruction order
-            Ord_acq = -np.array(acquisition_parameters.patterns)[::2]//2   # pattern order
-            Ord_acq = np.reshape(Ord_acq, (N_acq,N_acq))                   # sampling map
-            
-            Perm_rec = Permutation_Matrix(Ord_rec)    # from natural order to reconstrcution order 
-            Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
-            meas = reorder(meas, Perm_acq, Perm_rec)
-            
-            #%% Reconstruct a single spectral slice from full reconstruction
-            wav_min = 579 
-            wav_max = 579.1
-            wav_num = 1
-            meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
-                                                            wavelengths, 
-                                                            wav_min, 
-                                                            wav_max, 
-                                                            wav_num)
+        if net_arch == 'dc-net':
+            model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
+
+        #%% Init and load trained network
+        # Covariance in hadamard domain
+        Cov_rec = np.load(cov_rec_file)
+        
+        # Sampling order
+        Ord_rec = sampling_order(N_rec, M, net_order)
+
+        if img_id is not None:
+            name_save = f'sim{img_id}'
+        else:
+            name_save = 'sim'
+        name_save = name_save + f'_{N_rec}_N0_{N0}_M_{M}_{net_order}'      
+        if mode_sim_crop:
+            name_save = name_save + f'_crop'  
+        # ---------------------------------------------------------
+        # Init network  
+        meas = HadamSplit(M, N_rec, Ord_rec)
+        noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
+        prep  = SplitPoisson(N0, meas)    
+
+        model, denoi = init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi,
+                                                    model_path, model_name, lpgd_iter, step_decay, wls, step_grad)
+
+        # noise error for drunet
+        if net_denoi == 'drunet':
+            denoi.set_noise_level(noise_level)
+            name_save_details = name_save_details + f'_nlevel_{noise_level}'
+        ###########################################################################       
+        #%% simulations
+        if mode_sim:
+            x = x.view(b * c, h * w)
+            y = noise(x.to(device))
+        
+        if mode_sim:
             with torch.no_grad():
-                m = torch.Tensor(meas_slice[:2*M,:]).to(device)
-                
-                if True:  # all methods?
-                    rec_gpu = model.reconstruct_expe(m)
-                    rec = rec_gpu.cpu().detach().numpy().squeeze()
-                
-                    #%% Plot or save 
-                    # rotate
-                    #rec = np.rot90(rec,2)
-                    
-                    fig , axs = plt.subplots(1,1)
-                    im = axs.imshow(rec, cmap='gray')
-                    noaxis(axs)
-                    if colorbar:
-                        add_colorbar(im, 'bottom')
-                    
-                    full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
-                    fig.savefig(full_path, bbox_inches='tight')  
+                rec_sim, data_fidelity, mse = reconstruct(model, y, device, log_fidelity, 
+                                                        step_estimation, wls, metrics=metrics)
+            if 'name_save_details' in globals():
+                name_save = name_save + '_' + name_save_details
             
-                
-        
-                
+            for i in range(b):                
+                if b > 1:
+                    name_save_this = name_save.replace('sim', f'sim{i}')
+                full_path = save_root / (name_save_this + '.png')
+                if i == 0:
+                    imshow_specs(rec_sim[i], vmin=-1, vmax=0.4, colorbar=colorbar, path_save=full_path)
+                else:
+                    imshow_specs(rec_sim[i], vmin=vmin, vmax=vmax, colorbar=colorbar, path_save=full_path)
+                # 
+                if metrics:
+                    if log_fidelity:
+                        # Data fidelity
+                        full_path = save_root / (name_save_this + '_data_fidelity.png')
+                        plot_data(data_fidelity, label='GD', path_save=full_path)
+
+                    if hasattr(model, 'mse'):
+                        # MSE
+                        #np.linalg.norm(x_gt-rec_sim)/np.linalg.norm(x_gt)
+                        mse = model.mse
+                        mse = np.array(mse)/np.linalg.norm(x_gt)
+                        full_path = save_root / (name_save_this + '_nmse.png')
+                        plot_data(mse, ylabel='NMSE', xlabel='Iterations', path_save=full_path)
+
+                    print(f'MSE: {mse}')
+                    # Save metrics
+                    save_metrics(mse, save_root / (name_save_this + '_metrics.pkl'))
+
+        ###########################################################################
+        #%% Load expe data and unsplit
+        if mode_exp:
+            data_root = Path('../../data/')
+
+            data_file_prefix_list = ['zoom_x12_usaf_group5',
+                                    'zoom_x12_starsector',
+                                    'tomato_slice_2_zoomx2',
+                                    'tomato_slice_2_zoomx12',
+                                    ]
             
+            
+            #%% Load data
+            for data_file_prefix in data_file_prefix_list:
+                
+                print(Path(data_file_prefix) / data_file_prefix)
+                
+                # meta data
+                meta_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_metadata.json')
+                _, acquisition_parameters, _, _ = read_metadata(meta_path)
+                wavelengths = acquisition_parameters.wavelengths 
+                
+                # data
+                full_path = data_root / Path(data_file_prefix) / (data_file_prefix + '_spectraldata.npz')
+                raw = np.load(full_path)
+                meas= raw['spectral_data']
+                
+                # reorder measurements to match with the reconstruction order
+                Ord_acq = -np.array(acquisition_parameters.patterns)[::2]//2   # pattern order
+                Ord_acq = np.reshape(Ord_acq, (N_acq,N_acq))                   # sampling map
+                
+                Perm_rec = Permutation_Matrix(Ord_rec)    # from natural order to reconstrcution order 
+                Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
+                meas = reorder(meas, Perm_acq, Perm_rec)
+                
+                #%% Reconstruct a single spectral slice from full reconstruction
+                wav_min = 579 
+                wav_max = 579.1
+                wav_num = 1
+                meas_slice, wavelengths_slice, _ = spectral_slicing(meas.T, 
+                                                                wavelengths, 
+                                                                wav_min, 
+                                                                wav_max, 
+                                                                wav_num)
+                with torch.no_grad():
+                    m = torch.Tensor(meas_slice[:2*M,:]).to(device)
+                    
+                    if True:  # all methods?
+                        rec_gpu = model.reconstruct_expe(m)
+                        rec = rec_gpu.cpu().detach().numpy().squeeze()
+                    
+                        #%% Plot or save 
+                        full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
+                        imshow_specs(rec, vmin=None, vmax=None, colorbar=colorbar, path_save=full_path)
+              
+                    
+            
+                    
+                
