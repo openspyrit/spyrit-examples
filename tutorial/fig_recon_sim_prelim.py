@@ -60,7 +60,7 @@ mode_sim_crop = False
 # Evaluate metrics on ImageNet test set
 mode_eval_metrics = True
 metrics_eval = ['nrmse', 'ssim', 'psnr'] 
-num_batchs_metrics = 2 # Number of batchs to evaluate: None: all
+num_batchs_metrics = 10 # Number of batchs to evaluate: None: all
 ds_type_eval = 'val' # 'val' for test. 'test' for train!
 
 # Reconstruction of experimental data
@@ -91,7 +91,7 @@ path_natural_images = '../../data/spy_pub_imgs/target/'
 # Select image
 img_id = None # None: all images; 0: first image
 
-bs = 64
+bs = 128
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -155,12 +155,19 @@ models_specs = [
 #models_specs = models_specs[2:]
 
 # Assess several noise values for DRUNet
-mode_drunet_est_noise = True
+mode_drunet_est_noise = False
 if mode_drunet_est_noise:
     ds_type_eval = 'train'
     num_batchs_metrics = 10
     noise_levels = [20, 25, 30, 35, 40, 45, 50]
-    models_spec_ref = models_specs[0].copy()
+    models_spec_ref = {   
+                    'net_arch':'pinv-net', 
+                    'net_denoi':'drunet', 
+                    'other_specs': {'noise_level': 40},
+                    'model_path': '../../model/',
+                    'model_name': 'drunet_gray.pth',
+                    }                
+                
     models_specs = []
     for noise_level in noise_levels:
         models_specs.append(models_spec_ref)
