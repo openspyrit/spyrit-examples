@@ -170,8 +170,9 @@ if mode_drunet_est_noise:
                 
     models_specs = []
     for noise_level in noise_levels:
-        models_specs.append(models_spec_ref)
-        models_specs[-1]['other_specs'] = {'noise_level': noise_level}
+        model_specs = models_spec_ref.copy()
+        model_specs['other_specs'] = {'noise_level': noise_level}
+        models_specs.append(model_specs)
 
 ######################################################
 # Reconstruction functions
@@ -219,7 +220,7 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
                               step_decay=step_decay,
                               gt=x_gt,
                               step_grad=step_grad)
-    if net_denoi != 'I' and net_denoi != 'P0':
+    if net_denoi != 'I' and net_denoi != 'P0' and net_denoi != 'drunet':
         load_net(os.path.join(model_path, model_name), model, device, strict = False)
     model.eval()    # Mandantory when batchNorm is used
     model.to(device)
