@@ -38,8 +38,6 @@ from spyrit.core.nnet import Unet, ConvNet, Identity
 from spyrit.misc.sampling import reorder, Permutation_Matrix
 from spyrit.misc.disp import add_colorbar, noaxis
 
-from spas import read_metadata, spectral_slicing
-
 torch.manual_seed(0)
 
 #%% user-defined
@@ -55,12 +53,19 @@ M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
 N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
-mode_sim = True # Reconstruct simulated images in addition to exp
-mode_exp = False
+# Reconstruct simulated images from folder
+mode_sim = True 
 mode_sim_crop = False
-mode_eval_metrics = True
+
+# Evaluate metrics on ImageNet test set
+mode_eval_metrics = False
 metrics_eval = ['nrmse', 'ssim', 'psnr'] 
 num_batchs_metrics = 1 # Number of batchs to evaluate
+
+# Reconstruction of experimental data
+mode_exp = False
+if mode_exp:
+    from spas import read_metadata, spectral_slicing
 
 # Reconstruction parameters
 metrics = False # Compute metrics: MSE
@@ -80,7 +85,8 @@ if not os.path.exists(save_root):
     os.makedirs(save_root)
 
 # Simulated images
-path_natural_images = '../../../../Nextcloud/spyrit_slides/spie/figures/target/'
+path_natural_images = '../../data/spy_pub_imgs/target/'
+
 # Select image
 img_id = None # None: all images; 0: first image
 
@@ -102,7 +108,7 @@ models_specs = [
                     'net_denoi': 'unet', 
                     'other_specs': {}, 
                     'model_path': '../../model/oe_paper/',
-                    'model_name': '', # Taken from the data specifications
+                    'model_name': 'dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light', # Taken from the data specifications
                 },
                 # Pinv-Net: previously used, now lpgd 1 iter
                 #{   'net_arch':'pinv-net', 
@@ -145,7 +151,13 @@ models_specs = [
                 },                
                 ]
 
-models_specs = models_specs[0:]
+#models_specs = models_specs[2:]
+
+# Assess several noise values for DRUNet
+noise_levels = [20, 25, 30, 35, 40, 45, 50]
+for noise_level in noise_levels:
+    models_specs.append(models_specs[-1].copy())
+    models_specs[-1]['other_specs'] = {'noise_level': noise_level}
 
 ######################################################
 # Reconstruction functions
@@ -304,12 +316,12 @@ def evaluate_model(model, dataloader, device, metrics = ['nrmse', 'ssim', 'psnr'
         outputs = model(inputs)
         inputs = inputs.cpu().detach().numpy().squeeze()
         outputs = outputs.cpu().detach().numpy().squeeze()
-        mse_val = []
+        nrmse_val = []
         ssim_val = []
         psnr_val = []
         if 'nrmse' in metrics:
             mse_batch = compute_nrmse(outputs, inputs)
-            mse_val.append(mse_batch)
+            nrmse_val.append(mse_batch)
         if 'ssim' in metrics:
             ssim_batch = compute_ssim(outputs, inputs)
             ssim_val.append(ssim_batch)
@@ -317,11 +329,29 @@ def evaluate_model(model, dataloader, device, metrics = ['nrmse', 'ssim', 'psnr'
             psnr_batch = compute_pnsr(outputs, inputs)
             psnr_val.append(psnr_batch)
     if 'nrmse' in metrics:
-        results['nrmse'] = mse_val
+        if len(nrmse_val) > 1:
+            nrmse_val = np.mean(nrmse_val)
+            nrmse_val_std = np.std(nrmse_val)
+        else:
+            nrmse_val = nrmse_val[0]
+            nrmse_val_std = None
+        results['nrmse'] = (nrmse_val, nrmse_val_std)
     if 'ssim' in metrics:
-        results['ssim'] = ssim_val
+        if len(ssim_val) > 1:
+            ssim_val = np.mean(ssim_val)
+            ssim_val_std = np.std(ssim_val)
+        else:
+            ssim_val = ssim_val[0]
+            ssim_val_std = None
+        results['ssim'] = (ssim_val, ssim_val_std)
     if 'psnr' in metrics:
-        results['psnr'] = psnr_val
+        if len(psnr_val) > 1:
+            psnr_val = np.mean(psnr_val)
+            psnr_val_std = np.std(psnr_val)
+        else:
+            psnr_val = psnr_val[0]
+            psnr_val_std = None
+        results['psnr'] = (psnr_val, psnr_val_std)
     return results   
 
 # ---------------------------------------------------------
@@ -469,6 +499,10 @@ for model_specs in models_specs:
         if net_arch == 'dc-net':
             model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
 
+        # Init data
+        if 'y' in locals():
+            del y
+
         #%% Init and load trained network
         # Covariance in hadamard domain
         Cov_rec = np.load(cov_rec_file)
@@ -504,7 +538,7 @@ for model_specs in models_specs:
             results_metrics[name_save_details] = results
         # ---------------------------------------------------------    
         #%% simulations
-        if mode_sim:
+        if mode_sim and 'y' not in locals():
             x = x.view(b * c, h * w)
             y = noise(x.to(device))
         
@@ -598,7 +632,7 @@ for model_specs in models_specs:
                         imshow_specs(rec, vmin=None, vmax=None, colorbar=colorbar, path_save=full_path)
               
                     
-print(f'Metrics for {name_save_details}: {results}')
+print(f'Metrics for {name_save_details}: {results_metrics}')
             
                     
                 
