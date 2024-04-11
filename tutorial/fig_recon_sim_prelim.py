@@ -50,7 +50,7 @@ M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
 #N_rec = 64
 #M_list = [1024]
 
-N0 = 50     # Check if we used 10 in the paper
+N0 = 10     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 # Reconstruct simulated images from folder
@@ -58,9 +58,9 @@ mode_sim = True
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
-mode_eval_metrics = False
+mode_eval_metrics = True
 metrics_eval = ['nrmse', 'ssim', 'psnr'] 
-num_batchs_metrics = None # Number of batchs to evaluate: None: all
+num_batchs_metrics = 2 # Number of batchs to evaluate: None: all
 
 # Reconstruction of experimental data
 mode_exp = False
@@ -309,6 +309,9 @@ def evaluate_model(model, dataloader, device, metrics = ['nrmse', 'ssim', 'psnr'
     # Evaluate
     model.eval()
     results = {}
+    nrmse_batches = []
+    ssim_batches = []
+    psnr_batches = []
     for i, (inputs, _) in enumerate(dataloader):
         if num_batchs is not None and i >= num_batchs:
             break
@@ -316,41 +319,38 @@ def evaluate_model(model, dataloader, device, metrics = ['nrmse', 'ssim', 'psnr'
         outputs = model(inputs)
         inputs = inputs.cpu().detach().numpy().squeeze()
         outputs = outputs.cpu().detach().numpy().squeeze()
-        nrmse_val = []
-        ssim_val = []
-        psnr_val = []
         if 'nrmse' in metrics:
             mse_batch = compute_nrmse(outputs, inputs)
-            nrmse_val.append(mse_batch)
+            nrmse_batches.append(mse_batch)
         if 'ssim' in metrics:
             ssim_batch = compute_ssim(outputs, inputs)
-            ssim_val.append(ssim_batch)
+            ssim_batches.append(ssim_batch)
         if 'psnr' in metrics:
             psnr_batch = compute_pnsr(outputs, inputs)
-            psnr_val.append(psnr_batch)
+            psnr_batches.append(psnr_batch)
     if 'nrmse' in metrics:
-        if len(nrmse_val) > 1:
-            nrmse_val = np.mean(nrmse_val)
-            nrmse_val_std = np.std(nrmse_val)
+        if len(nrmse_batches) > 1:
+            nrmse_val = np.mean(nrmse_batches)
+            nrmse_val_std = np.std(nrmse_batches)
         else:
-            nrmse_val = nrmse_val[0]
-            nrmse_val_std = None
+            nrmse_val = nrmse_batches[0]
+            nrmse_val_std = 0
         results['nrmse'] = (nrmse_val, nrmse_val_std)
     if 'ssim' in metrics:
-        if len(ssim_val) > 1:
-            ssim_val = np.mean(ssim_val)
-            ssim_val_std = np.std(ssim_val)
+        if len(ssim_batches) > 1:
+            ssim_val = np.mean(ssim_batches)
+            ssim_val_std = np.std(ssim_batches)
         else:
-            ssim_val = ssim_val[0]
-            ssim_val_std = None
+            ssim_val = ssim_batches[0]
+            ssim_val_std = 0
         results['ssim'] = (ssim_val, ssim_val_std)
     if 'psnr' in metrics:
-        if len(psnr_val) > 1:
-            psnr_val = np.mean(psnr_val)
-            psnr_val_std = np.std(psnr_val)
+        if len(psnr_batches) > 1:
+            psnr_val = np.mean(psnr_batches)
+            psnr_val_std = np.std(psnr_batches)
         else:
-            psnr_val = psnr_val[0]
-            psnr_val_std = None
+            psnr_val = psnr_batches[0]
+            psnr_val_std = 0
         results['psnr'] = (psnr_val, psnr_val_std)
     return results   
 
