@@ -61,6 +61,7 @@ mode_sim_crop = False
 mode_eval_metrics = True
 metrics_eval = ['nrmse', 'ssim', 'psnr'] 
 num_batchs_metrics = 2 # Number of batchs to evaluate: None: all
+ds_type_eval = 'val' # 'val' for test. 'test' for train!
 
 # Reconstruction of experimental data
 mode_exp = False
@@ -154,10 +155,16 @@ models_specs = [
 #models_specs = models_specs[2:]
 
 # Assess several noise values for DRUNet
-noise_levels = [20, 25, 30, 35, 40, 45, 50]
-for noise_level in noise_levels:
-    models_specs.append(models_specs[-1].copy())
-    models_specs[-1]['other_specs'] = {'noise_level': noise_level}
+mode_drunet_est_noise = True
+if mode_drunet_est_noise:
+    ds_type_eval = 'train'
+    num_batchs_metrics = 10
+    noise_levels = [20, 25, 30, 35, 40, 45, 50]
+    models_spec_ref = models_specs[0].copy()
+    models_specs = []
+    for noise_level in noise_levels:
+        models_specs.append(models_spec_ref)
+        models_specs[-1]['other_specs'] = {'noise_level': noise_level}
 
 ######################################################
 # Reconstruction functions
@@ -282,13 +289,13 @@ def sampling_order(N_rec, M, net_order):
         Ord_rec = Cov2Var(Cov_rec)
     return Ord_rec
 
-def data_loader(data_root_train, data_root_val, img_size, batch_size):
+def data_loader(data_root_train, data_root_val, img_size, batch_size, ds_type='val'):
     # Data loaders
     dataloaders = data_loaders_ImageNet(data_root_train, 
                                 data_root_val, 
                                 img_size=img_size, 
                                 batch_size=batch_size)
-    return dataloaders['val']
+    return dataloaders[ds_type]
 
 def compute_nrmse(x, x_gt):
     if isinstance(x, np.ndarray):
@@ -442,7 +449,8 @@ if mode_eval_metrics:
     dataloader_val = data_loader(data_root_train=Path(data_root) / 'test', 
                                    data_root_val=Path(data_root) / 'val', 
                                    img_size=N_rec, 
-                                   batch_size=bs)
+                                   batch_size=bs,
+                                   ds_type=ds_type_eval)
     results_metrics = {}
 
 # Loop over models
