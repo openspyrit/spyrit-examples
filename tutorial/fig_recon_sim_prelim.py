@@ -50,7 +50,7 @@ M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
 #N_rec = 64
 #M_list = [1024]
 
-N0 = 10     # Check if we used 10 in the paper
+N0 = 50     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 # Reconstruct simulated images from folder
@@ -60,7 +60,7 @@ mode_sim_crop = False
 # Evaluate metrics on ImageNet test set
 mode_eval_metrics = False
 metrics_eval = ['nrmse', 'ssim', 'psnr'] 
-num_batchs_metrics = 1 # Number of batchs to evaluate
+num_batchs_metrics = None # Number of batchs to evaluate: None: all
 
 # Reconstruction of experimental data
 mode_exp = False
@@ -496,8 +496,8 @@ for model_specs in models_specs:
 
         net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
         
-        if net_arch == 'dc-net':
-            model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
+        #if net_arch == 'dc-net':
+        #    model_name = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
 
         # Init data
         if 'y' in locals():
