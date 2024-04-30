@@ -23,7 +23,6 @@ import collections
 collections.Callable = collections.abc.Callable
 
 from skimage.metrics import structural_similarity as ssim
-from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import normalized_root_mse as nrmse
 
 import torchvision
@@ -42,7 +41,7 @@ torch.manual_seed(0)
 
 #%% user-defined
 # used for acquisition
-N_acq = 32
+N_acq = 64
 
 # for reconstruction
 N_rec = 128  # 128 or 64
@@ -59,7 +58,7 @@ mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
 mode_eval_metrics = True
-metrics_eval = ['nrmse', 'ssim', 'psnr'] 
+metrics_eval = ['nrmse', 'ssim'] 
 num_batchs_metrics = 10 # Number of batchs to evaluate: None: all
 ds_type_eval = 'val' # 'val' for test. 'test' for train!
 
@@ -94,6 +93,7 @@ img_id = None # None: all images; 0: first image
 bs = 128
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cpu")
 
 # Path for data evaluation
 data_root = '../../data/ILSVRC2012_v10102019/'
@@ -152,7 +152,7 @@ models_specs = [
                 },                
                 ]
 
-#models_specs = models_specs[2:]
+models_specs = models_specs[1:2]
 
 # Assess several noise values for DRUNet
 mode_drunet_est_noise = False
@@ -305,69 +305,107 @@ def data_loader(data_root_train, data_root_val, img_size, batch_size, ds_type='v
                                 batch_size=batch_size)
     return dataloaders[ds_type]
 
-def compute_nrmse(x, x_gt):
+def compute_nrmse(x, x_gt, dim=[2,3]):
     if isinstance(x, np.ndarray):
         nrmse_val = nrmse(x, x_gt)
     else:
-        nrmse_val = torch.linalg.norm(x - x_gt)/ torch.linalg.norm(x_gt)
+        nrmse_val = torch.linalg.norm(x - x_gt, dim=dim)/ torch.linalg.norm(x_gt, dim=dim)
     return nrmse_val
 
-def compute_pnsr(x, x_gt):
-    psnr_val = psnr(x, x_gt, data_range=x_gt.max() - x_gt.min())
-    return psnr_val
-
 def compute_ssim(x, x_gt):
-    ssim_val = ssim(x, x_gt, data_range=x_gt.max() - x_gt.min())
-    return ssim_val
+    if not isinstance(x, np.ndarray):
+        x = x.cpu().detach().numpy().squeeze()
+        x_gt = x_gt.cpu().detach().numpy().squeeze()
+    ssim_val = np.zeros(x.shape[0])
+    for i in range(x.shape[0]):
+        ssim_val[i] = ssim(x[i], x_gt[i], data_range=x_gt[i].max() - x_gt[i].min())
+    return torch.tensor(ssim_val)
 
-def evaluate_model(model, dataloader, device, metrics = ['nrmse', 'ssim', 'psnr'], num_batchs = None):
-    # Evaluate
+def compute_metric_batch(images, targets, metric='nrmse', operation='sum'):
+    """
+    Compute metric for a batch along pixels dimension
+    """
+    if metric == 'nrmse':
+        metric_batch = compute_nrmse(images, targets)
+    elif metric == 'ssim':
+        metric_batch = compute_ssim(images, targets)
+    else:
+        raise ValueError(f'Metric {metric} not supported')
+
+    if operation == 'sum':
+        metric_batch = torch.sum(metric_batch)
+    elif operation == 'mean':
+        metric_batch = torch.mean(metric_batch)
+    else:
+        raise ValueError(f'Operation {operation} not supported')
+    
+    return metric_batch
+
+def eval_model_metrics_batch_cum(model, dataloader, device, metrics = ['nrmse', 'ssim'], num_batchs = None):
+    """
+    Compute metrics for a dataset and accumulate batches
+    """
     model.eval()
     results = {}
-    nrmse_batches = []
-    ssim_batches = []
-    psnr_batches = []
+    n = 0
     for i, (inputs, _) in enumerate(dataloader):
         if num_batchs is not None and i >= num_batchs:
             break
         inputs = inputs.to(device)
         outputs = model(inputs)
-        inputs = inputs.cpu().detach().numpy().squeeze()
-        outputs = outputs.cpu().detach().numpy().squeeze()
-        if 'nrmse' in metrics:
-            mse_batch = compute_nrmse(outputs, inputs)
-            nrmse_batches.append(mse_batch)
-        if 'ssim' in metrics:
-            ssim_batch = compute_ssim(outputs, inputs)
-            ssim_batches.append(ssim_batch)
-        if 'psnr' in metrics:
-            psnr_batch = compute_pnsr(outputs, inputs)
-            psnr_batches.append(psnr_batch)
-    if 'nrmse' in metrics:
-        if len(nrmse_batches) > 1:
-            nrmse_val = np.mean(nrmse_batches)
-            nrmse_val_std = np.std(nrmse_batches)
-        else:
-            nrmse_val = nrmse_batches[0]
-            nrmse_val_std = 0
-        results['nrmse'] = (nrmse_val, nrmse_val_std)
-    if 'ssim' in metrics:
-        if len(ssim_batches) > 1:
-            ssim_val = np.mean(ssim_batches)
-            ssim_val_std = np.std(ssim_batches)
-        else:
-            ssim_val = ssim_batches[0]
-            ssim_val_std = 0
-        results['ssim'] = (ssim_val, ssim_val_std)
-    if 'psnr' in metrics:
-        if len(psnr_batches) > 1:
-            psnr_val = np.mean(psnr_batches)
-            psnr_val_std = np.std(psnr_batches)
-        else:
-            psnr_val = psnr_batches[0]
-            psnr_val_std = 0
-        results['psnr'] = (psnr_val, psnr_val_std)
+        for metric in metrics:
+            if metric not in results:
+                results[metric] = 0
+            results_batch = compute_metric_batch(outputs, inputs, metric)
+            results[metric] = results[metric] + results_batch.cpu().detach().numpy().item()
+
+        n = n + inputs.shape[0]
+    for metric in metrics:
+        results[metric] = results[metric] / n
     return results   
+
+def mean_walsh(dataloader, device, n_loop=1):
+    """
+    nloop > 1 is relevant for dataloaders with random crops such as that
+    provided by data_loaders_ImageNet
+
+    """
+    import spyrit.misc.walsh_hadamard as wh
+
+    # Get dimensions and estimate total number of images in the dataset
+    inputs, _ = next(iter(dataloader))
+    (b, c, nx, ny) = inputs.shape
+    tot_num = len(dataloader) * b
+
+    # Init
+    n = 0
+    H = wh.walsh_matrix(nx).astype(np.float32, copy=False)
+    mean = torch.zeros((nx, ny), dtype=torch.float32)
+
+    # Send to device (e.g., cuda)
+    mean = mean.to(device)
+    H = torch.from_numpy(H).to(device)
+
+    # Compute Mean
+    # Accumulate sum over all images in dataset
+    for i in range(n_loop):
+        torch.manual_seed(i)
+        for inputs, _ in dataloader:
+            inputs = inputs.to(device)
+            trans = wh.walsh2_torch(inputs, H)
+            mean = mean.add(torch.sum(trans, 0))
+            # print
+            n = n + inputs.shape[0]
+            print(f"Mean:  {n} / (less than) {tot_num*n_loop} images", end="\n")
+            # test
+            # print(f' | {inputs[53,0,33,49]}', end='\n')
+        print("", end="\n")
+
+    # Normalize
+    mean = mean / n
+    mean = torch.squeeze(mean)
+
+    return mean
 
 # ---------------------------------------------------------
 #%% Parameters for simulated images 
@@ -469,6 +507,7 @@ for model_specs in models_specs:
     model_path = model_specs['model_path']
     model_name = model_specs['model_name']
     other_specs = model_specs['other_specs']
+    print(f'Model: {net_arch} - {net_denoi}')
     # LPGD
     lpgd_iter = other_specs.get('lpgd_iter', None)
     step_decay = other_specs.get('step_decay', None)
@@ -549,7 +588,7 @@ for model_specs in models_specs:
         ###########################################################################   
         # Evaluate metrics
         if mode_eval_metrics:
-            results = evaluate_model(model, dataloader_val, device, metrics = metrics_eval, num_batchs = num_batchs_metrics)
+            results = eval_model_metrics_batch_cum(model, dataloader_val, device, metrics = metrics_eval, num_batchs = num_batchs_metrics)
             print(f'Metrics for {name_save_details}: {results}')
             results_metrics[name_save_details] = results
         # ---------------------------------------------------------    
