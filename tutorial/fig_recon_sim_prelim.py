@@ -18,6 +18,7 @@ import math
 from matplotlib import pyplot as plt
 from pathlib import Path
 import pickle
+import pandas as pd
 # get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
@@ -59,8 +60,10 @@ mode_sim_crop = False
 # Evaluate metrics on ImageNet test set
 mode_eval_metrics = True
 metrics_eval = ['nrmse', 'ssim'] 
-num_batchs_metrics = 10 # Number of batchs to evaluate: None: all
-ds_type_eval = 'val' # 'val' for test. 'test' for train!
+num_batchs_metrics = 50 # Number of batchs to evaluate: None: all
+
+# We used test set for training and now use val set for evaluation 
+ds_type_eval = 'val' 
 
 # Reconstruction of experimental data
 mode_exp = False
@@ -146,7 +149,7 @@ models_specs = [
                 # DRUNet
                 {   'net_arch':'pinv-net', 
                     'net_denoi':'drunet', 
-                    'other_specs': {'noise_level': 40},
+                    'other_specs': {'noise_level': 50},
                     'model_path': '../../model/',
                     'model_name': 'drunet_gray.pth',
                 },                
@@ -306,6 +309,7 @@ def data_loader(data_root_train, data_root_val, img_size, batch_size, ds_type='v
     return dataloaders[ds_type]
 
 def compute_nrmse(x, x_gt, dim=[2,3]):
+    # Compute relative error across pixels
     if isinstance(x, np.ndarray):
         nrmse_val = nrmse(x, x_gt)
     else:
@@ -318,12 +322,12 @@ def compute_ssim(x, x_gt):
         x_gt = x_gt.cpu().detach().numpy().squeeze()
     ssim_val = np.zeros(x.shape[0])
     for i in range(x.shape[0]):
-        ssim_val[i] = ssim(x[i], x_gt[i], data_range=x_gt[i].max() - x_gt[i].min())
+        ssim_val[i] = ssim(x[i], x_gt[i], data_range=x[i].max() - x[i].min())
     return torch.tensor(ssim_val)
 
 def compute_metric_batch(images, targets, metric='nrmse', operation='sum'):
     """
-    Compute metric for a batch along pixels dimension
+    Compute mean and variance of a metric
     """
     if metric == 'nrmse':
         metric_batch = compute_nrmse(images, targets)
@@ -331,19 +335,24 @@ def compute_metric_batch(images, targets, metric='nrmse', operation='sum'):
         metric_batch = compute_ssim(images, targets)
     else:
         raise ValueError(f'Metric {metric} not supported')
-
+    
     if operation == 'sum':
-        metric_batch = torch.sum(metric_batch)
+        # Sum over all images in the batch
+        metric_batch_sum = torch.sum(metric_batch)
+        
+        # Sum of squares to compute variance
+        metric_batch_sq = torch.sum(metric_batch**2)
+        return metric_batch_sum, metric_batch_sq
     elif operation == 'mean':
         metric_batch = torch.mean(metric_batch)
+        return metric_batch
     else:
         raise ValueError(f'Operation {operation} not supported')
     
-    return metric_batch
 
 def eval_model_metrics_batch_cum(model, dataloader, device, metrics = ['nrmse', 'ssim'], num_batchs = None):
     """
-    Compute metrics for a dataset and accumulate batches
+    Compute metrics meand and variance for a dataset, accumulating across batches
     """
     model.eval()
     results = {}
@@ -354,14 +363,16 @@ def eval_model_metrics_batch_cum(model, dataloader, device, metrics = ['nrmse', 
         inputs = inputs.to(device)
         outputs = model(inputs)
         for metric in metrics:
-            if metric not in results:
-                results[metric] = 0
-            results_batch = compute_metric_batch(outputs, inputs, metric)
-            results[metric] = results[metric] + results_batch.cpu().detach().numpy().item()
+            # Accumulate sum and sum of squares across batches
+            results_batch_sum, results_batch_sq = compute_metric_batch(outputs, inputs, metric)
+            results[metric] = results.get(metric, 0)  + results_batch_sum.cpu().detach().numpy().item()
+            results[metric + '_var'] = results.get(metric + '_var', 0) + results_batch_sq.cpu().detach().numpy().item()
 
         n = n + inputs.shape[0]
     for metric in metrics:
+        # Compute mean and variance
         results[metric] = results[metric] / n
+        results[metric + '_var'] = results[metric + '_var'] / n - results[metric]**2
     return results   
 
 def mean_walsh(dataloader, device, n_loop=1):
@@ -492,6 +503,7 @@ if mode_sim:
 ######################################################
 # Data to evaluate metrics
 if mode_eval_metrics:
+    # We used test set for training and now use val set for evaluation 
     dataloader_val = data_loader(data_root_train=Path(data_root) / 'test', 
                                    data_root_val=Path(data_root) / 'val', 
                                    img_size=N_rec, 
@@ -688,6 +700,12 @@ for model_specs in models_specs:
               
                     
 print(f'Metrics for {name_save_details}: {results_metrics}')
+
+# Save metrics
+save_metrics(results_metrics, save_root / 'metrics_sim_test.pkl')
+df = pd.DataFrame(results_metrics)
+df.to_csv(save_root / 'metrics_sim_test.csv')
+
             
                     
                 
