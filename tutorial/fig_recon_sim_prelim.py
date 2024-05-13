@@ -38,6 +38,12 @@ from spyrit.core.nnet import Unet, ConvNet, Identity
 from spyrit.misc.sampling import reorder, Permutation_Matrix
 from spyrit.misc.disp import add_colorbar, noaxis
 
+# PnP from Audrey
+import sys
+sys.path.insert(0, '../../DFBNet-PnP/') # update if necessary!
+sys.path.insert(0, '../../DFBnet-spyrit/') # update if necessary!
+from models import get_model, load_model
+
 torch.manual_seed(0)
 
 #%% user-defined
@@ -58,9 +64,9 @@ mode_sim = True
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
-mode_eval_metrics = True
+mode_eval_metrics = False
 metrics_eval = ['nrmse', 'ssim'] 
-num_batchs_metrics = 50 # Number of batchs to evaluate: None: all
+num_batchs_metrics = 5E0 # Number of batchs to evaluate: None: all
 
 # We used test set for training and now use val set for evaluation 
 ds_type_eval = 'val' 
@@ -152,10 +158,17 @@ models_specs = [
                     'other_specs': {'noise_level': 50},
                     'model_path': '../../model/',
                     'model_name': 'drunet_gray.pth',
-                },                
+                },      
+                # DFBNet
+                {   'net_arch':'dfb-net',
+                    'net_denoi': 'dfb',
+                    'other_specs': {},
+                    'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
+                    'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
+                }          
                 ]
 
-models_specs = models_specs[1:2]
+models_specs = models_specs[-1:]
 
 # Assess several noise values for DRUNet
 mode_drunet_est_noise = False
@@ -199,6 +212,9 @@ def init_denoi(net_denoi, model_path = None, model_name = None, lpgd_iter = None
         denoi = ProjectToZero()
     elif net_denoi == 'I':
         denoi = Identity()
+    elif net_denoi == 'dfb':
+        # Define DFB model
+        denoi = get_dfb_model()    
     return denoi    
 
 def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None, 
@@ -223,7 +239,21 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
                               step_decay=step_decay,
                               gt=x_gt,
                               step_grad=step_grad)
-    if net_denoi != 'I' and net_denoi != 'P0' and net_denoi != 'drunet':
+    elif net_arch == 'dfb-net':
+        from spyrit_dev import PnP
+
+        #-- recon param
+        gamma = 1/N_rec**2
+        mu = 1e3 #50 #1e1  # 1e2
+        display_it = 10
+        display_im = 25
+        max_iter = 101
+        crit_norm = 1e-4
+        save_it = 50
+
+        model = PnP(noise, prep, denoi, gamma, mu, max_iter, crit_norm)
+
+    if net_denoi != 'I' and net_denoi != 'P0' and net_denoi != 'drunet' and net_denoi != 'dfb':
         load_net(os.path.join(model_path, model_name), model, device, strict = False)
     model.eval()    # Mandantory when batchNorm is used
     model.to(device)
@@ -456,6 +486,22 @@ def transform_gray_norm_rand_crop(img_size, seed = 0, shuffle = True):
         ]
     )    
     return transform
+
+# ---------------------------------------------------------
+def get_dfb_model():
+    #-- load denoiser
+    n_channel, n_feature, n_layer = 1, 100, 20
+
+    model_dir = f'../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_{n_feature}_layers_{n_layer}/'
+    model, net_name, clip_val, lr = get_model('DFBNet', n_channel,  n_feature, n_layer)
+    model = load_model(pth = model_dir + net_name + '.pth', 
+                        net = model, 
+                        n_ch = n_channel, 
+                        features = n_feature, 
+                        num_of_layers = n_layer)
+    model.module.update_lip((1,50,50))
+    model.eval()    
+    return model  
 
 # ---------------------------------------------------------
 #%% Simulated images
