@@ -32,7 +32,7 @@ from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet
 from spyrit.core.noise import Poisson 
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet, LearnedPGD
+from spyrit.core.recon import DCNet, PinvNet#, LearnedPGD
 from spyrit.core.train import load_net
 from spyrit.core.nnet import Unet, ConvNet, Identity
 from spyrit.misc.sampling import reorder, Permutation_Matrix
@@ -64,7 +64,7 @@ mode_sim = True
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
-mode_eval_metrics = False
+mode_eval_metrics = True
 metrics_eval = ['nrmse', 'ssim'] 
 num_batchs_metrics = 5E0 # Number of batchs to evaluate: None: all
 
@@ -162,7 +162,7 @@ models_specs = [
                 # DFBNet
                 {   'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
-                    'other_specs': {},
+                    'other_specs': {'mu': 3500, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
                     'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
                     'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
                 }          
@@ -244,12 +244,8 @@ def init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi = None
 
         #-- recon param
         gamma = 1/N_rec**2
-        mu = 1e3 #50 #1e1  # 1e2
-        display_it = 10
-        display_im = 25
         max_iter = 101
         crit_norm = 1e-4
-        save_it = 50
 
         model = PnP(noise, prep, denoi, gamma, mu, max_iter, crit_norm)
 
@@ -574,6 +570,8 @@ for model_specs in models_specs:
     x_gt = None
     # DRUNet
     noise_level = other_specs.get('noise_level', None)
+    # DFBNet
+    mu = other_specs.get('mu', None)
 
     # Free memory
     if 'model' in locals():
@@ -643,6 +641,9 @@ for model_specs in models_specs:
         if net_denoi == 'drunet':
             denoi.set_noise_level(noise_level)
             name_save_details = name_save_details + f'_nlevel_{noise_level}'
+        # params for DFBNet
+        if net_arch == 'dfb-net':
+            name_save_details = name_save_details + f'_mu_{int(mu)}'
         ###########################################################################   
         # Evaluate metrics
         if mode_eval_metrics:
@@ -662,7 +663,8 @@ for model_specs in models_specs:
             if 'name_save_details' in globals():
                 name_save = name_save + '_' + name_save_details
             
-            for i in range(b):                
+            #for i in range(b):    
+            for i in range(1,6):    
                 if b > 1:
                     name_save_this = name_save.replace('sim', f'sim{i}')
                 full_path = save_root / (name_save_this + '.png')
