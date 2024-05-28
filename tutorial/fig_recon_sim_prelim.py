@@ -22,6 +22,7 @@ import pandas as pd
 # get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
+import pprint 
 
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import normalized_root_mse as nrmse
@@ -56,7 +57,7 @@ M_list = [4096] #[4096, 1024, 512] # for N_rec = 128
 #N_rec = 64
 #M_list = [1024]
 
-N0 = 10     # Check if we used 10 in the paper
+N0 = 50     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 # Reconstruct simulated images from folder
@@ -64,9 +65,9 @@ mode_sim = True
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
-mode_eval_metrics = True
+mode_eval_metrics = False
 metrics_eval = ['nrmse', 'ssim'] 
-num_batchs_metrics = 5E0 # Number of batchs to evaluate: None: all
+num_batchs_metrics = None # Number of batchs to evaluate: None: all
 
 # We used test set for training and now use val set for evaluation 
 ds_type_eval = 'val' 
@@ -162,7 +163,7 @@ models_specs = [
                 # DFBNet
                 {   'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
-                    'other_specs': {'mu': 3500, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
+                    'other_specs': {'mu': 3000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
                     'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
                     'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
                 }          
@@ -174,6 +175,7 @@ models_specs = models_specs[-1:]
 mode_drunet_est_noise = False
 if mode_drunet_est_noise:
     ds_type_eval = 'train'
+    mode_eval_metrics = True
     num_batchs_metrics = 10
     noise_levels = [20, 25, 30, 35, 40, 45, 50]
     models_spec_ref = {   
@@ -190,6 +192,29 @@ if mode_drunet_est_noise:
         model_specs['other_specs'] = {'noise_level': noise_level}
         models_specs.append(model_specs)
 
+# Assess several mu values for DFBNet
+mode_dfbnet_est_mu = True
+if mode_dfbnet_est_mu:
+    ds_type_eval = 'train'
+    mode_eval_metrics = True
+    num_batchs_metrics = 3
+    mu_values = [1200, 1500, 1800]
+    models_spec_ref = {   
+                    'net_arch':'dfb-net',
+                    'net_denoi': 'dfb',
+                    'other_specs': {'mu': 3000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
+                    'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
+                    'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
+                    }                
+                
+    models_specs = []
+    for mu in mu_values:
+        model_specs = models_spec_ref.copy()
+        model_specs['other_specs'] = {'mu': mu}
+        models_specs.append(model_specs)
+
+print('Models specifications:')
+pprint.pprint(models_specs)
 ######################################################
 # Reconstruction functions
 def init_denoi(net_denoi, model_path = None, model_name = None, lpgd_iter = None,):
@@ -750,9 +775,9 @@ for model_specs in models_specs:
 print(f'Metrics for {name_save_details}: {results_metrics}')
 
 # Save metrics
-save_metrics(results_metrics, save_root / 'metrics_sim_test.pkl')
+save_metrics(results_metrics, save_root / f'N0_{N0}_metrics_sim_test.pkl')
 df = pd.DataFrame(results_metrics)
-df.to_csv(save_root / 'metrics_sim_test.csv')
+df.to_csv(save_root / f'N0_{N0}_metrics_sim_test.csv')
 
             
                     
