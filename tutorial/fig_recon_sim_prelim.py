@@ -163,21 +163,24 @@ models_specs = [
                 # DFBNet
                 {   'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
-                    'other_specs': {'mu': 3000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
+                    'other_specs': {'mu': 1000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
                     'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
                     'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
                 }          
                 ]
 
-models_specs = models_specs[-1:]
+#models_specs = models_specs[-1:] # Test only DFBNet
+models_specs = models_specs[-2:-1] # Test only DRUNet
 
 # Assess several noise values for DRUNet
-mode_drunet_est_noise = False
+mode_drunet_est_noise = True
 if mode_drunet_est_noise:
     ds_type_eval = 'train'
     mode_eval_metrics = True
-    num_batchs_metrics = 10
-    noise_levels = [20, 25, 30, 35, 40, 45, 50]
+    num_batchs_metrics = 3
+    #noise_levels = [30, 35, 40, 45, 50, 55, 60]    # N0=10
+    #noise_levels = [70, 80, 90, 95, 100, 105, 110] # N0=2
+    noise_levels = [10, 15, 20, 25, 30, 35]         # N0=50
     models_spec_ref = {   
                     'net_arch':'pinv-net', 
                     'net_denoi':'drunet', 
@@ -193,12 +196,12 @@ if mode_drunet_est_noise:
         models_specs.append(model_specs)
 
 # Assess several mu values for DFBNet
-mode_dfbnet_est_mu = True
+mode_dfbnet_est_mu = False
 if mode_dfbnet_est_mu:
     ds_type_eval = 'train'
-    mode_eval_metrics = True
+    mode_eval_metrics = False #True
     num_batchs_metrics = 3
-    mu_values = [1200, 1500, 1800]
+    mu_values = [3000, 4000, 5000, 6000]
     models_spec_ref = {   
                     'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
@@ -655,7 +658,7 @@ for model_specs in models_specs:
             name_save = name_save + f'_crop'  
         # ---------------------------------------------------------
         # Init network  
-        meas = HadamSplit(M, N_rec, Ord_rec)
+        meas = HadamSplit(M, N_rec, torch.from_numpy(Ord_rec))
         noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
         prep  = SplitPoisson(N0, meas)    
 
@@ -688,8 +691,8 @@ for model_specs in models_specs:
             if 'name_save_details' in globals():
                 name_save = name_save + '_' + name_save_details
             
-            #for i in range(b):    
-            for i in range(1,6):    
+            for i in range(b):    
+            #for i in range(0,1):    
                 if b > 1:
                     name_save_this = name_save.replace('sim', f'sim{i}')
                 full_path = save_root / (name_save_this + '.png')
