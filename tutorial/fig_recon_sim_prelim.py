@@ -33,7 +33,7 @@ from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet
 from spyrit.core.noise import Poisson 
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet#, LearnedPGD
+from spyrit.core.recon import DCNet, PinvNet, LearnedPGD
 from spyrit.core.train import load_net
 from spyrit.core.nnet import Unet, ConvNet, Identity
 from spyrit.misc.sampling import reorder, Permutation_Matrix
@@ -61,7 +61,7 @@ N0 = 50     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 # Reconstruct simulated images from folder
-mode_sim = True 
+mode_sim = False 
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
@@ -73,7 +73,7 @@ num_batchs_metrics = None # Number of batchs to evaluate: None: all
 ds_type_eval = 'val' 
 
 # Reconstruction of experimental data
-mode_exp = False
+mode_exp = True
 if mode_exp:
     from spas import read_metadata, spectral_slicing
 
@@ -156,24 +156,25 @@ models_specs = [
                 # DRUNet
                 {   'net_arch':'pinv-net', 
                     'net_denoi':'drunet', 
-                    'other_specs': {'noise_level': 50},
+                    'other_specs': {'noise_level': 45},
                     'model_path': '../../model/',
                     'model_name': 'drunet_gray.pth',
                 },      
                 # DFBNet
                 {   'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
-                    'other_specs': {'mu': 1000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
+                    'other_specs': {'mu': 3000, 'gamma': 1/N_rec**2, 'max_iter': 101, 'crit_norm': 1e-4},
                     'model_path': '../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20/',
                     'model_name': 'DFBNet_l1_patchsize=50_varnoise0.05_feat_100_layers_20.pth',
                 }          
                 ]
 
+#models_specs = models_specs[1:]
 #models_specs = models_specs[-1:] # Test only DFBNet
-models_specs = models_specs[-2:-1] # Test only DRUNet
+#models_specs = models_specs[-2:-1] # Test only DRUNet
 
 # Assess several noise values for DRUNet
-mode_drunet_est_noise = True
+mode_drunet_est_noise = False
 if mode_drunet_est_noise:
     ds_type_eval = 'train'
     mode_eval_metrics = True
@@ -336,9 +337,9 @@ def imshow_specs(x, vmin=None, vmax=None, colorbar=False, path_save=None):
         im = plt.imshow(x, cmap='gray', vmin=vmin, vmax=vmax)
     else: 
         im = plt.imshow(x, cmap='gray')
-    plt.axis('off')
     if colorbar:
         add_colorbar(im, 'bottom')
+    plt.axis('off')
     if path_save:
         plt.savefig(path_save, bbox_inches='tight', dpi=600)
 
@@ -660,8 +661,8 @@ for model_specs in models_specs:
         # Init network  
         meas = HadamSplit(M, N_rec, torch.from_numpy(Ord_rec))
         noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
-        prep  = SplitPoisson(N0, meas)    
-
+        prep  = SplitPoisson(N0, meas)  
+        prep.set_expe()
         model, denoi = init_reconstruction_network(noise, prep, Cov_rec, net_arch, net_denoi,
                                                     model_path, model_name, lpgd_iter, step_decay, wls, step_grad)
 
@@ -732,7 +733,7 @@ for model_specs in models_specs:
             
             
             #%% Load data
-            for data_file_prefix in data_file_prefix_list:
+            for data_file_prefix in data_file_prefix_list[1:2]:
                 
                 print(Path(data_file_prefix) / data_file_prefix)
                 
@@ -765,17 +766,21 @@ for model_specs in models_specs:
                                                                 wav_num)
                 with torch.no_grad():
                     m = torch.Tensor(meas_slice[:2*M,:]).to(device)
-                    
-                    if True:  # all methods?
+                    # Warning: Reconstruction reconstruct_expe handled inside reconstruct!!!!
+                    if net_arch == 'lpgd' or net_arch == 'dfb-net':
+                        rec_gpu = model.reconstruct(m, exp=True)
+                    else:
+                        model.prep.set_expe()
                         rec_gpu = model.reconstruct_expe(m)
-                        rec = rec_gpu.cpu().detach().numpy().squeeze()
-                    
-                        #%% Plot or save 
-                        full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
-                        imshow_specs(rec, vmin=None, vmax=None, colorbar=colorbar, path_save=full_path)
+                    rec = rec_gpu.cpu().detach().numpy().squeeze()
+                
+                    #%% Plot or save 
+                    full_path = save_root / (data_file_prefix + '_' + f'{M}_{N_rec}' + f'_{name_save_details}' + '.png')
+                    plt.close('all')
+                    imshow_specs(rec, vmin=None, vmax=None, colorbar=True, path_save=full_path)
               
-                    
-print(f'Metrics for {name_save_details}: {results_metrics}')
+if mode_eval_metrics:                    
+    print(f'Metrics for {name_save_details}: {results_metrics}')
 
 # Save metrics
 save_metrics(results_metrics, save_root / f'N0_{N0}_metrics_sim_test.pkl')
