@@ -156,7 +156,7 @@ models_specs = [
                 # DRUNet
                 {   'net_arch':'pinv-net', 
                     'net_denoi':'drunet', 
-                    'other_specs': {'noise_level': 45},
+                    'other_specs': {'noise_level': 35},
                     'model_path': '../../model/',
                     'model_name': 'drunet_gray.pth',
                 },      
@@ -169,9 +169,10 @@ models_specs = [
                 }          
                 ]
 
-#models_specs = models_specs[1:]
+#models_specs = models_specs[3:4]
 #models_specs = models_specs[-1:] # Test only DFBNet
-#models_specs = models_specs[-2:-1] # Test only DRUNet
+models_specs = models_specs[-2:-1] # Test only DRUNet
+#models_specs = models_specs[-2:]
 
 # Assess several noise values for DRUNet
 mode_drunet_est_noise = False
@@ -181,11 +182,11 @@ if mode_drunet_est_noise:
     num_batchs_metrics = 3
     #noise_levels = [30, 35, 40, 45, 50, 55, 60]    # N0=10
     #noise_levels = [70, 80, 90, 95, 100, 105, 110] # N0=2
-    noise_levels = [10, 15, 20, 25, 30, 35]         # N0=50
+    noise_levels = [20, 30, 40]         # N0=50
     models_spec_ref = {   
                     'net_arch':'pinv-net', 
                     'net_denoi':'drunet', 
-                    'other_specs': {'noise_level': 40},
+                    'other_specs': {'noise_level': 55},
                     'model_path': '../../model/',
                     'model_name': 'drunet_gray.pth',
                     }                
@@ -202,7 +203,7 @@ if mode_dfbnet_est_mu:
     ds_type_eval = 'train'
     mode_eval_metrics = False #True
     num_batchs_metrics = 3
-    mu_values = [3000, 4000, 5000, 6000]
+    mu_values = [2000]
     models_spec_ref = {   
                     'net_arch':'dfb-net',
                     'net_denoi': 'dfb',
@@ -782,10 +783,10 @@ for model_specs in models_specs:
 if mode_eval_metrics:                    
     print(f'Metrics for {name_save_details}: {results_metrics}')
 
-# Save metrics
-save_metrics(results_metrics, save_root / f'N0_{N0}_metrics_sim_test.pkl')
-df = pd.DataFrame(results_metrics)
-df.to_csv(save_root / f'N0_{N0}_metrics_sim_test.csv')
+    # Save metrics
+    save_metrics(results_metrics, save_root / f'N0_{N0}_metrics_sim_test.pkl')
+    df = pd.DataFrame(results_metrics)
+    df.to_csv(save_root / f'N0_{N0}_metrics_sim_test.csv')
 
             
                     
