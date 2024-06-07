@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct  7 08:48:35 2022
+This script is based on reconstructs the images in Figure 8
 
-This scripts reconstructs the images in Figure 8
-
-NB (15-Sep-22): to debug needs to run
-import collections
-collections.Callable = collections.abc.Callable
+Requirements: 
+- stat/ :  covariances from oe_paper
+- model/ : models from oe_paper, drunet, dfbnet
+- data/ : experimental datasets and ILVRC2012_v10102019
 
 """
 
@@ -18,7 +17,6 @@ import math
 from matplotlib import pyplot as plt
 from pathlib import Path
 import pickle
-import pandas as pd
 # get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
@@ -61,7 +59,7 @@ N0 = 50     # Check if we used 10 in the paper
 stat_folder_rec = Path('../../stat/oe_paper/') # Path('../../stat/ILSVRC2012_v10102019/')
 
 # Reconstruct simulated images from folder
-mode_sim = False 
+mode_sim = True 
 mode_sim_crop = False
 
 # Evaluate metrics on ImageNet test set
@@ -73,7 +71,7 @@ num_batchs_metrics = None # Number of batchs to evaluate: None: all
 ds_type_eval = 'val' 
 
 # Reconstruction of experimental data
-mode_exp = True
+mode_exp = False
 if mode_exp:
     from spas import read_metadata, spectral_slicing
 
@@ -169,9 +167,9 @@ models_specs = [
                 }          
                 ]
 
-#models_specs = models_specs[3:4]
+models_specs = models_specs[:4]
 #models_specs = models_specs[-1:] # Test only DFBNet
-models_specs = models_specs[-2:-1] # Test only DRUNet
+#models_specs = models_specs[-2:-1] # Test only DRUNet
 #models_specs = models_specs[-2:]
 
 # Assess several noise values for DRUNet
@@ -695,8 +693,8 @@ for model_specs in models_specs:
             
             for i in range(b):    
             #for i in range(0,1):    
-                if b > 1:
-                    name_save_this = name_save.replace('sim', f'sim{i}')
+                #if b > 1:
+                name_save_this = name_save.replace('sim', f'sim{i}')
                 full_path = save_root / (name_save_this + '.png')
                 if i == 0:
                     imshow_specs(rec_sim[i], vmin=-1, vmax=0.4, colorbar=colorbar, path_save=full_path)
