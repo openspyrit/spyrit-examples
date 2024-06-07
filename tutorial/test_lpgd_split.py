@@ -23,7 +23,7 @@ arch = 'lpgd' # Network architecture:  'lpgd
 unfold_iter = 1 # Number of UPGD iterations
 denoi = 'unet' # Denoiser architecture
 #
-wls = True
+wls = False
 #
 res_learn = True
 #

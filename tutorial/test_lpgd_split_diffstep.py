@@ -20,21 +20,21 @@ stat_root = '../../stat/ILSVRC2012_v10102019/'
 data_root = '../../data/ILSVRC2012_v10102019/'
 #
 arch = 'lpgd' # Network architecture:  'lpgd
-unfold_iter = 2 # Number of UPGD iterations
-denoi = 'unet' # Denoiser architecture
+unfold_iter = 1 # Number of UPGD iterations
+denoi = 'cnn-diff' # Denoiser architecture: 'cnn', 'unet', 'cnn-diff'
 #
 wls = False
 #
-num_epochs = 30
+num_epochs = 1
 batch_size = 128
 # Path to previous trained model
-checkpoint_model = ""
-#checkpoint_model = './model/lpgd_unet_stl10_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth' 
+checkpoint_model = ''
+#checkpoint_model = "model/lpgd_unet_imagenet_N0_10_m_hadam-split_N_64_M_1024_epo_1_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_2_sdec0-9.pth"
 checkpoint_interval = 10     # Interval to save the model
 # Learneable stepsize
-unfold_step_grad = False
+unfold_step_grad =False
 # Stepsize decay
-unfold_step_decay = 0.1
+unfold_step_decay = 0.9
 #
 # Tensorboard logs path
 name_run = f"{data}_splitmeas_{subs}_M{M}_N{int(N0)}_{img_size}x{img_size}_bs{batch_size}_ep{num_epochs}_{arch}_{denoi}"
