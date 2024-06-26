@@ -79,11 +79,11 @@ for M in M_list:
         Ord_rec = Cov2Var(Cov_rec)
         
     # Init network  
-    meas = HadamSplit(M, N_rec, Ord_rec)
+    meas = HadamSplit(M, N_rec, torch.from_numpy(Ord_rec))
     noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
     prep  = SplitPoisson(N0, meas)    
     denoi = Unet()
-    model = DCNet(noise, prep, Cov_rec, denoi)
+    model = DCNet(noise, prep, torch.from_numpy(Cov_rec), denoi)
     
     # Load trained DC-Net
     net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_order}_{net_suffix}'
