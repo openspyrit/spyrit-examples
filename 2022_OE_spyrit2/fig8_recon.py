@@ -11,14 +11,14 @@ collections.Callable = collections.abc.Callable
 """
 
 #%%
-import torch
-import numpy as np
-import math
-from matplotlib import pyplot as plt
 from pathlib import Path
-# get debug in spyder
 import collections
 collections.Callable = collections.abc.Callable
+
+import math
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
 
 from spyrit.misc.statistics import Cov2Var
 from spyrit.core.noise import Poisson 
@@ -29,7 +29,6 @@ from spyrit.core.train import load_net
 from spyrit.core.nnet import Unet
 from spyrit.misc.sampling import reorder, Permutation_Matrix
 from spyrit.misc.disp import add_colorbar, noaxis
-
 
 from spas import read_metadata, spectral_slicing
 
@@ -63,15 +62,15 @@ elif N_rec==128:
     
 #%% Networks
 for M in M_list:
-    
+
     if (N_rec == 128) and (M == 4096):
         net_order   = 'rect'
     else:
         net_order   = 'var'
 
-    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
+    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light.pth'
     
-    #%% Init and load trained network
+    #% Init and load trained network
     # Covariance in hadamard domain
     Cov_rec = np.load(cov_rec_file)
     
@@ -86,11 +85,11 @@ for M in M_list:
         Ord_rec = Cov2Var(Cov_rec)
         
     # Init network  
-    meas = HadamSplit(M, N_rec, Ord_rec)
-    noise = Poisson(meas, N0) # could be replaced by anything here as we just need to recon
-    prep  = SplitPoisson(N0, meas)    
+    meas_op = HadamSplit(M, N_rec, torch.from_numpy(Ord_rec))
+    noise = Poisson(meas_op, N0) # could be replaced by anything here as we just need to recon
+    prep  = SplitPoisson(N0, meas_op)    
     denoi = Unet()
-    model = DCNet(noise, prep, Cov_rec, denoi)
+    model = DCNet(noise, prep, torch.from_numpy(Cov_rec), denoi)
     
     pinet = PinvNet(noise, prep)
     
@@ -106,7 +105,7 @@ for M in M_list:
     model.prep.set_expe()
     model.to(device)
     
-    #%% Load expe data and unsplit
+    #% Load expe data and unsplit
     data_root = Path('data/')
 
     data_file_prefix_list = ['zoom_x12_usaf_group5',
@@ -116,7 +115,7 @@ for M in M_list:
                              ]
        
     
-    #%% Load data
+    #% Load data
     for data_file_prefix in data_file_prefix_list:
         
         print(Path(data_file_prefix) / data_file_prefix)
@@ -139,7 +138,7 @@ for M in M_list:
         Perm_acq = Permutation_Matrix(Ord_acq).T  # from acquisition to natural order
         meas = reorder(meas, Perm_acq, Perm_rec)
         
-        #%% Reconstruct a single spectral slice from full reconstruction
+        #% Reconstruct a single spectral slice from full reconstruction
         wav_min = 579 
         wav_max = 579.1
         wav_num = 1
@@ -153,7 +152,7 @@ for M in M_list:
             rec_gpu = model.reconstruct_expe(m)
             rec = rec_gpu.cpu().detach().numpy().squeeze()
             
-        #%% Plot or save 
+        #% Plot or save 
         # rotate
         #rec = np.rot90(rec,2)
         
@@ -166,7 +165,7 @@ for M in M_list:
         fig.savefig(full_path, bbox_inches='tight')
         
         
-        #%% pseudo inverse
+        #% pseudo inverse
         if M==4096:
             rec_pinv_gpu = model_pinv.reconstruct_expe(m)
             rec_pinv = rec_pinv_gpu.cpu().detach().numpy().squeeze()
@@ -178,3 +177,4 @@ for M in M_list:
             
             full_path = save_root / (data_file_prefix + '_' + f'pinv_{N_rec}' + '.pdf')
             fig.savefig(full_path, bbox_inches='tight', dpi=600)
+# %%
