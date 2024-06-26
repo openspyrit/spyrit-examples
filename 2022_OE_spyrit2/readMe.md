@@ -14,12 +14,23 @@ The code in the current folder allows to reproduce the results that are reported
 
 ## Install the dependencies
 
+To ensure reproducibility and compatibility, we recommend creating a new environment using the environment.yml file included in this folder. With conda for example, move to the folder containing the environment.yml file and run this command:
+
+    ```shell
+    conda env create -f environment.yml
+    conda activate OpenSpyritPaper2022
+    ```
+
+The name of this new environment is `OpenSpyritPaper2022`.
+
+If this doesn't work, follow these step-by-step instructions:
+
 1. We recommend using a virtual (e.g., conda) environment.
 
     ```shell
     # conda install
-    conda create --name OpenSpyritPaper
-    conda activate OpenSpyritPaper
+    conda create --name OpenSpyritPaper2022
+    conda activate OpenSpyritPaper2022
     ```
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
