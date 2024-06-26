@@ -93,7 +93,7 @@ with open('caption.tex', 'w') as f:
         
         for M, sub in zip(M_list,sub_list):   
     
-            net_suffix  = f'{sub}_N0_{N0}_N_128_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07'
+            net_suffix  = f'{sub}_N0_{N0}_N_128_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth'
             net_title = f'{net_arch}_{net_denoi}_{net_data}_{net_suffix}'
             
             full_path_slice = (save_prefix + '_slice_' + net_title)

@@ -63,7 +63,7 @@ for M in M_list:
     else:
         net_order   = 'var'
 
-    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light'
+    net_suffix  = f'N0_{N0}_N_{N_rec}_M_{M}_epo_30_lr_0.001_sss_10_sdr_0.5_bs_{bs}_reg_1e-07_light.pth'
     
     #%% Init and load trained network   
     Cov_rec = np.load(cov_rec_file)
