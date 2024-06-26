@@ -12,6 +12,8 @@ The code in the current folder allows to reproduce the results that are reported
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
+Spyrit v2.3.1 is used in this code.
+
 ## Install the dependencies
 
 To ensure reproducibility and compatibility, we recommend creating a new environment using the environment.yml file included in this folder. With conda for example, move to the folder containing the environment.yml file and run this command:
@@ -29,8 +31,8 @@ If this doesn't work, follow these step-by-step instructions:
 
     ```shell
     # conda install
-    conda create --name OpenSpyritPaper2022
-    conda activate OpenSpyritPaper2022
+    conda create --name OpenSpyritPaper2022_manual
+    conda activate OpenSpyritPaper2022_manual
     ```
 
     Alternatively, you can clone an existing environment with `conda create --name new-env --clone existing-env`
@@ -41,11 +43,11 @@ If this doesn't work, follow these step-by-step instructions:
     conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
     ```
 
-3. Install the spyrit package (more details [here](https://github.com/openspyrit/spyrit)). Tested with spyrit 2.1.0
+3. Install the spyrit package (more details [here](https://github.com/openspyrit/spyrit)). Tested with spyrit 2.3.1
 
     ```shell
     conda install pip
-    pip install spyrit==2.1.0
+    pip install spyrit==2.3.1
     ```
     
 4. Move to your local folder where your environment is installed and clone and install the spas package (more details [here](https://github.com/openspyrit/spas)). Tested with spas v1.4.
@@ -54,7 +56,7 @@ If this doesn't work, follow these step-by-step instructions:
     # get your environment path
     echo %CONDA_PREFIX%  # C:\Users\[name]\.conda\envs\OpenSpyritPaper
     # move to that location
-    cd C:\Users\[name]\.conda\envs\OpenSpyritPaper
+    cd C:\Users\[name]\.conda\envs\OpenSpyritPaper2022_manual
     # move to the package installation folder
     cd Lib/site-packages
     pip install -e git+https://github.com/openspyrit/spas.git@v1.4#egg=spas
