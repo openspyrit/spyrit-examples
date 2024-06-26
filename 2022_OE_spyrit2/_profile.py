@@ -27,14 +27,14 @@ cov_file = '../../stat/ILSVRC2012_v10102019/Cov_8_64x64.npy'
 Cov = np.load(cov_file)
 
 Ord = Cov2Var(Cov)
-meas = HadamSplit(M, H, Ord)
+meas = HadamSplit(M, H, torch.from_numpy(Ord))
 
 noise = Poisson(meas, alpha)
 #noise  = NoNoise(meas)    # noiseless
 prep  = SplitPoisson(alpha, meas)
 pinet = PinvNet(noise, prep)
 denoi = Unet()
-dcnet = DCNet(noise, prep, Cov, denoi)
+dcnet = DCNet(noise, prep, torch.from_numpy(Cov), denoi)
 
 # A batch of images
 dataloaders = data_loaders_stl10('../../data', img_size=H, batch_size=100)  
