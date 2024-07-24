@@ -143,12 +143,12 @@ x_plot = x.view(h, h).cpu().numpy()
 orig_minmax = (-1, 1)
 imagesc_mod(x_plot, figsize=figsize, dpi=dpi, minmax=orig_minmax)
 
-# %% Rectangular sampling map
+# %% SQUARE SAMPLING MAP
 Sampling_map = np.ones((h, h))
-torch.from_numpy([:, h//sub_x:] = 0
+Sampling_map[:, h//sub_x:] = 0
 Sampling_map[h//sub_y:, :] = 0
 #Sampling_map = np.random.rand(h, h)
-Sampling_map.from_numpy()
+Sampling_map = torch.from_numpy(Sampling_map)
 
 #%% MEASUREMENT OPERATORS
 # define 3 measurement operators :
