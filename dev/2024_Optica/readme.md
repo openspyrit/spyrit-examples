@@ -13,7 +13,9 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvi
 
 ### Then, clone spyrit and install it using pip
 ```shell
-git clone  # commit ???
+git clone https://github.com/openspyrit/spyrit.git
+cd spyrit
+git reset --hard 21db0562c38833de6a9f9298c6952105b248e1ba # specific commit
 pip install -e .
 ```
 
