@@ -19,6 +19,12 @@ git reset --hard 21db0562c38833de6a9f9298c6952105b248e1ba # specific commit
 pip install -e .
 ```
 
+## Should work as well (not tested yet)
+```shell
+pip install spyrit==2.3.3
+```
+
+
 ## Missing to run the script
 ```shell
 pip install ipykernel
