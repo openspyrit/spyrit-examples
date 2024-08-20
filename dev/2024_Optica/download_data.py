@@ -1,29 +1,30 @@
-# -*- coding: utf-8 -*-
-#%%
+# %%
 import girder_client
 from pathlib import Path
+
+from spyrit.misc.load_data import download_girder
+
 
 # api Rest url of the warehouse
 url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
 
-# Generate the warehouse client
-gc = girder_client.GirderClient(apiUrl=url)
 
-#%% Download the covariance matrix and mean image [Todo: add Ids from tomoradio-warehouse and remove unused files]
-data_folder = './stat/'
-dataId_list = ['63935b584d15dd536f04849f', # for reconstruction (imageNet, 128)
+# %%
+# Download the covariance matrix and mean image
+# [Todo: add Ids from tomoradio-warehouse and remove unused files]
+
+stat_folder = './stat/'
+statId_list = ['63935b584d15dd536f04849f', # for reconstruction (imageNet, 128)
             '63935a224d15dd536f048490', # for reconstruction (imageNet, 128)
             '63935b624d15dd536f0484a5', # for reconstruction (imageNet, 64)
             '63935a224d15dd536f048496', # for reconstruction (imageNet, 64)
             ]
+download_girder(url, statId_list, stat_folder)
 
-for dataId in dataId_list:
-    myfile = gc.getFile(dataId)
-    gc.downloadFile(dataId, data_folder + myfile['name'])
+# Download the models
 
-#%% Download the models [Todo: add Ids from tomoradio-warehouse]
-data_folder = './model/'
-dataId_list = ['6410889f0386da274769778f',
+model_folder = './model/'
+modelId_list = ['6410889f0386da274769778f',
             '641088930386da2747697789',
             '6410889a0386da274769778c',
             '6410888d0386da2747697786',
@@ -31,14 +32,12 @@ dataId_list = ['6410889f0386da274769778f',
             '644a38c785f48d3da07140b7', # N_rec = 64, M = 1024
             '644a38c585f48d3da07140b4', # N_rec = 64, M = 512
             ]
+download_girder(url, modelId_list, model_folder)
 
-for dataId in dataId_list:
-    myfile = gc.getFile(dataId)
-    gc.downloadFile(dataId, data_folder + myfile['name'])
+# %% Download the raw data
+# [Todo: remove unused data]
 
-#%% Download the raw data [Todo: remove unused data]
 data_folder = './data/'
-
 folderId_list = [
                 '637512e84d15dd536f048247', # bitten apple
                 '622b65d543258e76eab217b3', # cat
@@ -56,21 +55,24 @@ folderId_list = [
                 '617289d2478214d8c8a30f5c', # usaf x2
                 '6172a77c478214d8c8a30fde', # usaf x12
                 ]
+# in the folder list, download only the files with the following suffixes
+suffix = ('_spectraldata.npz', '_metadata.json')
 
-suffix_list = ['_spectraldata.npz', '_metadata.json']
+#%%
+# Generate the warehouse client
+gc = girder_client.GirderClient(apiUrl=url)
 
 for folderId in folderId_list:
+    
     folder = gc.getFolder(folderId)
     folder_name = folder['name']
-
     list_item = gc.listItem(folderId)
+    
     for item in list_item:
-        if (suffix_list[0] in item['name']):
-            item_id = item['_id']
-            print('item found : ' + item['name'])
-            gc.downloadItem(item_id, Path(data_folder) / Path(folder_name), item['name'])
+        if item['name'].endswith(suffix):
+            
+            item_id, item_name = item['_id'], item['name']
+            download_girder(url, item_id,
+                            Path(data_folder) / Path(folder_name), item['name'])
 
-        if (suffix_list[1] in item['name']):
-            item_id = item['_id']
-            print('item found : ' + item['name'])
-            gc.downloadItem(item_id, Path(data_folder) / Path(folder_name), item['name'])
+# %%
