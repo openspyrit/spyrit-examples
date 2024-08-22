@@ -47,8 +47,8 @@ folderId_list = [
                 # '622b5ea843258e76eab21740', # cat colored
                 # '639332784d15dd536f04838e', # color checker
                 # '622b634743258e76eab21767', # horse
-                '616fe8ac478214d8c8a30d8e', # star sector x2
-                # '616fff63478214d8c8a30e2f', # star sector x12
+                # '616fe8ac478214d8c8a30d8e', # star sector x2
+                '616fff63478214d8c8a30e2f', # star sector x12
                 # '61e19b3fcdb6910b899d0147', # star sector colored
                 # '622b57f743258e76eab21719', # star sector off-centered
                 # '6328942febe9129ae9936f8d', # Thorlab box
