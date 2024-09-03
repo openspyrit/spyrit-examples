@@ -9,7 +9,6 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # %% General
 # --------------------------------------------------------------------
 
@@ -95,10 +94,63 @@ for ii, alpha in enumerate(alpha_list):
 # Send to GPU if available
 y = y.to(device)
 
+# %% Pinv
+# --------------------------------------------------------------------
+from spyrit.core.recon import PinvNet
+
+# Init
+pinv = PinvNet(noise_op, prep_op)
+
+# Use GPU if available
+pinv = pinv.to(device)
+
+# Reconstruct
+x_pinv = torch.zeros(3,1,img_size,img_size)
+
+with torch.no_grad():
+    for ii, alpha in enumerate(alpha_list):
+        pinv.prep.alpha = alpha
+        x_pinv[ii] =  pinv.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192)
+
+# %% Save reconstructions from pinv
+# --------------------------------------------------------------------
+save_tag = True
+
+if save_tag:
+    for ii, alpha in enumerate(alpha_list):
+        filename = f'pinv_alpha_{alpha:02}.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_pinv[ii,0].cpu().detach().numpy(), 
+            cmap='gray') #
+
+# %% Pinv-Net
+# --------------------------------------------------------------------
+from spyrit.core.recon import PinvNet
+from spyrit.core.nnet import Unet
+from spyrit.core.train import load_net
+
+model_name = 'xxx_light.pth'
+
+# Init
+pinvnet = PinvNet(noise_op, prep_op, Unet())
+pinvnet.eval() 
+
+# Load net and use GPU if available
+load_net(model_folder_full / model_name, pinvnet, device, False)
+pinvnet = pinvnet.to(device)
+
+# Reconstruct
+x_pinvnet = torch.zeros(3,1,img_size,img_size)
+
+with torch.no_grad():
+    for ii, alpha in enumerate(alpha_list):
+        pinvnet.prep.alpha = alpha
+        x_pinvnet[ii] =  pinvnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192)
+
 # %% DC-Net
 # --------------------------------------------------------------------
-from spyrit.core.nnet import Unet
 from spyrit.core.recon import DCNet
+from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
 model_name = 'dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth'
