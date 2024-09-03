@@ -1,3 +1,8 @@
-.jpeg
-.png
+*.jpeg
+*.png
+*.pdf
 **/image_sample/
+/stat*
+/recon*
+/model*
+/data*
