@@ -131,11 +131,14 @@ if save_tag:
 
 # %% Pinv-Net
 # ====================================================================
+# %% -----------------------------------------------------------------
+# Pinv-Net
+# --------------------------------------------------------------------
 from spyrit.core.recon import PinvNet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
-model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07.pth'
+model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07_retrained_light.pth'
 
 # Init
 pinvnet = PinvNet(noise_op, prep_op, Unet())
@@ -159,8 +162,20 @@ for ii, alpha in enumerate(alpha_list):
     plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), 
         cmap='gray') #
 
+# %% -----------------------------------------------------------------
+# Save reconstructions from Pinv-Net
+# --------------------------------------------------------------------
+save_tag = True
+
+if save_tag:
+    for ii, alpha in enumerate(alpha_list):
+        filename = f'pinvnet_alpha_{alpha:02}.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), 
+            cmap='gray') #
+
 # %% DC-Net
-# ====================================================================
+# --------------------------------------------------------------------
 from spyrit.core.recon import DCNet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net

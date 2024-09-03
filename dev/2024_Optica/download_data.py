@@ -2,9 +2,7 @@
 # IMPORTS
 
 from pathlib import Path
-
 from spyrit.misc.load_data import download_girder
-
 
 # %%
 # auxiliary DL function
