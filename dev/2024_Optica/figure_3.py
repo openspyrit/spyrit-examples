@@ -123,13 +123,14 @@ if save_tag:
         plt.imsave(full_path, x_pinv[ii,0].cpu().detach().numpy(), 
             cmap='gray') #
 
-# %% Pinv-Net
+# %% -----------------------------------------------------------------
+# Pinv-Net
 # --------------------------------------------------------------------
 from spyrit.core.recon import PinvNet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
-model_name = 'xxx_light.pth'
+model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07_retrained_light.pth'
 
 # Init
 pinvnet = PinvNet(noise_op, prep_op, Unet())
@@ -146,6 +147,18 @@ with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         pinvnet.prep.alpha = alpha
         x_pinvnet[ii] =  pinvnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192)
+
+# %% -----------------------------------------------------------------
+# Save reconstructions from Pinv-Net
+# --------------------------------------------------------------------
+save_tag = True
+
+if save_tag:
+    for ii, alpha in enumerate(alpha_list):
+        filename = f'pinvnet_alpha_{alpha:02}.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), 
+            cmap='gray') #
 
 # %% DC-Net
 # --------------------------------------------------------------------
