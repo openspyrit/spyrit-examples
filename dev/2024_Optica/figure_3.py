@@ -199,3 +199,31 @@ if save_tag:
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dcnet[ii,0].cpu().detach().numpy(), 
             cmap='gray') #
+
+
+
+# %% DPGD-PnP
+# --------------------------------------------------------------------
+gamma = 1/img_size**2
+max_iter = 101
+mu_list = [6000, 3500, 1500]
+crit_norm = 1e-4
+
+from utility import get_model, load_model
+def get_dfb_model():
+    #-- load denoiser
+    n_channel, n_feature, n_layer = 1, 100, 20
+
+    model_name = f'../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_{n_feature}_layers_{n_layer}/'
+    model, net_name, clip_val, lr = get_model('DFBNet', n_channel,  n_feature, n_layer)
+    model = load_model(pth = model_dir + net_name + '.pth', 
+                        net = model, 
+                        n_ch = n_channel, 
+                        features = n_feature, 
+                        num_of_layers = n_layer)
+    model.module.update_lip((1,50,50))
+    model.eval()    
+    return model
+
+denoi = get_dfb_model() 
+model = PnP(noise_op, prep_op, denoi, gamma, mu, max_iter, crit_norm)
