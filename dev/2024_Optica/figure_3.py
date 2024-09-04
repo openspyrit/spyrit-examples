@@ -1,4 +1,5 @@
-# %% Imports
+# %% 
+# Imports
 # --------------------------------------------------------------------
 import os
 from pathlib import Path
@@ -12,7 +13,8 @@ import matplotlib.pyplot as plt
 import spyrit.core.recon as recon
 import spyrit.external.drunet as drunet
 
-# %% General
+# %% 
+# General
 # --------------------------------------------------------------------
 
 # Experimental data
@@ -31,7 +33,8 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-# %% Load images
+# %% 
+# Load images
 # --------------------------------------------------------------------
 import spyrit.misc.statistics as stats
 from spyrit.misc.disp import imagesc
@@ -66,7 +69,8 @@ x_plot = x.view(-1, h, h).cpu().numpy()
 plt.imsave(recon_folder_full / 'original.png', x_plot[0, :, :], cmap='gray')
 
 
-# %% Simulate measurements for three image intensities
+# %% 
+# Simulate measurements for three image intensities
 # --------------------------------------------------------------------
 alpha_list = [2, 10, 50] # Poisson law parameter for noisy image acquisitions
 n_alpha = len(alpha_list)
@@ -102,7 +106,8 @@ for ii, alpha in enumerate(alpha_list):
 y = y.to(device)
 
 
-# %% Pinv
+# %% 
+# Pinv
 # ====================================================================
 from spyrit.core.recon import PinvNet
 
@@ -126,7 +131,8 @@ with torch.no_grad():
             cmap='gray') #
 
 
-# %% Pinv-Net
+# %% 
+# Pinv-Net
 # ====================================================================
 from spyrit.core.recon import PinvNet
 from spyrit.core.nnet import Unet
@@ -157,7 +163,8 @@ with torch.no_grad():
             cmap='gray') #
 
 
-# %% DC-Net
+# %% 
+# DC-Net
 # ====================================================================
 from spyrit.core.recon import DCNet
 from spyrit.core.nnet import Unet
@@ -192,7 +199,8 @@ with torch.no_grad():
             cmap='gray') #
 
 
-# %% LPGD
+# %% 
+# LPGD
 # ====================================================================
 
 model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
@@ -206,21 +214,23 @@ lpgd.eval()
 load_net(model_folder_full / model_name, lpgd, device, False)
 lpgd = lpgd.to(device)
 
-# Reconstruct
-x_lpgd = torch.zeros(n_alpha, 1, img_size, img_size)
+# Reconstruct and save
+x_lpgd = torch.zeros(1, 1, img_size, img_size)
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         lpgd.prep.alpha = alpha
-        x_lpgd[ii] =  lpgd.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
+        x_lpgd =  lpgd.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
         
+        # save
         filename = f'lpgd_alpha_{alpha:02}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_lpgd[ii,0].cpu().detach().numpy(), 
+        plt.imsave(full_path, x_lpgd[0,0].cpu().detach().numpy(), 
             cmap='gray')
 
 
-# %% Pinv - PnP
+# %% 
+# Pinv - PnP
 # ====================================================================
 
 model_name = "drunet_gray.pth"
@@ -231,54 +241,64 @@ denoi = drunet.DRUNet()
 pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
 pinvnet.eval()
 
-# load_net(model_folder_full / model_name, pinvnet, device, True)
-pinvnet.denoi.load_state_dict(torch.load(model_folder_full / model_name), strict=False)
+#load_net(model_folder_full / model_name, pinvnet, device, False)
+pinvnet.denoi.load_state_dict(
+    torch.load(model_folder_full / model_name), 
+    strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
 
-# Reconstruct
-x_pinvnet = torch.zeros(n_alpha, 1, img_size, img_size)
+# Reconstruct and save
+x_pinvnet = torch.zeros(1, 1, img_size, img_size)
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
+        
         # set noise level for measurement operator and PnP denoiser
         pinvnet.prep.alpha = alpha
         nu = noise_levels[ii]
         pinvnet.denoi.set_noise_level(nu)
-        x_pinvnet[ii] = pinvnet.reconstruct(y[ii:ii+1, :])
+        x_pinvnet = pinvnet.reconstruct(y[ii:ii+1, :])
         
+        # save
         filename = f'pinv_pnp_alpha_{alpha:02}_nu_{nu:03}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), 
+        plt.imsave(full_path, x_pinvnet[0,0].cpu().detach().numpy(), 
             cmap='gray')
-        
-# %%
-
-
 
 
 # %% DPGD-PnP
-# --------------------------------------------------------------------
+from utility_dpgd import load_model, DualPGD
+
+# load denoiser
+n_channel, n_feature, n_layer = 1, 100, 20
+model_name = 'DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20.pth'
+denoi = load_model(pth = (model_folder_full / model_name).as_posix(), 
+                    n_ch = n_channel, 
+                    features = n_feature, 
+                    num_of_layers = n_layer)
+
+denoi.module.update_lip((1,50,50))
+denoi.eval()
+
+# Reconstruction hyperparameters
 gamma = 1/img_size**2
 max_iter = 101
 mu_list = [6000, 3500, 1500]
 crit_norm = 1e-4
 
-from utility import get_model, load_model
-def get_dfb_model():
-    #-- load denoiser
-    n_channel, n_feature, n_layer = 1, 100, 20
+# Init 
+dpgdnet = DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+x_dpgd = torch.zeros(1, 1, img_size, img_size)
 
-    model_name = f'../../model_pnp/DFBNet_l1_patchsize=50_varnoise0.1_feat_{n_feature}_layers_{n_layer}/'
-    model, net_name, clip_val, lr = get_model('DFBNet', n_channel,  n_feature, n_layer)
-    model = load_model(pth = model_dir + net_name + '.pth', 
-                        net = model, 
-                        n_ch = n_channel, 
-                        features = n_feature, 
-                        num_of_layers = n_layer)
-    model.module.update_lip((1,50,50))
-    model.eval()    
-    return model
-
-denoi = get_dfb_model() 
-model = PnP(noise_op, prep_op, denoi, gamma, mu, max_iter, crit_norm)
+with torch.no_grad():
+    for ii, alpha in enumerate(alpha_list):
+        dpgdnet.prep.alpha = alpha
+        dpgdnet.mu = mu_list[ii]
+        x_dpgd =  dpgdnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
+        
+        # save
+        filename = f'dpgd_alpha_{alpha:02}.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_dpgd[0,0].cpu().detach().numpy(), 
+            cmap='gray')

@@ -123,7 +123,6 @@ model_files = [
     "66cf34f5b891f94a08ad8218", # LPGD
     "66c72804b891f94a08ad8193", # DC-Net
     "66cc9a7bb891f94a08ad81e4", # Pinv - PnP
-    "66d6cc01b891f94a08ad821e", # dfb-net nch_3_feat_64_lay_20
     "66d6cd3eb891f94a08ad8221", # dfb-net nch_1 / varnoise0.05
     "66d6cd3eb891f94a08ad8224", # dfb-net nch_1 / varnoise0.1
     "66cf34f5b891f94a08ad8215", # Pinv-net retrained
