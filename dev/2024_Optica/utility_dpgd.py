@@ -362,7 +362,7 @@ class DualPGD(nn.Module):
                 x_old = x_old.view(bc,1,self.acqu.meas_op.h, self.acqu.meas_op.w)
                 norm_it = torch.linalg.vector_norm(x-x_old)/torch.linalg.vector_norm(x)
                 
-                print(f'{i}: |x - x_old| / |x| = {norm_it}')
+                # print(f'{i}: |x - x_old| / |x| = {norm_it}')
                 if norm_it < self.norm_stop:
                     break
 
