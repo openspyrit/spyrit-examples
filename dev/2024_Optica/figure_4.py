@@ -33,8 +33,8 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
 data_title = [
+    "tomato_slice_2_zoomx2",
     "zoom_x12_starsector",
-    "tomato_slice_2_zoomx2"
 ]
 savenames = [
     "starsector",
@@ -113,7 +113,6 @@ measurements = [
 ]
 
 # %%
-
 # reconstruct using a single spectral slice
 lambda_min = 579
 lambda_max = 579.1
@@ -130,13 +129,6 @@ for i in range(n_meas):
     # convert to torch, float32
     measurements_slice[i] = torch.from_numpy(
         measurements_slice[i]).to(device, dtype=torch.float32)
-
-
-
-
-
-
-
 
 
 # %% Pinv
