@@ -1,19 +1,26 @@
 # %% 
 # Imports
 # --------------------------------------------------------------------
-import os
 from pathlib import Path
-import sys
-import math
 import torch
-import torchvision
 import numpy as np
-import matplotlib.pyplot as plt
 
 import spyrit.core.recon as recon
 import spyrit.external.drunet as drunet
 
 import aux_functions as aux
+
+# Create a rescaled version of pinv that uses drunet that outputs images
+# in the range [-1, 1] instead of [0, 1]
+class pinvnet_rescaled(torch.nn.Module):
+    def __init__(self, pinvnet):
+        super().__init__()
+        self.pinvnet = pinvnet
+        
+    def forward(self, x):
+        return (self.pinvnet.forward(x) * 2) - 1
+    
+    
 # %% 
 # General Parameters
 # --------------------------------------------------------------------
@@ -91,7 +98,8 @@ with torch.no_grad():
         pinv.acqu.alpha = alpha
         results = aux.eval_model_metrics_batch_cum(pinv, dataloader, device, metrics_eval[0:1], n_batches)
         print(results)
-        
+
+del pinv        
 
 # %% 
 # Pinv-Net
@@ -121,7 +129,8 @@ with torch.no_grad():
         results = aux.eval_model_metrics_batch_cum(pinvnet, dataloader, device, metrics_eval, n_batches)
         print(results)
         
-        
+del pinvnet
+
 # %% 
 # LPGD
 # ====================================================================
@@ -162,9 +171,9 @@ cov_name = stat_folder_full / 'Cov_8_{}x{}.npy'.format(img_size, img_size)
 Cov = torch.from_numpy(np.load(cov_name)) 
 
 # Init
-denoi = Unet()         # torch.nn.Identity()
+denoi = Unet()
 dcnet = DCNet(noise_op, prep_op, Cov, denoi)
-dcnet.eval() 
+dcnet.eval()
 
 # Load net and use GPU if available
 load_net(model_folder_full / model_name, dcnet, device, False)
@@ -195,7 +204,7 @@ pinvnet.eval()
 
 #load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet.denoi.load_state_dict(
-    torch.load(model_folder_full / model_name), 
+    torch.load(model_folder_full / model_name, weights_only=True), 
     strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
@@ -209,7 +218,8 @@ with torch.no_grad():
         nu = noise_levels[ii]
         pinvnet.denoi.set_noise_level(nu)
         print(f"For {alpha=} and {nu=}")
-        results = aux.eval_model_metrics_batch_cum(pinvnet, dataloader, device, metrics_eval, n_batches)
+        pinvnet_ = pinvnet_rescaled(pinvnet)
+        results = aux.eval_model_metrics_batch_cum(pinvnet_, dataloader, device, metrics_eval, n_batches)
         print(results)
         
 
