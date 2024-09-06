@@ -1,23 +1,19 @@
 # %% Imports
 # --------------------------------------------------------------------
-import os
+import json
+import ast
 from pathlib import Path
-import sys
-import math
 import torch
-import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
 import spyrit.core.recon as recon
 import spyrit.external.drunet as drunet
 import spyrit.misc.sampling as samp
-import spas
 
 
 # %% General
 # --------------------------------------------------------------------
-
 # Experimental data
 data_folder = 'data/'       # images for simulated measurements
 model_folder = 'model/'             # reconstruction models
@@ -47,13 +43,12 @@ suffix = {
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 print("Using device:", device)
 
-
-
-import spyrit.misc.statistics as stats
 img_size = 128 # image size
 subsampling_factor = 2 # measure an equivalent image of size img_size // 2
+
 
 # %% Measurement (and reconstruction) operators
 # --------------------------------------------------------------------
@@ -76,10 +71,7 @@ noise_op = Poisson(meas_op, 2) # parameter alpha is unimportant here
 prep_op = SplitPoisson(2, meas_op) # same here
 
 
-
-
 # %% Load experimental data and prepare it for reconstruction
-# --------------------------------------------------------------------
 print("Looking for data in", data_folder_full)
 
 # Collect data in numpy
@@ -88,55 +80,48 @@ exp_data = [
     for title in data_title
 ]
 # Collect metadata
-metadata = [
-    spas.read_metadata(data_folder_full / (title + suffix['metadata']))[1]
-    for title in data_title
-]
+patterns = [[] for _ in range(n_meas)]
+wavelengths = [[] for _ in range(n_meas)]
+for ii, title in enumerate(data_title):
+    file = open(data_folder_full / (title + suffix['metadata']), 'r')
+    json_metadata = json.load(file)[3]
+    file.close()
+    patterns[ii] = ast.literal_eval(json_metadata['patterns'])
+    wavelengths[ii] = ast.literal_eval(json_metadata['wavelengths'])
+    
 
 # %%
-
 # reorder measurements to match with the reconstruction order
 acq_size = img_size // subsampling_factor
 Ord_acq = [
-    (-np.array(metadata[i].patterns)[::2]//2).reshape((acq_size, acq_size))
+    (-np.array(patterns[i])[::2]//2).reshape((acq_size, acq_size))
     for i in range(n_meas)
 ]
 
 # %%
-
 # define the two permutation matrices used to reorder the measurements
 # measurement order -> natural order -> reconstruction order
 Perm_rec = samp.Permutation_Matrix(Ord_rec)
 Perm_acq = [samp.Permutation_Matrix(Ord_acq[i]).T for i in range(n_meas)]
+# each element of 'measurements' has shape (measurements, wavelengths)
 measurements = [
     samp.reorder(exp_data[i], Perm_acq[i], Perm_rec) for i in range(n_meas)
 ]
 
-# %%
 
+# %%
 # reconstruct using a single spectral slice
-lambda_min = 579
-lambda_max = 579.1
-lambda_num = 1
+lambda_select = 579.0970
 measurements_slice = [np.zeros((2*M, 1)) for _ in range(n_meas)]
 
 # select the measurements in the right spectral slice
 for i in range(n_meas):
-    # spectral_slicing takes wavelength / measurements, hence the .T
-    measurements_slice[i] = spas.spectral_slicing(
-        measurements[i].T, metadata[i].wavelengths, lambda_min, lambda_max,
-        lambda_num
-    )[0][:, :2*M]
-    # convert to torch, float32
+    
+    lambda_index = wavelengths[i].index(lambda_select)
+    # take only the first 2*M measurements of the right wavelength
+    measurements_slice[i] = measurements[i][:2*M, lambda_index].reshape((1, 2*M))
     measurements_slice[i] = torch.from_numpy(
         measurements_slice[i]).to(device, dtype=torch.float32)
-
-
-
-
-
-
-
 
 
 # %% Pinv
@@ -165,7 +150,6 @@ with torch.no_grad():
 
 # %% Pinv-Net
 # ====================================================================
-from spyrit.core.recon import PinvNet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
@@ -291,6 +275,7 @@ with torch.no_grad():
         
 
 # %% DPGD-PnP
+# ====================================================================
 from utility_dpgd import load_model, DualPGD
 
 # load denoiser
@@ -326,4 +311,3 @@ with torch.no_grad():
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dpgd[0,0, :, :].cpu().detach().numpy(), 
             cmap='gray')
-# %%
