@@ -15,11 +15,14 @@ import spyrit.external.drunet as drunet
 
 import aux_functions as aux
 # %% 
-# General
+# General Parameters
 # --------------------------------------------------------------------
+img_size = 128 # image size
+batch_size = 128
+n_batches = 3 # iterate over how many batches to get statistical data
 
 # Experimental data
-val_folder = 'data/ImageNet_validation/' # used for statistical analysis
+val_folder = 'data/ImageNet_validation/val(1)/val' # used for statistical analysis
 # val_folder = r'C:\Users\phan\Downloads\images\Images'
 model_folder = 'model/'             # reconstruction models
 stat_folder  = 'stat/'              # statistics
@@ -40,10 +43,6 @@ print("Using device:", device)
 # Load images
 # --------------------------------------------------------------------
 import spyrit.misc.statistics as stats
-from spyrit.misc.disp import imagesc
-img_size = 128 # image size
-batch_size = 128
-n_batches = 3 # iterate over how many batches to get data
 
 dataloader = stats.data_loaders_ImageNet(val_folder_full, val_folder_full, 
     img_size, batch_size)['val'] 
@@ -53,15 +52,13 @@ metrics_eval = ['nrmse', 'ssim']
 # %% 
 # Simulate measurements for three image intensities
 # --------------------------------------------------------------------
-alpha_list = [2, 10, 50] # Poisson law parameter for noisy image acquisitions
-n_alpha = len(alpha_list)
-
 from spyrit.core.meas import HadamSplit
 from spyrit.core.noise import Poisson
-# from spyrit.misc.sampling import meas2img
 from spyrit.core.prep import SplitPoisson
 
 # Measurement parameters
+alpha_list = [2, 10, 50] # Poisson law parameter for noisy image acquisitions
+n_alpha = len(alpha_list)
 M = 128 * 128 // 4  # Number of measurements (here, 1/4 of the pixels)
 
 # Measurement and noise operators
@@ -72,19 +69,6 @@ Ord_rec[img_size//2:,:] = 0
 meas_op = HadamSplit(M, img_size, torch.from_numpy(Ord_rec))
 noise_op = Poisson(meas_op, alpha_list[0])
 prep_op = SplitPoisson(2, meas_op)
-
-# Vectorized image
-# x = x.view(1, h * w)
-
-# Measurement vectors
-# y = torch.zeros(n_alpha, 2*M)
-# for ii, alpha in enumerate(alpha_list): 
-#     torch.manual_seed(0)    # for reproducibility
-#     noise_op.alpha = alpha
-#     y[ii,:] = noise_op(x)
-
-# Send to GPU if available
-# y = y.to(device)
 
 
 # %% 
@@ -104,7 +88,8 @@ with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         print(f"For {alpha=}")
         pinv.prep.alpha = alpha
-        results = aux.eval_model_metrics_batch_cum(pinv, dataloader, device, metrics_eval, n_batches)
+        pinv.acqu.alpha = alpha
+        results = aux.eval_model_metrics_batch_cum(pinv, dataloader, device, metrics_eval[0:1], n_batches)
         print(results)
         
 
@@ -132,10 +117,37 @@ with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         print(f"For {alpha=}")
         pinvnet.prep.alpha = alpha
+        pinvnet.acqu.alpha = alpha
         results = aux.eval_model_metrics_batch_cum(pinvnet, dataloader, device, metrics_eval, n_batches)
         print(results)
         
         
+# %% 
+# LPGD
+# ====================================================================
+
+model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
+
+# Initialize network
+denoi = Unet()
+lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
+lpgd.eval()
+
+# load net and use GPU if available
+load_net(model_folder_full / model_name, lpgd, device, False)
+lpgd = lpgd.to(device)
+
+print("\nLPGD reconstruction metrics")
+
+with torch.no_grad():
+    for ii, alpha in enumerate(alpha_list):
+        print(f"For {alpha=}")
+        lpgd.prep.alpha = alpha
+        lpgd.acqu.alpha = alpha
+        results = aux.eval_model_metrics_batch_cum(lpgd, dataloader, device, metrics_eval, n_batches)
+        print(results)
+        
+
 # %% 
 # DC-Net
 # ====================================================================
@@ -164,41 +176,17 @@ with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         print(f"For {alpha=}")
         dcnet.prep.alpha = alpha
+        dcnet.Acq.alpha = alpha
         results = aux.eval_model_metrics_batch_cum(dcnet, dataloader, device, metrics_eval, n_batches)
         print(results)
 
-
-# %% 
-# LPGD
-# ====================================================================
-
-model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
-
-# Initialize network
-denoi = Unet()
-lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
-lpgd.eval()
-
-# load net and use GPU if available
-load_net(model_folder_full / model_name, lpgd, device, False)
-lpgd = lpgd.to(device)
-
-print("\nLPGD reconstruction metrics")
-
-with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        print
-        lpgd.prep.alpha = alpha
-        results = aux.eval_model_metrics_batch_cum(lpgd, dataloader, device, metrics_eval, n_batches)
-        print(results)
-        
 
 # %% 
 # Pinv - PnP
 # ====================================================================
 
 model_name = "drunet_gray.pth"
-noise_levels = [115, 45, 20] # noise levels from 0 to 255 for each alpha
+noise_levels = [115, 50, 20] # noise levels from 0 to 255 for each alpha
 
 # Initialize network
 denoi = drunet.DRUNet()
@@ -217,6 +205,7 @@ print("\nPinv-PnP reconstruction metrics")
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         pinvnet.prep.alpha = alpha
+        pinvnet.acqu.alpha = alpha
         nu = noise_levels[ii]
         pinvnet.denoi.set_noise_level(nu)
         print(f"For {alpha=} and {nu=}")
@@ -252,6 +241,7 @@ print("\nDPGD-PnP reconstruction metrics")
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
         dpgdnet.prep.alpha = alpha
+        dpgdnet.acqu.alpha = alpha
         dpgdnet.mu = mu_list[ii]
         mu = mu_list[ii]
         print(f"For {alpha=} and {mu=}")
