@@ -29,8 +29,8 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
 data_title = [
+    "tomato_slice_2_zoomx2",
     "zoom_x12_starsector",
-    "tomato_slice_2_zoomx2"
 ]
 savenames = [
     "starsector",

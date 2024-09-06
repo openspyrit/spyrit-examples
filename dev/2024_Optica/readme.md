@@ -15,49 +15,46 @@ We provide here the code to reproduce the results reported in
 ## Installation
 ### Create a conda environment
 ```shell
-conda create --name spyrit-dev
-conda activate spyrit-dev
+conda create --name spyrit-spas
+conda activate spyrit-spas
 ```
 ### First, install pytorch using conda
 Use the following command or visit https://pytorch.org/get-started/locally/ if you need a different installation.
 ```shell
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
 ```
 
-### [Developper mode] Then, clone spyrit and install it using pip
-```shell
-git clone https://github.com/openspyrit/spyrit.git
-cd spyrit
-git reset --hard 21db0562c38833de6a9f9298c6952105b248e1ba # specific commit
-pip install -e .
-```
-### [User mode] Should work, but not tested
+### Install SPyRiT and a few more packages
 ```shell
 pip install spyrit==2.3.3
-```
-
-### Some other packages
-The `pandas` package is only needed to save some results in a csv file. You may not need to install it.
-```shell
 pip install ipykernel
 pip install girder-client
 pip install scikit-image
-pip install pandas
 ```
 
-### Install SPAS
-Follow the guidelines given in the SPAS ReadMe: https://github.com/openspyrit/spas. You don't need the DLLs.
+The `pandas` package may be needed to save some results in a csv file. 
+
+### Install SPAS (single-pixel acquisition software)
+```shell
+git clone -b tmp-oe --single-branch https://github.com/openspyrit/spas.git
+cd spas # update path in necessary
+pip install -e .
+cd ..
+```
+
+For more information, check https://github.com/openspyrit/spas. 
 
 ## Get code and data
-First, get the source code. and navigate to the
+First, get the source code
 
 ```shell
 git clone https://github.com/openspyrit/spyrit-examples.git
+cd spyrit-examples/dev/2024_Optica/ 
 ```
 
-Then, navigate to the `/dev/2024_Optica/` folder and download the models and data by running `download_data.py`:
+Download the models and data
+
 ```shell
-cd spyrit-examples/dev/2024_Optica/ 
 python3 download_data.py
 ```
 
