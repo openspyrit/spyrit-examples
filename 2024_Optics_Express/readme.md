@@ -12,43 +12,9 @@ We provide here the code to reproduce the results reported in
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
-## Installation
+## Get the code from Github
 
-### Method 1 (preferred): using environment.yml
-Using a environment manager (e.g. conda), create an environment using the `environment.yml` file.
-```shell
-cd 2024_Optics_Express
-conda env create -f environment.yml
-conda activate spyrit_optics_express_2024
-```
-
-### Method 2: install each module independently
-
-#### Create a conda environment
-```shell
-conda create --name spyrit_optics_express_2024
-conda activate spyrit_optics_express_2024
-```
-
-#### First, install pytorch using conda
-Use the following command or visit https://pytorch.org/get-started/locally/ if you need a different installation.
-```shell
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
-```
-
-#### Install SPyRiT and a few more packages
-Still using the conda shell, run these lines:
-```shell
-pip install spyrit==2.3.3
-pip install girder-client
-pip install scikit-image
-```
-
-## Get code and data
-
-### Get the code from Github
-
-You can clone only the code for this paper using a `sparse-checkout` in git. In a new directory, run these commands:
+You can only clone the code corresponding to this paper using the  `sparse-checkout` git command.
 ```shell
 git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
 cd spyrit-examples
@@ -61,47 +27,101 @@ Alternatively, you can clone the whole `spyrit-examples` repository (which inclu
 git clone https://github.com/openspyrit/spyrit-examples.git
 ```
 
-### Download the models and data
+## Download the models and data
 
-Run this in a python command line or from your favorite IDE:
+Run the `download_data.py` script from the `2024_Optics_Express` subfolder
 ```shell
 cd spyrit-examples/2024_Optics_Express/ 
-python3 download_data.py
+python download_data.py
 ```
 
+
+The ImageNet (ILSVRC2012) test and validation sets can be downloaded from [this url](https://image-net.org/challenges/LSVRC/2012/2012-downloads.php). They must saved in `./data/ILSVRC2012/test/all` and `./data/ILSVRC2012/val/all`. 
+
+If the images are already available on your computer, just create a symbolic link
+
+* Linux:
+
+    ```shell
+    ln -s <imagenet folder> /data/ILSVRC2012/ 
+    ```
+
+* Windows Powershell (run as Administrator):
+
+    ```shell
+    New-Item -ItemType SymbolicLink -Name \data\ILSVRC2012\ -Target <imagenet folder>
+    ```
 The directory structure should be as follows:
 
 ```
 |---spyrit-examples
-|   |---dev
-|   |   |---2024_Optics_Express
-|   |   |   |---data
-|   |   |   |   |---
-|   |   |   |---model
-|   |   |   |   |---
-|   |   |   |---stat
-|   |   |   |   |---
-|   |   |   |---recon
-|   |   |   |   |---
-|   |   |   |---aux_functions.py
-|   |   |   |---download_data.py
-|   |   |   |---figure_2.py
-|   |   |   |---figure_3.py
-|   |   |   |---figure_4.py
-|   |   |   |---table_1.py
-|   |   |   |---train.py
-|   |   |   |---utility_dpgd.py
+|   |---2024_Optics_Express
+|   |   |---data
+|   |   |   |---ILSVRC2012
+|   |   |   |   |---test
+|   |   |   |   |   |---all
+|   |   |   |   |   |   |---ILSVRC2012_test_00000001.JPEG
+|   |   |   |   |   |   |---
+|   |   |   |   |---val
+|   |   |   |   |   |---all
+|   |   |   |   |   |   |---ILSVRC2012_val_00000001.JPEG
+|   |   |   |   |   |   |---
+|   |   |   |---tomato_slice_2_zoomx2_spectraldata.npz
+|   |   |   |---images
+|   |   |   |---
+|   |   |---model
+|   |   |   |---
+|   |   |---stat
+|   |   |   |---
+|   |   |---recon
+|   |   |   |---
+|   |   |---aux_functions.py
+|   |   |---download_data.py
+|   |   |---figure_2.py
+|   |   |---figure_3.py
+|   |   |---figure_4.py
+|   |   |---table_1.py
+|   |   |---train.py
+|   |   |---utility_dpgd.py
 ```
 
-## Paper results generation
+## Installation
 
-1. Run `figure_2.py`, `figure_3.py`, `figure_4.py` to reproduce the sampling masks, acquisition matrices, measurements, and images in Fig. 2.
+### Method 1 (preferred, NOT WORKING): using environment.yml
+Using a environment manager (e.g. conda), create an environment using the `environment.yml` file.
+```shell
+conda env create -f environment.yml
+conda activate spyrit_optics_express_2024
+```
 
-2. Run `figure_3.py` and `figure_4.py` to reproduce the reconstruction images obtained from simulated measurements (figure 3) or from experimental measurements (figure 4).
+### Method 2: install each module independently
+1. Create a conda environment
+    ```shell
+    conda create --name spyrit_optics_express_2024
+    conda activate spyrit_optics_express_2024
+    ```
 
-3. Run `table_1.py` to reproduce the statistical results presented in table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
+1. Install pytorch using conda. E.g.,
+    ```shell
+    conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+    ```
+    Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-## Training of the networks from scratch
+1. Install SPyRiT and a few more packages:
+    ```shell
+    pip install spyrit==2.3.3
+    pip install girder-client
+    pip install scikit-image
+    ```
+
+## How to reproduce the paper's results?
+1. To reproduce the sampling masks, acquisition matrices, measurements, and images in Figure 2, run `figure_2.py`. 
+
+2. To reproduce the reconstructions in Figure 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images are saved in `\2024_Optics_Express\recon\`
+
+3. Run `table_1.py` to reproduce the metrics reported in Table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
+
+## Training the networks from scratch (NOT TESTED)
 
 ```powershell
 ./train.py --M 2048 --img_size 128 --batch_size 256

@@ -28,9 +28,8 @@ img_size = 128 # image size
 batch_size = 128
 n_batches = 3 # iterate over how many batches to get statistical data
 
-# Experimental data
-val_folder = 'data/ImageNet_validation/val(1)/val' # used for statistical analysis
-# val_folder = r'C:\Users\phan\Downloads\images\Images'
+# Experimental
+val_folder = 'data/ILSVRC2012/val/' # used for statistical analysis
 model_folder = 'model/'             # reconstruction models
 stat_folder  = 'stat/'              # statistics
 recon_folder = 'recon/table_1/'     # table output

@@ -21,8 +21,9 @@ import spyrit.external.drunet as drunet
 import utility_dpgd as dpgd
 
 
-# %% General
-# --------------------------------------------------------------------
+# %% 
+# General
+# ====================================================================
 # Experimental data
 data_folder = 'data/'       # images for simulated measurements
 model_folder = 'model/'             # reconstruction models
@@ -59,11 +60,9 @@ img_size = 128 # image size
 subsampling_factor = 2 # measure an equivalent image of size img_size // 2
 
 
-# %% Measurement (and reconstruction) operators
-# --------------------------------------------------------------------
-
-
-
+# %% 
+# Measurement (and reconstruction) operators
+# ====================================================================
 # number of measurements
 M = (img_size // subsampling_factor)**2
 
@@ -77,7 +76,9 @@ noise_op = noise.Poisson(meas_op, 2) # parameter alpha is unimportant here
 prep_op = prep.SplitPoisson(2, meas_op) # same here
 
 
-# %% Load experimental data and prepare it for reconstruction
+# %% 
+# Load experimental data and prepare it for reconstruction
+# ====================================================================
 print("Looking for data in", data_folder_full)
 
 # Collect data in numpy
@@ -97,7 +98,8 @@ for ii, title in enumerate(data_title):
     
 
 # %%
-# reorder measurements to match with the reconstruction order
+# Reorder measurements to match with the reconstruction order
+# ====================================================================
 acq_size = img_size // subsampling_factor
 Ord_acq = [
     (-np.array(patterns[i])[::2]//2).reshape((acq_size, acq_size))
@@ -105,7 +107,7 @@ Ord_acq = [
 ]
 
 # %%
-# define the two permutation matrices used to reorder the measurements
+# Define the two permutation matrices used to reorder the measurements
 # measurement order -> natural order -> reconstruction order
 Perm_rec = samp.Permutation_Matrix(Ord_rec)
 Perm_acq = [samp.Permutation_Matrix(Ord_acq[i]).T for i in range(n_meas)]
@@ -116,7 +118,8 @@ measurements = [
 
 
 # %%
-# reconstruct using a single spectral slice
+# Reconstruct using a single spectral slice
+# ====================================================================
 lambda_select = 579.0970
 measurements_slice = [np.zeros((2*M, 1)) for _ in range(n_meas)]
 
@@ -130,7 +133,8 @@ for i in range(n_meas):
         measurements_slice[i]).to(device, dtype=torch.float32)
 
 
-# %% Pinv
+# %% 
+# Pinv
 # ====================================================================
 # Init
 pinv = recon.PinvNet(noise_op, prep_op)
@@ -152,7 +156,8 @@ with torch.no_grad():
             cmap='gray')
 
 
-# %% Pinv-Net
+# %% 
+# Pinv-Net
 # ====================================================================
 model_name = 'pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07_retrained_light.pth'
 
@@ -178,7 +183,8 @@ with torch.no_grad():
             cmap='gray')
 
 
-# %% DC-Net
+# %% 
+# DC-Net
 # ====================================================================
 model_name = 'dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth'
 cov_name = stat_folder_full / 'Cov_8_{}x{}.npy'.format(img_size, img_size)
@@ -209,7 +215,8 @@ with torch.no_grad():
             cmap='gray')
 
 
-# %% LPGD
+# %% 
+# LPGD
 # ====================================================================
 model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
 
@@ -236,7 +243,8 @@ with torch.no_grad():
             cmap='gray')
 
 
-# %% Pinv - PnP
+# %% 
+# Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
 noise_levels = [55, 35] # noise levels from 0 to 255 for each alpha
@@ -268,7 +276,8 @@ with torch.no_grad():
             cmap='gray')
         
 
-# %% DPGD-PnP
+# %% 
+# DPGD-PnP
 # ====================================================================
 # load denoiser
 n_channel, n_feature, n_layer = 1, 100, 20
