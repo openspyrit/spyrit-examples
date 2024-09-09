@@ -99,7 +99,7 @@ The directory structure should be as follows:
 
 2. Run `figure_3.py` and `figure_4.py` to reproduce the reconstruction images obtained from simulated measurements (figure 3) or from experimental measurements (figure 4).
 
-3. Run `table_1.py` to reproduce the statistical results presented in table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
+3. Run `table_1.py` with the data available at [...] to reproduce the statistical results presented in table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
 
 ## Training of the networks from scratch
 
