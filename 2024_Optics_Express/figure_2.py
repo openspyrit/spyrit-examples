@@ -53,8 +53,8 @@ seed = 404
 # download image from girder server
 url = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 dataID = "668e986a7d138728d4806d7a"
-local_folder = "./image_sample/"
-class_folder = "test/"
+local_folder = "./data/images/figure_2/"
+class_folder = "magpie/"
 data_name = "ILSVRC2012_test_00000002.jpeg"
 image_abs_path = load.download_girder(url, dataID, local_folder+class_folder, data_name)
 
