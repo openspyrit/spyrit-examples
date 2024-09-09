@@ -40,7 +40,6 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvi
 Still using the conda shell, run these lines:
 ```shell
 pip install spyrit==2.3.3
-pip install ipykernel
 pip install girder-client
 pip install scikit-image
 ```
