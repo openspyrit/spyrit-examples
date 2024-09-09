@@ -19,6 +19,7 @@ Using a environment manager (e.g. conda), create an environment using the `envir
 ```shell
 cd 2024_Optics_Express
 conda env create -f environment.yml
+conda activate spyrit_optics_express_2024
 ```
 
 ### Method 2: install each module independently
