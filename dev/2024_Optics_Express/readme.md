@@ -13,18 +13,30 @@ We provide here the code to reproduce the results reported in
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Installation
-### Create a conda environment
+
+### Method 1 (preferred): using environment.yml
+Using a environment manager (e.g. conda), create an environment using the `environment.yml` file.
 ```shell
-conda create --name spyrit-spas
-conda activate spyrit-spas
+cd 2024_Optics_Express
+conda env create -f environment.yml
 ```
-### First, install pytorch using conda
+
+### Method 2: install each module independently
+
+#### Create a conda environment
+```shell
+conda create --name spyrit_optics_express_2024
+conda activate spyrit_optics_express_2024
+```
+
+#### First, install pytorch using conda
 Use the following command or visit https://pytorch.org/get-started/locally/ if you need a different installation.
 ```shell
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
 ```
 
-### Install SPyRiT and a few more packages
+#### Install SPyRiT and a few more packages
+Still using the conda shell, run these lines:
 ```shell
 pip install spyrit==2.3.3
 pip install ipykernel
@@ -32,24 +44,12 @@ pip install girder-client
 pip install scikit-image
 ```
 
-The `pandas` package may be needed to save some results in a csv file. 
-
-### Install SPAS (single-pixel acquisition software)
-```shell
-git clone -b tmp-oe --single-branch https://github.com/openspyrit/spas.git
-cd spas # update path in necessary
-pip install -e .
-cd ..
-```
-
-For more information, check https://github.com/openspyrit/spas. 
-
 ## Get code and data
-First, get the source code
+First, get the source code using git:
 
 ```shell
 git clone https://github.com/openspyrit/spyrit-examples.git
-cd spyrit-examples/dev/2024_Optica/ 
+cd spyrit-examples/dev/2024_Optics_Express/ 
 ```
 
 Download the models and data
@@ -63,28 +63,31 @@ The directory structure should be as follows:
 ```
 |---spyrit-examples
 |   |---dev
-|   |   |---2024_Optica
+|   |   |---2024_Optics_Express
 |   |   |   |---data
 |   |   |   |   |---
 |   |   |   |---model
 |   |   |   |   |---
 |   |   |   |---stat
 |   |   |   |   |---
+|   |   |   |---recon
+|   |   |   |   |---
+|   |   |   |---aux_functions.py
 |   |   |   |---download_data.py
 |   |   |   |---figure_2.py
-|   |   |   |---reconstruct_all_figures.py
+|   |   |   |---figure_3.py
+|   |   |   |---figure_4.py
+|   |   |   |---table_1.py
 |   |   |   |---train.py
-|   |   |   |---aux_functions.py
-|   |   |   |---models_helper.py
-|   |   |   |---networks.py
-|   |   |   |---
-|   |   |   |---recon
+|   |   |   |---utility_dpgd.py
 ```
 
 ## Generation of the results of the paper
-1. Run `figure2_py` to reproduce the sampling masks, acquisition matrices, measurements, and images in Fig. 2.
+1. Run `figure_2.py`, `figure_3.py`, `figure_4.py` to reproduce the sampling masks, acquisition matrices, measurements, and images in Fig. 2.
 
-1. Run `reconstruct_all_figures.py` to reconstruct all the images displayed in both the main and supplementary documents.
+2. Run `figure_3.py` and `figure_4.py` to reproduce the reconstruction images obtained from simulated measurements (figure 3) or from experimental measurements (figure 4).
+
+3. Run `table_1.py` to reproduce the statistical results presented in table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
 
 ## Training of the networks from scratch
 ```powershell
