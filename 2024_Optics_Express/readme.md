@@ -45,16 +45,27 @@ pip install scikit-image
 ```
 
 ## Get code and data
-First, get the source code using git:
 
+### Get the code from Github
+
+You can clone only the code for this paper using a `sparse-checkout` in git. In a new directory, run these commands:
 ```shell
-git clone https://github.com/openspyrit/spyrit-examples.git
-cd spyrit-examples/dev/2024_Optics_Express/ 
+git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
+cd spyrit-examples
+git sparse-checkout set 2024_Optics_Express
+git checkout
 ```
 
-Download the models and data
-
+Alternatively, you can clone the whole `spyrit-examples` repository (which includes code for some other papers):
 ```shell
+git clone https://github.com/openspyrit/spyrit-examples.git
+```
+
+### Download the models and data
+
+Run this in a python command line or from your favorite IDE:
+```shell
+cd spyrit-examples/2024_Optics_Express/ 
 python3 download_data.py
 ```
 
@@ -82,7 +93,8 @@ The directory structure should be as follows:
 |   |   |   |---utility_dpgd.py
 ```
 
-## Generation of the results of the paper
+## Paper results generation
+
 1. Run `figure_2.py`, `figure_3.py`, `figure_4.py` to reproduce the sampling masks, acquisition matrices, measurements, and images in Fig. 2.
 
 2. Run `figure_3.py` and `figure_4.py` to reproduce the reconstruction images obtained from simulated measurements (figure 3) or from experimental measurements (figure 4).
@@ -90,6 +102,7 @@ The directory structure should be as follows:
 3. Run `table_1.py` to reproduce the statistical results presented in table 1. This code runs on a subset of the the ImageNet validation data. For this reason, you will get values close to but not equal to those presented in the paper. 
 
 ## Training of the networks from scratch
+
 ```powershell
 ./train.py --M 2048 --img_size 128 --batch_size 256
 ```
