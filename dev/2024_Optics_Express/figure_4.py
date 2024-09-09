@@ -15,7 +15,7 @@ import spyrit.core.prep as prep
 import spyrit.core.recon as recon
 import spyrit.core.nnet as nnet
 import spyrit.core.train as train
-import spyrit.misc.statistics as stats
+import spyrit.misc.sampling as samp
 import spyrit.external.drunet as drunet
 
 import utility_dpgd as dpgd
