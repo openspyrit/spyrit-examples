@@ -1,5 +1,5 @@
 """
-Auxiliary functions for the Optica 2024 paper.
+Auxiliary functions for the OpticsExpress 2024 paper.
 """
 
 import torch
