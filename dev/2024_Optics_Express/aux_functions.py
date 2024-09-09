@@ -4,10 +4,83 @@ Auxiliary functions for the Optics Express 2024 paper.
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt	
+import matplotlib.ticker as ticker
 
 from skimage.metrics import normalized_root_mse as nrmse
 from skimage.metrics import structural_similarity as ssim
 
+
+# DISPLAY FUNCTIONS
+def imagesc_mod(img,
+               title='',
+               figsize=(5, 5),
+               colormap=plt.cm.gray,
+               title_fontsize=16,
+               dpi=100,
+               minmax=None,
+               showscale=False,
+               **kwargs):
+    """
+    Plot images with a custom colormap and a custom color for 'nan' values.
+    """
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    ax = fig.add_subplot(1, 1, 1)
+    # clean the axes
+    ax.xaxis.set_major_locator(ticker.NullLocator())
+    ax.yaxis.set_major_locator(ticker.NullLocator())
+    # set min max for the colormap
+    if minmax is None:
+        minmax = (img[~img.isnan()].min(), img[~img.isnan()].max())
+    # define the color for 'nan' values
+    colormap.set_bad(color='grey')
+    plt.imshow(img, cmap=colormap, vmin=minmax[0], vmax=minmax[1], **kwargs)
+    plt.title(title, fontsize=title_fontsize)
+    if showscale:
+        # cax = plt.axes([0.85, 0.1, 0.075, 0.8])
+        plt.colorbar(orientation="vertical")
+    plt.show()
+    
+
+def split_meas2img(measurements, meas_operator):
+    r"""
+    Generates a 2D image from split measurements acquired from a LinearSplit or
+    HadamSplit operator.
+    
+    /!\ The measurements must be in the alternating positive / negative format.
+    
+    Using spyrit 2.3.2
+    """
+    M = meas_operator.M
+    N = meas_operator.N
+    h,w = meas_operator.meas_shape
+    # using 'nan' so that we can show them with a custom color (see imagesc_mod)
+    img_pos = torch.full((N,), torch.tensor(float('nan'))) # even rows
+    img_neg = torch.full((N,), torch.tensor(float('nan'))) # odd rows
+    
+    # split the measurements in pos/neg, then apply meas2img to each
+    meas = measurements.view(2*M)
+    meas_pos = meas[0::2]
+    meas_neg = meas[1::2]
+    
+    # fill img_pos and img_neg with the measurements
+    img_pos[meas_operator.indices[:M]] = meas_pos
+    img_neg[meas_operator.indices[:M]] = meas_neg
+    
+    # concatenate and reshape the images
+    img = torch.cat((img_pos.reshape(h,w), img_neg.reshape(h,w)), dim=0)
+    
+    return img
+
+
+def center_measurements(measurements):
+    r"""
+    Centers the measurements so that the max value is the opposite of the min
+    value. This is useful for visualization purposes.
+    """
+    max_val = measurements[~measurements.isnan()].max()
+    min_val = measurements[~measurements.isnan()].min()
+    return measurements - (max_val + min_val) / 2
 
 
 def compute_nrmse(x, x_gt, dim=[2,3]):
