@@ -1,4 +1,5 @@
-"""Python file for generating plots presented in figure 2 in the paper:
+"""Python file for generating plots presented in figure 2 in the OpticsExpress 
+main paper:
 
 SPyRiT: AN OPEN SOURCE PACKAGE FOR SINGLE-PIXEL IMAGING BASED ON DEEP LEARNING
 """
