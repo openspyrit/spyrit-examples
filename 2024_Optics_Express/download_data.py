@@ -5,85 +5,10 @@ from pathlib import Path
 from spyrit.misc.load_data import download_girder
 
 # %%
-# auxiliary DL function
-
-def download_girder_folder(
-    server_url: str,
-    folder_id: str,
-    destination: str=None,
-    force_download: bool=False
-    ):
-    """
-    Downloads recursively a folder from a Girder server and saves it locally in
-    the specified folder. If the local folder does not exist, it is created.
-    
-    It is possible to specify a list of folders to download. In this case, the
-    folders are downloaded in the same directory.
-    
-    ..important::
-        If `force_download` is set to False, the function checks if the folder
-        already exists locally. If it does, the folder is not downloaded. The
-        function does not check if the folder's contents match the server's.
-    
-    Args:
-        server_url (str): The URL of the Girder server.
-        
-        folder_id (str or list): The hexadecimal id or list of ids of the
-        folder(s) to download.
-        
-        local_folder (str, optional): The path to the local folder where the
-        files will be saved. If it does not exist, it will be created.
-    
-        force_download (bool, optional): If True, the folder is downloaded 
-        regardless of whether it already exists locally. Default is False.
-    
-    Returns:
-        Absolute path to the downloaded folder.
-    """
-    import girder_client
-    
-    # create local folder if it does not exist
-    if destination is not None:
-        destination = Path.cwd() / Path(destination)
-        if not Path(destination).exists():
-            Path(destination).mkdir(parents=True, exist_ok=True)
-    else:
-        destination = Path.cwd()
-    print("Downloading at:", destination)
-    
-    # connect to the server
-    gc = girder_client.GirderClient(apiUrl=server_url)
-    
-    # create lists if strings are provided
-    if type(folder_id) is str:
-        folder_id = [folder_id]
-    elif type(folder_id) is not list:
-        raise ValueError("folder_id must be a string or a list of strings.")
-    
-    # download the folders
-    abs_paths = []
-    for folder in folder_id:
-        
-        # get the folder name
-        folder_name = gc.getFolder(folder)['name']
-        print(f"Downloading folder: {folder_name}/", end="\r")
-        
-        # is it found locally?
-        if (not force_download) and (destination / folder_name).exists():
-            print(f"Folder found: {folder_name}/")
-        else:
-            gc.downloadFolderRecursive(folder, destination / folder_name)
-            print(f"Downloaded folder: {folder_name}/ ") # leave final space
-            
-        abs_paths.append((destination / folder_name).resolve())
-    
-    return abs_paths[0] if len(abs_paths) == 1 else abs_paths
-        
-
 # %% SETTINGS
 # change this if you want to download the files in a different folder
 destination = Path.cwd() # / Path("your_subfolder")
-
+print("Copying folder in:", destination)
 
 # %%
 # download data from the Pilot warehouse
@@ -140,7 +65,14 @@ stat_files = [
 download_girder(url_tomoradio, stat_files, stat_subfolder)
 
 
+# %%
+# create recon folder
+recon_subfolder = Path("recon")
+recon_subfolder.mkdir(exist_ok=True)
 
+
+
+# %%
 
 # download files from this storage
 # url = 'https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1'
@@ -157,37 +89,7 @@ download_girder(url_tomoradio, stat_files, stat_subfolder)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# =============================================================================
 
 
 
