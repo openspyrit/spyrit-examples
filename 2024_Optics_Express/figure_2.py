@@ -1,12 +1,12 @@
-"""Python file for generating plots presented in figure 2 in the paper:
+"""Python file for generating plots presented in figure 2 in the Optics Express 
+main paper:
 
 SPyRiT: AN OPEN SOURCE PACKAGE FOR SINGLE-PIXEL IMAGING BASED ON DEEP LEARNING
 """
 #%%
-import numpy as np
 import torch
 import torchvision
-import matplotlib.ticker as ticker
+import numpy as np
 import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
@@ -15,75 +15,10 @@ import spyrit.core.prep as prep
 import spyrit.core.torch as spytorch
 import spyrit.misc.statistics as stats
 import spyrit.misc.sampling as samp
-from spyrit.misc.load_data import download_girder
+import spyrit.misc.load_data as load
 
-def imagesc_mod(img,
-               title='',
-               figsize=(5, 5),
-               colormap=plt.cm.gray,
-               title_fontsize=16,
-               dpi=100,
-               minmax=None,
-               showscale=False,
-               **kwargs):
-    """
-    Plot images with a custom colormap and a custom color for 'nan' values.
-    """
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-    ax = fig.add_subplot(1, 1, 1)
-    # clean the axes
-    ax.xaxis.set_major_locator(ticker.NullLocator())
-    ax.yaxis.set_major_locator(ticker.NullLocator())
-    # set min max for the colormap
-    if minmax is None:
-        minmax = (img[~img.isnan()].min(), img[~img.isnan()].max())
-    # define the color for 'nan' values
-    colormap.set_bad(color='grey')
-    plt.imshow(img, cmap=colormap, vmin=minmax[0], vmax=minmax[1], **kwargs)
-    plt.title(title, fontsize=title_fontsize)
-    if showscale:
-        # cax = plt.axes([0.85, 0.1, 0.075, 0.8])
-        plt.colorbar(orientation="vertical")
-    plt.show()
-    
-def split_meas2img(measurements, meas_operator):
-    r"""
-    Generates a 2D image from split measurements acquired from a LinearSplit or
-    HadamSplit operator.
-    
-    /!\ The measurements must be in the alternating positive / negative format.
-    
-    Using spyrit 2.3.2
-    """
-    M = meas_operator.M
-    N = meas_operator.N
-    h,w = meas_operator.meas_shape
-    # using 'nan' so that we can show them with a custom color (see imagesc_mod)
-    img_pos = torch.full((N,), torch.tensor(float('nan'))) # even rows
-    img_neg = torch.full((N,), torch.tensor(float('nan'))) # odd rows
-    
-    # split the measurements in pos/neg, then apply meas2img to each
-    meas = measurements.view(2*M)
-    meas_pos = meas[0::2]
-    meas_neg = meas[1::2]
-    
-    # fill img_pos and img_neg with the measurements
-    img_pos[meas_operator.indices[:M]] = meas_pos
-    img_neg[meas_operator.indices[:M]] = meas_neg
-    
-    # concatenate and reshape the images
-    img = torch.cat((img_pos.reshape(h,w), img_neg.reshape(h,w)), dim=0)
-    
-    return img
+import aux_functions as aux
 
-def center_measurements(measurements):
-    r"""
-    Centers the measurements so that the max value is the opposite of the min
-    value. This is useful for visualization purposes.
-    """
-    max_val = measurements[~measurements.isnan()].max()
-    min_val = measurements[~measurements.isnan()].min()
-    return measurements - (max_val + min_val) / 2
 
 # %% PARAMS
 # Generic parameters for the script
@@ -118,10 +53,10 @@ seed = 404
 # download image from girder server
 url = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 dataID = "668e986a7d138728d4806d7a"
-local_folder = "./image_sample/"
-class_folder = "test/"
+local_folder = "./data/images/figure_2/"
+class_folder = "magpie/"
 data_name = "ILSVRC2012_test_00000002.jpeg"
-image_abs_path = download_girder(url, dataID, local_folder+class_folder, data_name)
+image_abs_path = load.download_girder(url, dataID, local_folder+class_folder, data_name)
 
 # Create a transform for natural images to normalized grayscale image tensors
 transform = stats.transform_gray_norm(img_size=h)
@@ -141,7 +76,7 @@ c, height, width = x.shape
 # Plot Ground-truth image
 x_plot = x.view(h, h).cpu().numpy()
 orig_minmax = (-1, 1)
-imagesc_mod(x_plot, figsize=figsize, dpi=dpi, minmax=orig_minmax)
+aux.imagesc_mod(x_plot, figsize=figsize, dpi=dpi, minmax=orig_minmax)
 
 # %% SQUARE SAMPLING MAP
 Sampling_map = np.ones((h, h))
@@ -169,9 +104,9 @@ mask3 = (meas_op3.indices.argsort() < meas_op3.M).reshape(h, h)
 mask2 = torch.cat((mask2, mask2), dim=0)
 mask3 = torch.cat((mask3, mask3), dim=0)
 
-imagesc_mod(mask1.cpu().numpy(), figsize=figsize, dpi=dpi, minmax=(-1, 1))
-imagesc_mod(mask2.cpu().numpy(), figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
-imagesc_mod(mask3.cpu().numpy(), figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(mask1.cpu().numpy(), figsize=figsize, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(mask2.cpu().numpy(), figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(mask3.cpu().numpy(), figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
 
 # %% MATRICES H
 # show 1D walsh-ordered hadamard matrices for each case
@@ -184,9 +119,9 @@ zer = torch.zeros((h_disp-len(order), h_disp))
 H_disp3 = torch.cat((H_disp1[order], zer, -H_disp1[order], zer), dim=0)
 H_disp3[H_disp3 == -1] = 0 # take the positive part
 
-imagesc_mod(H_disp1, figsize=figsize, dpi=dpi, minmax=(-1, 1))
-imagesc_mod(H_disp2, figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
-imagesc_mod(H_disp3, figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(H_disp1, figsize=figsize, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(H_disp2, figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
+aux.imagesc_mod(H_disp3, figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
 
 # %% MEASUREMENTS
 # set seed for reproducibility in Poisson noise
@@ -206,17 +141,17 @@ y3 = noise_op3(x)
 
 # plots
 y1_plot = y1.reshape(h, h)
-y2_plot = split_meas2img(y2, meas_op2)
-y3_plot = split_meas2img(y3, meas_op3)
+y2_plot = aux.split_meas2img(y2, meas_op2)
+y3_plot = aux.split_meas2img(y3, meas_op3)
 
 # for split measurements, center measurements for better visualization
-y2_plot = center_measurements(y2_plot)
-y3_plot = center_measurements(y3_plot)
+y2_plot = aux.center_measurements(y2_plot)
+y3_plot = aux.center_measurements(y3_plot)
 
 norm = 'symlog'
-imagesc_mod(y1_plot, figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
-imagesc_mod(y2_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
-imagesc_mod(y3_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(y1_plot, figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(y2_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(y3_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
 
 # %% PREPROCESSING
 # preprocess measurements
@@ -239,9 +174,9 @@ m3_plot = torch.from_numpy(samp.meas2img(m3, meas_op3.Ord.numpy()))
 m3_plot[m3_plot == 0] = torch.tensor(float('nan'))
 
 # plot the preprocessed measurements
-imagesc_mod(m1.view(h, h).cpu(), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
-imagesc_mod(m2_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
-imagesc_mod(m3_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(m1.view(h, h).cpu(), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(m2_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(m3_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
 
 # %% RECONSTRUCTION
 # Reconstruct the image using the measurements
@@ -251,8 +186,8 @@ z3 = meas_op3.pinv(m3)
 
 #%%
 # plot the reconstructions
-imagesc_mod(z1.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
-imagesc_mod(z2.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
-imagesc_mod(z3.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
+aux.imagesc_mod(z1.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
+aux.imagesc_mod(z2.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
+aux.imagesc_mod(z3.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
 
 # %%

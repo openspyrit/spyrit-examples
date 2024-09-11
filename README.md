@@ -3,7 +3,13 @@
 
 ##  List of research contributions
 
-Some of research contributions based on the SPYRIT toolbox
+Some of research contributions based on the SPyRiT package:
+
+### 2024
+
+* [The SPyRiT package](./2024_Optics_Express/) (Optics Express, 2024)
+
+> JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT: an open source package for single-pixel imaging based on deep learning," Preprint (2024).
 
 ### 2023
 
@@ -15,9 +21,9 @@ Some of research contributions based on the SPYRIT toolbox
 
 * [ISTE Book Chapter](./deprecated/2022_ISTE/) (ISTE, 2022)
 
-> (French) N Ducros. Une introduction à l’imagerie computationnelle monodétecteur. [DOI](https://doi.org/10.51926/ISTE.9132.ch8).
+> [*English*] N Ducros. An Introduction to Single-Pixel Imaging. [DOI](https://doi.org/10.1002/9781394283996.ch8)
 
-> (English) N Ducros. In press
+> [*French*] N Ducros. Une introduction à l’imagerie computationnelle monodétecteur. [DOI](https://doi.org/10.51926/ISTE.9132.ch8).
 
 ### 2021
 
