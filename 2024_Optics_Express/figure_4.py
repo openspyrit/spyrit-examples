@@ -43,8 +43,8 @@ data_title = [
     "zoom_x12_starsector",
 ]
 savenames = [
-    "starsector",
-    "tomato"
+    "tomato",
+    "starsector"
 ]
 suffix = {
     "data": "_spectraldata.npz",
@@ -247,7 +247,7 @@ with torch.no_grad():
 # Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
-noise_levels = [55, 35] # noise levels from 0 to 255 for each alpha
+noise_levels = [35, 55] # noise levels from 0 to 255 for each alpha
 
 # Initialize network
 denoi = drunet.DRUNet()
