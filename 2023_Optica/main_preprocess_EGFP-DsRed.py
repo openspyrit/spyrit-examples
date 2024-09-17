@@ -30,10 +30,10 @@ def load_pattern_pos_neg(Dir, Run, c_bin):
         print(Path_files+list_files[i])
         print(Path_files+list_files[i+1])    
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
         pat_pos[i//2,:] = np.sum(tmp[1000:1048,:],0)
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
         pat_neg[i//2,:] = np.sum(tmp[1000:1048,:],0)
 
 
@@ -60,8 +60,8 @@ def load_data_pos_neg(Dir, Run, l_start, l_end, l_bin, lambda_bin):
     for i in range(0,2*Nh,2):      
         print(Path_files+list_files[i])
         print(Path_files+list_files[i+1])       
-        Data_pos[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
-        Data_neg[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        Data_pos[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
+        Data_neg[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
     
     # Crop raw data
     # We only have 2048 lines on the imaging camera we remove 56 lines 
@@ -104,6 +104,7 @@ H_neg = np.flip(H_neg,1).copy() # copy() required to remove negatives strides
 norm = H_pos[0,16:500].mean()
 H_pos /= norm
 H_neg /= norm
+
 
 f, axs = plt.subplots(3, 1)
 axs[0].set_title('Positive measurement patterns')

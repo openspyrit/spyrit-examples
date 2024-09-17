@@ -56,11 +56,6 @@ im = axs[1].imshow(np.flip(H_exp,1).copy(), cmap='gray')
 add_colorbar(im, 'bottom')
 axs[1].get_xaxis().set_visible(False)
 
-axs[1].set_title('Experimental measurement patterns (sum)')
-im = axs[1].imshow(np.flip(H_exp,1).copy(), cmap='gray') 
-add_colorbar(im, 'bottom')
-axs[1].get_xaxis().set_visible(False)
-
 #plt.savefig(Path(fig_folder) / 'patterns', bbox_inches='tight', dpi=600)
 
     
