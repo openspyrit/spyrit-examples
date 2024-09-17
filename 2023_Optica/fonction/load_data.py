@@ -88,15 +88,44 @@ def load_pattern_pos_neg(Dir, Run, c_bin):
         print(Path_files+list_files[i])
         print(Path_files+list_files[i+1])    
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
         pat_pos[i//2,:] = np.sum(tmp[1000:1048,:],0)
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
         pat_neg[i//2,:] = np.sum(tmp[1000:1048,:],0)
 
 
     pat_pos = bining_colonne(pat_pos, c_bin)
     pat_neg = bining_colonne(pat_neg, c_bin)
+    
+    return pat_pos, pat_neg
+
+
+def load_pattern_full_pos_neg(Dir, Run, c_bin=1, l_bin=1):
+    
+    Path_files, list_files = Select_data(Dir,Run)
+    Nh = len(list_files)//2
+    Nl, Nc = np.rot90(np.array(Image.open(Path_files+list_files[0]))).shape
+    
+    print(f'Found {Nh} patterns of size {Nl}x{Nc}')
+    
+    pat_pos = np.zeros((Nh,Nl//l_bin,Nc//c_bin))
+    pat_neg = np.zeros((Nh,Nl//l_bin,Nc//c_bin))
+    
+    for i in range(0,2*Nh,2):
+        
+        print(Path_files+list_files[i])
+        print(Path_files+list_files[i+1])    
+        
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
+        tmp = bining_colonne(tmp, c_bin)
+        tmp = bining_colonne(tmp.T, l_bin)
+        pat_pos[i//2] = tmp.T
+        
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        tmp = bining_colonne(tmp, c_bin)
+        tmp = bining_colonne(tmp.T, l_bin)
+        pat_neg[i//2] = tmp.T
     
     return pat_pos, pat_neg
 

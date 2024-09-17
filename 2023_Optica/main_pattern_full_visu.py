@@ -4,50 +4,21 @@ Created on Thu Dec  7 08:56:58 2023
 
 @author: ducros
 """
-#%%
+#%% Illuminations patterns (Nx, Ny, K)
 import numpy as np
-from PIL import Image
 import sys
 sys.path.append('./fonction')
-from load_data import Select_data
-from matrix_tools import bining_colonne, bining_line
+from load_data import load_pattern_full_pos_neg
 from pathlib import Path
 
-
-def load_pattern_full_pos_neg(Dir, Run, c_bin=1, l_bin=1):
-    
-    Path_files, list_files = Select_data(Dir,Run)
-    Nh = len(list_files)//2
-    Nl, Nc = np.rot90(np.array(Image.open(Path_files+list_files[0]))).shape
-    
-    print(f'Found {Nh} patterns of size {Nl}x{Nc}')
-    
-    pat_pos = np.zeros((Nh,Nl//l_bin,Nc//c_bin))
-    pat_neg = np.zeros((Nh,Nl//l_bin,Nc//c_bin))
-    
-    for i in range(0,2*Nh,2):
-        
-        print(Path_files+list_files[i])
-        print(Path_files+list_files[i+1])    
-        
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
-        tmp = bining_colonne(tmp, c_bin)
-        tmp = bining_colonne(tmp.T, l_bin)
-        pat_pos[i//2] = tmp.T
-        
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
-        tmp = bining_colonne(tmp, c_bin)
-        tmp = bining_colonne(tmp.T, l_bin)
-        pat_neg[i//2] = tmp.T
-    
-    return pat_pos, pat_neg
-
-#%% Acquisition patterns
 import matplotlib.pyplot as plt
 from spyrit.misc.disp import add_colorbar
 
 save_fig = True
-save_folder = Path(r'D:\Creatis\Communication\Journal\40_hspim\image_source\patterns_full')
+ext_fig = 'pdf'
+dpi_fig = 600
+
+save_folder = Path('./pattern/')
 
 data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
 Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
@@ -101,3 +72,111 @@ if save_fig:
     for ind in range(128):
         plt.imsave(save_folder / f'pat_pos_{ind}.png',H_pos[ind,:,:], cmap='Greys')
         plt.imsave(save_folder / f'pat_neg_{ind}.png',H_neg[ind,:,:], cmap='Greys')
+        
+#%% Profiles / acquisition matrix (Nx, K)
+import matplotlib.pyplot as plt
+from spyrit.misc.disp import add_colorbar
+from load_data import load_pattern_pos_neg
+
+save_fig = True
+ext_fig = 'pdf'
+dpi_fig = 1200
+
+data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
+Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
+Run = 'RUN0002' 
+
+# Binning is chosen such that:
+# 56 - 2104 = 2048 rows, hence 512 rows after x4 binning
+# 20 = 128 spectral channels 
+H_pos, H_neg = load_pattern_pos_neg(Dir,Run,4)
+
+H_pos = np.flip(H_pos,1).copy() # copy() required to remove negatives strides
+H_neg = np.flip(H_neg,1).copy() # copy() required to remove negatives strides
+norm = H_pos[0,16:500].mean()
+H_pos /= norm
+H_neg /= norm
+H_diff = H_pos - H_neg
+H_diff /= H_diff[0,16:500].mean()
+H_sum = H_pos + H_neg
+H_sum /= H_sum[0,16:500].mean()
+
+# plot
+f, axs = plt.subplots(4, 1)
+
+axs[0].set_ylabel('Pos')
+im = axs[0].imshow(H_pos, cmap='gray') 
+axs[0].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[1].set_ylabel('Neg')
+im = axs[1].imshow(H_neg, cmap='gray') 
+axs[1].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[2].set_ylabel('Diff')
+im = axs[2].imshow(H_diff, cmap='gray') 
+axs[2].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[3].set_ylabel('Sum')
+im = axs[3].imshow(H_sum, cmap='gray') 
+axs[3].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+if save_fig:
+    save_filename = f'measurement_matrix_actual.{ext_fig}'
+    plt.savefig(save_folder/save_filename, bbox_inches='tight', dpi=dpi_fig)
+
+
+# Save
+# Nl, Nh, Nc = stack_pos.shape
+# Ns = int(Run[-1])-1
+# filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
+# np.save(Path(data_folder+save_folder) / filename, stack_pos)
+# filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
+# np.save(Path(data_folder+save_folder) / filename, stack_neg)
+
+#%% Profiles / acquisition matrix (Nx, K)
+from spyrit.misc.walsh_hadamard import walsh_matrix
+import matplotlib.pyplot as plt
+from spyrit.misc.disp import add_colorbar
+from load_data import load_pattern_pos_neg
+
+save_fig = True
+ext_fig = 'pdf'
+dpi_fig = 1200
+
+
+H = walsh_matrix(512)
+H = H[:128]
+H_pos = np.where(H > 0, H, 0)
+H_neg = np.where(H < 0, -H, 0)
+H_sum = H_pos + H_neg
+
+# plot
+f, axs = plt.subplots(4, 1)
+
+axs[0].set_ylabel('Pos')
+im = axs[0].imshow(H_pos, cmap='gray') 
+axs[0].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[1].set_ylabel('Neg')
+im = axs[1].imshow(H_neg, cmap='gray') 
+axs[1].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[2].set_ylabel('Diff')
+im = axs[2].imshow(H, cmap='gray') 
+axs[2].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+axs[3].set_ylabel('Sum')
+im = axs[3].imshow(H_sum, cmap='gray') 
+axs[3].tick_params('both', bottom=False, left=False, labelbottom=False, labelleft=False)
+add_colorbar(im)
+
+if save_fig:
+    save_filename = f'measurement_matrix_target.{ext_fig}'
+    plt.savefig(save_folder/save_filename, bbox_inches='tight', dpi=dpi_fig)
