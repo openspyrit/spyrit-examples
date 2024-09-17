@@ -23,11 +23,6 @@ N = 512
 data_folder = './data/2023_03_07_mRFP_DsRed_can_vs_had/'
 mat_folder = '/Reconstruction/Mat_rc/'
 
-nbin = 2*4
-mudark = 106.0
-sigdark = 5.0
-gain = 2.65
-
 # load
 H_exp = np.load(Path(data_folder + mat_folder) / f'hadamard_matrix_{M}_{N}.npy')
 H_exp /= H_exp[0,16:500].mean()
@@ -36,7 +31,7 @@ H_exp /= H_exp[0,16:500].mean()
 channel = 10, 55, 100       # to be plotted
 Nl, Nh, Nc = 512, 64, 1280  # shape of preprocessed data
  
-c_step_list = [0,4,16]      # Step for the number of channels
+c_step_list = [0,4,16]      # Step for the number of channels. We must consider 10 to matche the dimension of the hypercubes corresponding to the zebrafish samples.
 lambda_central = 510        # Central channel
 
 lambda_all = np.linspace(500, 608, Nc)
@@ -51,7 +46,10 @@ import matplotlib.pyplot as plt
 M = 64
 N = 512
 
-linop = Linear(H_exp, pinv=True)
+linop = Linear(torch.from_numpy(H_exp), pinv=True, meas_shape = (1,512)) 
+# meas_shape = (1,512) allows to work in 1D, i.e., the forward model
+# applies to last dimension only. meas_shape = (512, 1) works as well.
+
 recon = PseudoInverse()
 
 #%% Pinv
@@ -85,11 +83,6 @@ prep_pos = np.moveaxis(prep_pos, -1, 0)
 prep_neg = np.moveaxis(prep_neg, -1, 0)
 
 # param #2
-background  = (2**15-1)*nbin
-
-prep_pos = prep_pos - background
-prep_neg = prep_neg - background
-
 nc, nl, nh = prep_neg.shape
 y = prep_pos - prep_neg #/np.expand_dims(prep_pos[:,:,0], axis=2)
 y = torch.from_numpy(y)
@@ -165,7 +158,7 @@ import matplotlib.pyplot as plt
 M = 64
 N = 512
 
-linop = Linear(H_exp, pinv=True)
+linop = Linear(torch.from_numpy(H_exp), pinv=True, meas_shape = (1,512))
 recon = PseudoInverse()
 
 #%% Pinv for CANONICAL patterns
