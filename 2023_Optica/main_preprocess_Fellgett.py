@@ -136,8 +136,8 @@ save_tag = True
 data_folder = './data/2023_03_07_mRFP_DsRed_can_vs_had/'
 Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/'
 save_folder = '/Reconstruction/Mat_rc/'
-Run_can = 'RUN0002'
-Run_dark = 'RUN0001'
+Run_can = 'RUN0002'     # As no dark pattern was measured we reuse the neg of
+Run_dark = 'RUN0001'    # the fist Hadamard pattern
 
 # Binning is chosen such that:
 # 56 - 2104 = 2048 rows, hence 512 rows after x4 binning
@@ -210,8 +210,8 @@ if save_tag:
 from load_data import load_data
 
 Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/'
-Run_can = 'RUN0006' 
-Run_dark = 'RUN0003' 
+Run_can = 'RUN0006'     #
+Run_dark = 'RUN0003'    #
 save_folder = '/Preprocess/'
 save_tag = True
 n_channel = 2

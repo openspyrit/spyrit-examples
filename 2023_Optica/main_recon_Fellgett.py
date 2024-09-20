@@ -102,6 +102,8 @@ for lambda_central in lambda_central_list:
         rec = rec_gpu.cpu().detach().numpy().squeeze()
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         rec = np.flip(rec,0)
+        rec = np.fliplr(rec)
+        rec = np.rot90(rec,-1)
     
     if save_rec:
         save_folder = 'Reconstruction/hypercube'  
@@ -204,6 +206,8 @@ for lambda_central in lambda_central_list:
                     
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         rec = np.flip(rec,0)
+        rec = np.fliplr(rec)
+        rec = np.rot90(rec,-1)
         
         if save_rec:
             save_folder = 'Reconstruction/hypercube'  
