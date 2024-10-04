@@ -56,7 +56,7 @@ Nc = 128 # number of channels
 
 T_list = range(1,27)    # slice indices
 load_path = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D'
-suffix = ''               # with leading underscore e.g. '_shift' '_registered'
+suffix = '_shift'               # with leading underscore e.g. '', '_shift' '_registered'
 recon = 'tikhonet50_div1.5' + suffix         # 'pinv'  'tikhonet50_div1.5'
 
 # all slices are unmixed jointly!
@@ -204,7 +204,7 @@ member_list = ['DsRed','EGFP','Autofluo'] #['DsRed','EGFP','Autofluo','Noise']
 unmix = 'calib_blind' + suffix # 'calib_blind_' 'calib_'
 unmixing_folder = '/Unmixing' + '_' + unmix + '/'
 
-method_unmix = 'NNLS' # 'NNLS''_UCLS'
+method_unmix = 'UCLS' # 'NNLS''_UCLS'
 Nm = 4
 Nl,Nh = xyzl_cube_reg.shape[:2] # new shape after registration
 
@@ -423,17 +423,20 @@ for z, t in enumerate(T_list):
         plt.close(fig)
         
 # Spectra
+col = ['r', 'g', (1,0.5, 0)]  # color list
+plt.rcParams['font.size'] = '16'
+
 fig, axs = plt.subplots()
-axs.plot(L_lambda, L_DsRed_exp, 'r', label = member_list[0])
-axs.plot(L_lambda, L_EGFP, 'g', label = member_list[1])
-axs.plot(L_lambda, U[2], 'b', label = member_list[2])
-axs.plot(L_lambda, L_notch, 'k', ls = 'dashed', label = 'notch filter')
+axs.plot(L_lambda, L_DsRed_exp, color=col[0], label = member_list[0])
+axs.plot(L_lambda, L_EGFP,      color=col[1], label = member_list[1])
+axs.plot(L_lambda, U[2],        color=col[2], label = member_list[2])
+axs.plot(L_lambda, L_notch,     color='k', ls = 'dashed', label = 'notch filter')
 axs.fill_between(L_lambda, L_notch, 1, color='k', alpha=.1)
-axs.plot(L_lambda, Filt_sep[0], 'g', ls = 'dashdot', label = 'green filter')
-axs.fill_between(L_lambda, Filt_sep[0], 0, color='g', alpha=.1)
-axs.plot(L_lambda, Filt_sep[1], 'r', ls = 'dashdot', label = 'red filter')
-axs.fill_between(L_lambda, Filt_sep[1], 0, color='r', alpha=.1)
-axs.legend()
+axs.plot(L_lambda, Filt_sep[0], color=col[1], ls = 'dashdot', label = 'green filter')
+axs.fill_between(L_lambda, Filt_sep[0], 0, color=col[1], alpha=.1)
+axs.plot(L_lambda, Filt_sep[1], color=col[0], ls = 'dashdot', label = 'red filter')
+axs.fill_between(L_lambda, Filt_sep[1], 0, color=col[0], alpha=.1)
+axs.legend(loc='upper right', bbox_to_anchor=(1.5, 1.05), frameon=False)
 plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
 
