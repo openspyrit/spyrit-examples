@@ -19,7 +19,7 @@ data_mRFP = np.genfromtxt(mRFP_path, delimiter=';',skip_header=True)
 mRFP_path =  "./data/Reference_spectra//mRFP12_fpbase_spectra.csv"
 data_mRFP = np.genfromtxt(mRFP_path, delimiter=',',skip_header=True)
 
-suffix = 'calib_mrfp12'
+suffix = 'calib_mrfp12_shift' # 'calib_mrfp12','calib_mrfp12_shift'
 
 Nc = 128 # number of channels
 
@@ -44,7 +44,7 @@ Nc = 128 # number of channels
 
 T_list = [*range(4, 8), *range(9, 25)] # slice indices, Run0008 corrupted
 load_path = './data/2023_02_28_mRFP_DsRed_3D'
-recon = 'pinv'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
+recon = 'pinv_shift'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
 
 # all slices are unmixed jointly!
 Nz = len(T_list)
@@ -131,7 +131,7 @@ from pysptools import abundance_maps
 unmixing_folder =  '/Unmixing_' + suffix + '/'
 member_list = ['DsRed','mRFP','Autofluo']  # member_list = ['DsRed','mRFP','Autofluo','Noise'] 
 
-method_unmix = 'NNLS' # 'NNLS''_UCLS'
+method_unmix = 'UCLS' # 'NNLS''_UCLS'
 Nm = 4
 Nl,Nh = xyzl_cube.shape[:2] # new shape after registration
 
@@ -271,12 +271,13 @@ for z, t in enumerate(T_list):
         plt.close(fig)
 
 # unmixing: spectra
-col = ['m', 'r', (1,0.5, 0)]  # color list
+col = ['r', 'b', (1,0.5, 0)]  # color list
 
+plt.rcParams['font.size'] = '16'
 fig, axs = plt.subplots()
 for m in range(len(member_list)):
     axs.plot(L_lambda, U[m], color=col[m], label = member_list[m])
-axs.legend()
+axs.legend(loc='upper right', bbox_to_anchor=(1.5, 1.05), frameon=False)
 plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
 
@@ -344,15 +345,18 @@ for z, t in enumerate(T_list):
         plt.close(fig)
         
 # Spectra
+col = ['r', (0,0,1), (1,0.5, 0)]  # color list
+
+plt.rcParams['font.size'] = '16'
 fig, axs = plt.subplots()
-axs.plot(L_lambda, L_DsRed, 'm', label = member_list[0])
-axs.plot(L_lambda, L_mRFP, 'r', label = member_list[1])
-axs.plot(L_lambda, U[2], color=(1,0.5, 0), label = member_list[2])
-axs.plot(L_lambda, Filt_sep[0], 'm', ls = 'dashdot', label = 'DsRed filter')
-axs.fill_between(L_lambda, Filt_sep[0], 0, color='g', alpha=.1)
-axs.plot(L_lambda, Filt_sep[1], 'r', ls = 'dashdot', label = 'mRFP filter')
-axs.fill_between(L_lambda, Filt_sep[1], 0, color='r', alpha=.1)
-axs.legend()
+axs.plot(L_lambda, L_DsRed, color=col[0], label = member_list[0])
+axs.plot(L_lambda, L_mRFP, color=col[1], label = member_list[1])
+axs.plot(L_lambda, U[2], color=col[2], label = member_list[2])
+axs.plot(L_lambda, Filt_sep[0], color=col[0], ls = 'dashdot', label = 'DsRed filter')
+axs.fill_between(L_lambda, Filt_sep[0], 0, color=col[0], alpha=.1)
+axs.plot(L_lambda, Filt_sep[1], color=col[1], ls = 'dashdot', label = 'mRFP filter')
+axs.fill_between(L_lambda, Filt_sep[1], 0, color=col[1], alpha=.1)
+axs.legend(loc='upper right', bbox_to_anchor=(1.5, 1.05), frameon=False)
 plt.xlabel('Wavelenght (nm)')
 plt.ylabel('Intensity (normalized)')
 
