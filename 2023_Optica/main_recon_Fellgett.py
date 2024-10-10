@@ -28,8 +28,6 @@ H_exp /= H_exp[0,16:500].mean()
 #%%
 channel = 10, 55, 100       # to be plotted
 Nl, Nh, Nc = 512, 64, 1280  # shape of preprocessed data
-save_rec = True
-save_fig = True
  
 # Number of channels. We choose 10 to get 128 channels, which matches the 
 # dimension of the hypercubes that were reconstructed for the zebrafish samples.
@@ -163,8 +161,8 @@ Run_can = 'RUN0006'
 Run_dark = 'RUN0003'  
 
 # save
-save_rec = True
-save_fig = True
+save_rec = False
+save_fig = False
 
 # Load net
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -227,3 +225,72 @@ for lambda_central in lambda_central_list:
         if save_fig:
             save_filename = f'can_{lambda_central}_{N}x{N}.{ext_fig}'
             plt.savefig(Path(data_folder+save_folder)/save_filename, bbox_inches='tight', dpi=dpi_fig)
+            
+#%% Peak signal to noise ratio
+
+def psnr(image, x, y, plot=True):
+    """Calculates the Peak Signal-to-Noise Ratio (PSNR) of an image.
+
+    Args:
+        image: The input image.
+        x: A tuple specifying the starting and ending row indices of the background.
+        y: A tuple specifying the starting and ending column indices of the background.
+
+    Returns:
+        The calculated PSNR value.
+
+    This function calculates the PSNR using the formula:
+
+    PSNR = 20*log10(MAX/STD),
+
+    where:
+        MAX: The maximum pixel value in the image.
+        STD: The standard deviation within the background region.
+
+    The PSNR provides a measure of image quality, with higher values indicating better image quality.
+    """
+    imax = image.max()
+    std = np.std(image[x[0]:x[1],y[0]:y[1]])
+    out = 20*np.log10(imax/std)
+    
+    if plot:
+        
+        from matplotlib.patches import Rectangle
+        fig, ax = plt.subplots()
+        plt.imshow(image)
+        plt.title(f'psnr: {out:.2f} dB')
+        plt.colorbar()
+        ax.add_patch(Rectangle((y[0], x[0]), y[1]-y[0]+1, x[1]-x[0]+1, linewidth=1, edgecolor='r', facecolor='none'))
+    
+    return out
+
+#%% PSNR comparison
+data_folder = './data/2023_03_07_mRFP_DsRed_can_vs_had/'
+save_folder = 'Reconstruction/hypercube'
+lambda_central_list = np.arange(510, 598, 12, dtype=int)  # Central channel in nanometer
+N = 512
+
+x_noise = [300, 450]
+y_noise = [100, 300]
+
+psnr_had = np.zeros(len(lambda_central_list))
+psnr_can = np.zeros(len(lambda_central_list))
+
+# hadamard
+for ii, lambda_central in enumerate(lambda_central_list):
+  
+    save_filename = f'had_{lambda_central}_{N}x{N}.npy'
+    rec = np.load(Path(data_folder+save_folder) / save_filename)
+    
+    psnr_had[ii] = psnr(rec, x_noise, y_noise)
+
+# pushbroom / canonical
+for ii, lambda_central in enumerate(lambda_central_list):
+  
+    save_filename = f'can_{lambda_central}_{N}x{N}.npy'
+    rec = np.load(Path(data_folder+save_folder) / save_filename)
+    
+    psnr_can[ii] = psnr(rec, x_noise, y_noise)
+
+with np.printoptions(precision=1, suppress=True):
+    print(psnr_had-psnr_can)
