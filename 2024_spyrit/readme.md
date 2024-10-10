@@ -18,7 +18,7 @@ You can only clone the code corresponding to this paper using the  `sparse-check
 ```shell
 git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
 cd spyrit-examples
-git sparse-checkout set 2024_Optics_Express
+git sparse-checkout set 2024_spyrit
 git checkout
 ```
 
@@ -29,9 +29,9 @@ git clone https://github.com/openspyrit/spyrit-examples.git
 
 ## Download the models and data
 
-Run the `download_data.py` script from the `2024_Optics_Express` subfolder
+Run the `download_data.py` script from the `2024_spyrit` subfolder
 ```shell
-cd spyrit-examples/2024_Optics_Express/ 
+cd spyrit-examples/2024_spyrit/ 
 python download_data.py
 ```
 
@@ -55,7 +55,7 @@ The directory structure should be as follows:
 
 ```
 |---spyrit-examples
-|   |---2024_Optics_Express
+|   |---2024_spyrit
 |   |   |---data
 |   |   |   |---ILSVRC2012
 |   |   |   |   |---test
@@ -88,8 +88,8 @@ The directory structure should be as follows:
 ## Installation
 1. Create a conda environment
     ```shell
-    conda create --name spyrit_optics_express_2024
-    conda activate spyrit_optics_express_2024
+    conda create --name spyrit_2024
+    conda activate spyrit_2024
     ```
 
 1. Install pytorch using conda. E.g.,
@@ -108,6 +108,6 @@ The directory structure should be as follows:
 ## How to reproduce the paper's results?
 1. To reproduce the sampling masks, acquisition matrices, measurements, and images in Figure 2, run `figure_2.py`. 
 
-2. To reproduce the reconstructions in Figure 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images are saved in `\2024_Optics_Express\recon\`
+2. To reproduce the reconstructions in Figure 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images are saved in `\2024_spyrit\recon\`
 
 3. Run `table_1.py` to reproduce the metrics in Table 1. To limit the computation time, the code runs only on a subset of the ImageNet validation set. For this reason, the obtained metrics are close to but not equal to those reported in the paper. 

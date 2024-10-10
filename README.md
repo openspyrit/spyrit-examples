@@ -7,7 +7,7 @@ Some of research contributions based on the SPyRiT package:
 
 ### 2024
 
-* [The SPyRiT package](./2024_Optics_Express/) (Optics Express, 2024)
+* [The SPyRiT package](./2024_spyrit/) (Preprint, 2024)
 
 > JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT: an open source package for single-pixel imaging based on deep learning," Preprint (2024).
 
