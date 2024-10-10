@@ -86,15 +86,6 @@ The directory structure should be as follows:
 ```
 
 ## Installation
-
-### Method 1 (preferred, NOT WORKING): using environment.yml
-Using a environment manager (e.g. conda), create an environment using the `environment.yml` file.
-```shell
-conda env create -f environment.yml
-conda activate spyrit_optics_express_2024
-```
-
-### Method 2: install each module independently
 1. Create a conda environment
     ```shell
     conda create --name spyrit_optics_express_2024
@@ -120,9 +111,3 @@ conda activate spyrit_optics_express_2024
 2. To reproduce the reconstructions in Figure 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images are saved in `\2024_Optics_Express\recon\`
 
 3. Run `table_1.py` to reproduce the metrics in Table 1. To limit the computation time, the code runs only on a subset of the ImageNet validation set. For this reason, the obtained metrics are close to but not equal to those reported in the paper. 
-
-## Training the networks from scratch (NOT TESTED)
-
-```powershell
-./train.py --M 2048 --img_size 128 --batch_size 256
-```
