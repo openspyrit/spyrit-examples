@@ -64,6 +64,7 @@ dataloader = torch.utils.data.DataLoader(
 
 # select the two images
 x, _ = next(iter(dataloader))
+# labels are given by file alphabetical order
 label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
 b, c, h, w = x.shape
 print("Batch shape:", x.shape)
@@ -196,7 +197,8 @@ with torch.no_grad():
 # Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
-nu_list = [45, 45, 45, 45, 45, 25] # noise levels from 0 to 255 for each alpha
+# label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
+nu_list = [25, 45, 45, 45, 45, 45] # noise levels for each label
 
 # Initialize network
 denoi = drunet.DRUNet()
@@ -236,7 +238,8 @@ denoi.module.update_lip((1,50,50))
 denoi.eval()
 
 # Reconstruction hyperparameters
-mu_list = [3000, 3000, 3000, 3000, 3000, 1800]
+# label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
+mu_list = [1800, 3000, 3000, 3000, 3000, 3000] # noise levels for each label
 gamma = 1/img_size**2
 max_iter = 101
 crit_norm = 1e-4
