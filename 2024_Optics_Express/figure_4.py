@@ -25,7 +25,7 @@ import utility_dpgd as dpgd
 # General
 # ====================================================================
 # Experimental data
-data_folder = 'data/'       # images for simulated measurements
+data_folder = 'data/'               # measurements
 model_folder = 'model/'             # reconstruction models
 stat_folder  = 'stat/'              # statistics
 recon_folder = 'recon/figure_4/'    # reconstructed images
@@ -170,8 +170,6 @@ train.load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet = pinvnet.to(device)
 
 # Reconstruct
-x_pinvnet = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinvnet.prep.set_expe()
@@ -202,8 +200,6 @@ train.load_net(model_folder_full / model_name, dcnet, device, False)
 dcnet = dcnet.to(device)
 
 # Reconstruct
-x_dcnet = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         dcnet.prep.set_expe()
@@ -230,8 +226,6 @@ train.load_net(model_folder_full / model_name, lpgd, device, False)
 lpgd = lpgd.to(device)
 
 # Reconstruct
-x_lpgd = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         lpgd.prep.set_expe()
@@ -255,13 +249,13 @@ pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
 pinvnet.eval()
 
 # load_net(model_folder_full / model_name, pinvnet, device, True)
-pinvnet.denoi.load_state_dict(torch.load(model_folder_full / model_name), strict=False)
+pinvnet.denoi.load_state_dict(
+    torch.load(model_folder_full / model_name, weights_only=True),
+    strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
 
 # Reconstruct
-x_pinvnet = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         # set noise level for measurement operator and PnP denoiser
@@ -299,7 +293,6 @@ crit_norm = 1e-4
 
 # Init 
 dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
-x_dpgd = torch.zeros(1, 1, img_size, img_size)
 
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
