@@ -31,6 +31,7 @@ download_girder(url_pilot, data_files, data_subfolder)
 url_tomoradio = 'https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1'
 images_subfolder = data_subfolder / Path("images/cropped")
 image_files = [
+    "670911acf03a54733161e956", # HSI_Brain_012-01_crop.jpeg
     "66cdd369b891f94a08ad81eb", # ILSVRC2012_val_00000003_crop.JPEG
     "66cdd36ab891f94a08ad81ee", # ILSVRC2012_val_00000012_crop.JPEG
     "66cdd36ab891f94a08ad81f1", # ILSVRC2012_val_00000019_crop.JPEG
