@@ -83,7 +83,7 @@ Ord_rec[img_size//2:,:] = 0
 
 meas_op = meas.HadamSplit(M, h, Ord_rec)
 noise_op = noise.Poisson(meas_op, alpha_list[0])
-prep_op = prep.SplitPoisson(2, meas_op)
+prep_op = prep.SplitPoisson(alpha_list[0], meas_op)
 
 # Vectorized images
 x_dog = x_dog.view(1, h * w)
@@ -94,6 +94,7 @@ y_dog = torch.zeros(n_alpha, 2*M)
 for ii, alpha in enumerate(alpha_list): 
     noise_op.alpha = alpha
     torch.manual_seed(0) # for reproducibility
+    # only need to measure, preprocessing is done in the dpgd, later
     y_dog[ii,:] = noise_op(x_dog)
 
 # Send to GPU if available
