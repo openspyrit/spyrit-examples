@@ -157,6 +157,35 @@ with torch.no_grad():
 
 
 # %% 
+# LPGD
+# ====================================================================
+model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
+
+# Initialize network
+denoi = nnet.Unet()
+lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
+lpgd.eval()
+
+# load net and use GPU if available
+train.load_net(model_folder_full / model_name, lpgd, device, False)
+lpgd = lpgd.to(device)
+
+# Reconstruct and save
+x_lpgd = torch.zeros(1, 1, img_size, img_size)
+
+with torch.no_grad():
+    for ii, alpha in enumerate(alpha_list):
+        lpgd.prep.alpha = alpha
+        x_lpgd =  lpgd.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
+        
+        # save
+        filename = f'lpgd_alpha_{alpha:02}.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_lpgd[0,0].cpu().detach().numpy(), 
+            cmap='gray')
+
+
+# %% 
 # DC-Net
 # ====================================================================
 model_name = 'dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth'
@@ -186,35 +215,6 @@ with torch.no_grad():
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dcnet[ii,0].cpu().detach().numpy(), 
             cmap='gray') #
-
-
-# %% 
-# LPGD
-# ====================================================================
-model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
-
-# Initialize network
-denoi = nnet.Unet()
-lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
-lpgd.eval()
-
-# load net and use GPU if available
-train.load_net(model_folder_full / model_name, lpgd, device, False)
-lpgd = lpgd.to(device)
-
-# Reconstruct and save
-x_lpgd = torch.zeros(1, 1, img_size, img_size)
-
-with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        lpgd.prep.alpha = alpha
-        x_lpgd =  lpgd.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
-        
-        # save
-        filename = f'lpgd_alpha_{alpha:02}.png'
-        full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_lpgd[0,0].cpu().detach().numpy(), 
-            cmap='gray')
 
 
 # %% 
