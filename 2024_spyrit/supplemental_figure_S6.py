@@ -43,12 +43,6 @@ data_title = [
     "tomato_slice_2_zoomx12",
     "tomato_slice_2_zoomx2",
 ]
-savenames = [
-    "usaf_target",
-    "starsector",
-    "tomato_x12",
-    "tomato_x2"
-]
 suffix = {
     "data": "_spectraldata.npz",
     "metadata": "_metadata.json"
@@ -149,7 +143,7 @@ with torch.no_grad():
         pinv.prep.set_expe()
         x_pinv =  pinv.reconstruct_expe(y)
 
-        filename = f'pinv_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinv.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinv[0,0,:,:].cpu().detach().numpy(), cmap='gray')
 
@@ -173,7 +167,7 @@ with torch.no_grad():
         pinvnet.prep.set_expe()
         x_pinvnet = pinvnet.reconstruct_expe(y) # NB: shape of measurement is (1,8192)
 
-        filename = f'pinvnet_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinvnet_unet.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
         
@@ -197,7 +191,7 @@ with torch.no_grad():
         lpgd.prep.set_expe()
         x_lpgd = lpgd.reconstruct_expe(y) # NB: shape of measurement is (1,8192) as expected
         
-        filename = f'lpgd_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_lpgd_unet.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_lpgd[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
         
@@ -225,7 +219,7 @@ with torch.no_grad():
         dcnet.prep.set_expe()
         x_dcnet = dcnet.reconstruct_expe(y) # NB: shape of measurement is (1,8192) as expected
 
-        filename = f'dcnet_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_dc-net_unet.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dcnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
 
@@ -258,7 +252,7 @@ with torch.no_grad():
         pinvnet.denoi.set_noise_level(nu)
         x_pinvnet = pinvnet.reconstruct_expe(y)
         
-        filename = f'pinv_pnp_{savenames[ii]}_nu_{nu:03}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
 
@@ -295,7 +289,7 @@ with torch.no_grad():
         x_dpgd =  dpgdnet.reconstruct(y, exp=True) # NB: shape of measurement is (1,8192) as expected
         
         # save
-        filename = f'dpgd_{savenames[ii]}_mu_{mu_list[ii]:04}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_dfb-net_dfb_mu_{mu_list[ii]}.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dpgd[0,0, :, :].cpu().detach().numpy(), cmap='gray')
 

@@ -70,7 +70,7 @@ print("Batch shape:", x.shape)
 
 for i, label in enumerate(label_list):
     x_plot = x[i, :, :, :].cpu().numpy()
-    plt.imsave(recon_folder_full / f'original_{label}.png', x_plot[0, :, :], cmap='gray')
+    plt.imsave(recon_folder_full / f'sim{i}_{img_size}_gt.png', x_plot[0, :, :], cmap='gray')
 
 
 # %% 
@@ -115,7 +115,7 @@ with torch.no_grad():
     x_pinv =  pinv.reconstruct(y) # NB: shape of measurement is (1,8192)
 
     for ii, label in enumerate(label_list):
-        filename = f'pinv_{label}.png'
+        filename =  f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinv[ii,0].cpu().detach().numpy(), cmap='gray')
 
@@ -137,7 +137,8 @@ with torch.no_grad():
     x_pinvnet = pinvnet.reconstruct(y) # NB: shape of measurement is (1,8192)
     
     for ii, label in enumerate(label_list):
-        filename = f'pinvnet_{label}.png'
+        filename =  f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png'
+        full_path = recon_folder_full / filename
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), cmap='gray')
 
@@ -160,7 +161,7 @@ with torch.no_grad():
     x_lpgd = lpgd.reconstruct(y)
     
     for ii, label in enumerate(label_list):
-        filename = f'lpgd_{label}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_lpgd_unet.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_lpgd[ii,0].cpu().detach().numpy(), cmap='gray')
     
@@ -187,7 +188,7 @@ with torch.no_grad():
     x_dcnet = dcnet.reconstruct(y)
     
     for ii, label in enumerate(label_list):
-        filename = f'dcnet_{label}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dc-net_unet.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dcnet[ii,0].cpu().detach().numpy(), cmap='gray')
         
@@ -217,7 +218,7 @@ with torch.no_grad():
         pinvnet.denoi.set_noise_level(nu)
         x_pinvPnP = pinvnet.reconstruct(y[ii:ii+1, :])
         
-        filename = f'pinv_pnp_{label_list[ii]}_nu_{nu}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinvPnP[0,0].cpu().detach().numpy(), cmap='gray')
 
@@ -252,7 +253,7 @@ with torch.no_grad():
         dpgdnet.mu = mu
         x_dpgd =  dpgdnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
         
-        filename = f'dpgd_pnp_{label_list[ii]}_mu_{mu}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png'
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dpgd[0,0].cpu().detach().numpy(), cmap='gray')
 # %%

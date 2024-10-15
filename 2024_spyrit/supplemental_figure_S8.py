@@ -13,9 +13,7 @@ import utility_dpgd as dpgd
 import spyrit.core.meas as meas
 import spyrit.core.prep as prep
 import spyrit.core.noise as noise
-import spyrit.core.recon as recon
 import spyrit.misc.sampling as samp
-import spyrit.external.drunet as drunet
 
 
 # %% 
@@ -40,12 +38,6 @@ data_title = [
     "zoom_x12_starsector",
     "tomato_slice_2_zoomx12",
     "tomato_slice_2_zoomx2",
-]
-savenames = [
-    "usaf_target",
-    "starsector",
-    "tomato_x12",
-    "tomato_x2"
 ]
 suffix = {
     "data": "_spectraldata.npz",
@@ -172,7 +164,7 @@ with torch.no_grad():
             x_dpgd =  dpgdnet.reconstruct(y, exp=True) # NB: shape of measurement is (1,8192) as expected
             
             # save
-            filename = f'dpgd_{savenames[ii]}_mu_{mu:04}.png'
+            filename = f'{data_title[ii]}_{M}_{img_size}_dfb-net_dfb_mu_{mu}.png'
             full_path = recon_folder_full / filename
             plt.imsave(full_path, x_dpgd[0,0, :, :].cpu().detach().numpy(), cmap='gray')
 

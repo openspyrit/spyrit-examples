@@ -59,13 +59,13 @@ dataloader = torch.utils.data.DataLoader(
 
 # select the two images
 x, _ = next(iter(dataloader))
-x_dog = x[0]
+x_dog = x[1]
 c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
 
 x_dog_plot = x_dog.view(-1, h, h).cpu().numpy()
 # save image as original
-plt.imsave(recon_folder_full / 'original_dog.png', x_dog_plot[0, :, :], cmap='gray')
+plt.imsave(recon_folder_full / f'sim1_{img_size}_gt.png', x_dog_plot[0, :, :], cmap='gray')
 
 
 # %% 
@@ -141,7 +141,7 @@ with torch.no_grad():
             x_dog_dpgd =  dpgdnet.reconstruct(y_dog[ii:ii+1, :])
 
             # save
-            filename = f'dog_dpgd_alpha_{alpha:02}_mu{mu}.png'
+            filename = f'sim1_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png'
             full_path = recon_folder_full / filename
             plt.imsave(full_path, x_dog_dpgd[0,0].cpu().detach().numpy(), cmap='gray')
 

@@ -54,21 +54,21 @@ dataset = torchvision.datasets.ImageFolder(
 
 dataloader = torch.utils.data.DataLoader(
     dataset, 
-    batch_size=2, 
+    batch_size=3,
     shuffle=False
     )
 
 # select the two images
 x, _ = next(iter(dataloader))
-x_dog, x_panther = x[0], x[1]
+x_dog, x_panther = x[1], x[2]
 c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
 
 x_dog_plot = x_dog.view(-1, h, h).cpu().numpy()
 x_panther_plot = x_panther.view(-1, h, h).cpu().numpy()
 # save image as original
-plt.imsave(recon_folder_full / 'original_dog.png', x_dog_plot[0, :, :], cmap='gray')
-plt.imsave(recon_folder_full / 'original_panther.png', x_panther_plot[0, :, :], cmap='gray')
+plt.imsave(recon_folder_full / f'sim1_{img_size}_gt.png', x_dog_plot[0, :, :], cmap='gray')
+plt.imsave(recon_folder_full / f'sim2_{img_size}_gt.png', x_panther_plot[0, :, :], cmap='gray')
 
 
 # %% 
@@ -125,7 +125,7 @@ pinvnet.eval()
 
 #load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet.denoi.load_state_dict(
-    torch.load(model_folder_full / model_name, wieghts_only=True), 
+    torch.load(model_folder_full / model_name, weights_only=True), 
     strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
@@ -146,8 +146,8 @@ with torch.no_grad():
             x_panther_pinvnet = pinvnet.reconstruct(y_panther[ii:ii+1, :])
             
             # save
-            filename_dog = f'dog_pinv_pnp_alpha_{alpha:02}_nu_{nu:03}.png'
-            filename_panther = f'panther_pinv_pnp_alpha_{alpha:02}_nu_{nu:03}.png'
+            filename_dog = f'sim1_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png'
+            filename_panther = f'sim2_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png'
             full_path_dog = recon_folder_full / filename_dog
             full_path_panther = recon_folder_full / filename_panther
             

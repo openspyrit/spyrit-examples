@@ -40,12 +40,6 @@ data_title = [
     "tomato_slice_2_zoomx12",
     "tomato_slice_2_zoomx2",
 ]
-savenames = [
-    "usaf_target",
-    "starsector",
-    "tomato_x12",
-    "tomato_x2"
-]
 suffix = {
     "data": "_spectraldata.npz",
     "metadata": "_metadata.json"
@@ -166,7 +160,7 @@ with torch.no_grad():
             pinvnet.denoi.set_noise_level(nu)
             x_pinvnet = pinvnet.reconstruct_expe(y)
             
-            filename = f'pinv_pnp_{savenames[ii]}_nu_{nu:03}.png'
+            filename = f'{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png'
             full_path = recon_folder_full / filename
             plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
        
