@@ -8,16 +8,15 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 
+import utility_dpgd as dpgd
 import spyrit.core.meas as meas
-import spyrit.core.noise as noise
-import spyrit.core.prep as prep
-import spyrit.core.recon as recon
 import spyrit.core.nnet as nnet
+import spyrit.core.prep as prep
+import spyrit.core.noise as noise
+import spyrit.core.recon as recon
 import spyrit.core.train as train
 import spyrit.misc.statistics as stats
 import spyrit.external.drunet as drunet
-
-import utility_dpgd as dpgd
 
 
 # %% 
@@ -27,7 +26,7 @@ import utility_dpgd as dpgd
 image_folder = 'data/images/'       # images for simulated measurements
 model_folder = 'model/'             # reconstruction models
 stat_folder  = 'stat/'              # statistics
-recon_folder = 'recon/figure_3/'    # reconstructed images
+recon_folder = 'recon/supplemental_figure_S5/'    # reconstructed images
 
 # Full paths
 image_folder_full = Path.cwd() / Path(image_folder)
@@ -59,51 +58,48 @@ dataset = torchvision.datasets.ImageFolder(
 
 dataloader = torch.utils.data.DataLoader(
     dataset, 
-    batch_size=1, 
+    batch_size=6, 
     shuffle=False
     )
 
-# select the image
+# select the two images
 x, _ = next(iter(dataloader))
-x = x[0]
-c, h, w = x.shape
-print("Image shape:", x.shape)
+label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
+b, c, h, w = x.shape
+print("Batch shape:", x.shape)
 
-x_plot = x.view(-1, h, h).cpu().numpy()
-# save image as original
-plt.imsave(recon_folder_full / 'original.png', x_plot[0, :, :], cmap='gray')
+for i, label in enumerate(label_list):
+    x_plot = x[i, :, :, :].cpu().numpy()
+    plt.imsave(recon_folder_full / f'sim{i}_{img_size}_gt.png', x_plot[0, :, :], cmap='gray')
 
 
 # %% 
-# Simulate measurements for three image intensities
+# Simulate measurements
 # --------------------------------------------------------------------
 # Measurement parameters
-alpha_list = [2, 10, 50] # Poisson law parameter for noisy image acquisitions
-n_alpha = len(alpha_list)
-M = 128 * 128 // 4  # Number of measurements (here, 1/4 of the pixels)
+alpha = 2 # Poisson law parameter for noisy image acquisitions
+M = img_size**2 // 4  # Number of measurements (here, 1/4 of the pixels)
 
 # Measurement and noise operators
-Ord_rec = np.ones((img_size, img_size))
+Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:,img_size//2:] = 0
 Ord_rec[img_size//2:,:] = 0
 
-meas_op = meas.HadamSplit(M, h, torch.from_numpy(Ord_rec))
-noise_op = noise.Poisson(meas_op, alpha_list[0])
-prep_op = prep.SplitPoisson(2, meas_op)
+meas_op = meas.HadamSplit(M, h, Ord_rec)
+noise_op = noise.Poisson(meas_op, alpha)
+prep_op = prep.SplitPoisson(alpha, meas_op)
 
-# Vectorized image
-x = x.view(1, h * w)
-
+# Vectorized images
+x = x.view(b, 1, h * w)
 # Measurement vectors
-y = torch.zeros(n_alpha, 2*M)
-for ii, alpha in enumerate(alpha_list): 
-    torch.manual_seed(0)    # for reproducibility
-    noise_op.alpha = alpha
-    y[ii,:] = noise_op(x)
+y = torch.zeros(b, 2*M)
+
+for ii in range(b):
+    torch.manual_seed(0) # for reproducibility
+    y[ii, :] = noise_op(x[ii, :])
 
 # Send to GPU if available
 y = y.to(device)
-
 
 
 # %% 
@@ -115,18 +111,14 @@ pinv = recon.PinvNet(noise_op, prep_op)
 # Use GPU if available
 pinv = pinv.to(device)
 
-# Reconstruct
-x_pinv = torch.zeros(n_alpha, 1, img_size, img_size)
-
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        pinv.prep.alpha = alpha
-        x_pinv[ii] =  pinv.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192)
+    x_pinv =  pinv.reconstruct(y) # NB: shape of measurement is (1,8192)
 
-        filename = f'pinv_alpha_{alpha:02}.png'
+    for ii, label in enumerate(label_list):
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinv[ii,0].cpu().detach().numpy(), 
-            cmap='gray') #
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_pinv[ii,0].cpu().detach().numpy(), cmap='gray')
 
 
 # %% 
@@ -142,18 +134,14 @@ pinvnet.eval()
 train.load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet = pinvnet.to(device)
 
-# Reconstruct
-x_pinvnet = torch.zeros(n_alpha, 1, img_size, img_size)
-
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        pinvnet.prep.alpha = alpha
-        x_pinvnet[ii] =  pinvnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192)
-
-        filename = f'pinvnet_alpha_{alpha:02}.png'
+    x_pinvnet = pinvnet.reconstruct(y) # NB: shape of measurement is (1,8192)
+    
+    for ii, label in enumerate(label_list):
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinvnet_unet.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), 
-            cmap='gray') #
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_pinvnet[ii,0].cpu().detach().numpy(), cmap='gray')
 
 
 # %% 
@@ -170,20 +158,14 @@ lpgd.eval()
 train.load_net(model_folder_full / model_name, lpgd, device, False)
 lpgd = lpgd.to(device)
 
-# Reconstruct and save
-x_lpgd = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        lpgd.prep.alpha = alpha
-        x_lpgd =  lpgd.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
-        
-        # save
-        filename = f'lpgd_alpha_{alpha:02}.png'
+    x_lpgd = lpgd.reconstruct(y)
+    
+    for ii, label in enumerate(label_list):
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_lpgd_unet.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_lpgd[0,0].cpu().detach().numpy(), 
-            cmap='gray')
-
+        plt.imsave(full_path, x_lpgd[ii,0].cpu().detach().numpy(), cmap='gray')
+    
 
 # %% 
 # DC-Net
@@ -203,25 +185,21 @@ dcnet.eval()
 train.load_net(model_folder_full / model_name, dcnet, device, False)
 dcnet = dcnet.to(device)
 
-# Reconstruct
-x_dcnet = torch.zeros(n_alpha, 1, img_size, img_size)
-
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        dcnet.prep.alpha = alpha
-        x_dcnet[ii] =  dcnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
-
-        filename = f'dcnet_alpha_{alpha:02}.png'
+    x_dcnet = dcnet.reconstruct(y)
+    
+    for ii, label in enumerate(label_list):
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dc-net_unet.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_dcnet[ii,0].cpu().detach().numpy(), 
-            cmap='gray') #
-
+        plt.imsave(full_path, x_dcnet[ii,0].cpu().detach().numpy(), cmap='gray')
+        
 
 # %% 
 # Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
-noise_levels = [115, 45, 20] # noise levels from 0 to 255 for each alpha
+# label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
+nu_list = [70, 115, 115, 100, 100, 100] # noise levels for each label
 
 # Initialize network
 denoi = drunet.DRUNet()
@@ -230,28 +208,20 @@ pinvnet.eval()
 
 #load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet.denoi.load_state_dict(
-    torch.load(model_folder_full / model_name), 
+    torch.load(model_folder_full / model_name, weights_only=True), 
     strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
 
-# Reconstruct and save
-x_pinvnet = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        
-        # set noise level for measurement operator and PnP denoiser
-        pinvnet.prep.alpha = alpha
-        nu = noise_levels[ii]
+    
+    for ii, nu in enumerate(nu_list):
         pinvnet.denoi.set_noise_level(nu)
-        x_pinvnet = pinvnet.reconstruct(y[ii:ii+1, :])
+        x_pinvPnP = pinvnet.reconstruct(y[ii:ii+1, :])
         
-        # save
-        filename = f'pinv_pnp_alpha_{alpha:02}_nu_{nu:03}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinvnet[0,0].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_pinvPnP[0,0].cpu().detach().numpy(), cmap='gray')
 
 
 # %% 
@@ -269,23 +239,22 @@ denoi.module.update_lip((1,50,50))
 denoi.eval()
 
 # Reconstruction hyperparameters
+# label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
+mu_list = [4000, 6000, 6000, 6000, 6000, 6000] # noise levels for each label
 gamma = 1/img_size**2
 max_iter = 101
-mu_list = [6000, 3500, 1500]
 crit_norm = 1e-4
 
 # Init 
 dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
-x_dpgd = torch.zeros(1, 1, img_size, img_size)
 
 with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        dpgdnet.prep.alpha = alpha
-        dpgdnet.mu = mu_list[ii]
+    
+    for ii, mu in enumerate(mu_list):
+        dpgdnet.mu = mu
         x_dpgd =  dpgdnet.reconstruct(y[ii:ii+1, :]) # NB: shape of measurement is (1,8192) as expected
         
-        # save
-        filename = f'dpgd_alpha_{alpha:02}.png'
+        filename = f'sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_dpgd[0,0].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_dpgd[0,0].cpu().detach().numpy(), cmap='gray')
+# %%

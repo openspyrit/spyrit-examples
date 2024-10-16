@@ -9,28 +9,27 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+import utility_dpgd as dpgd
 import spyrit.core.meas as meas
-import spyrit.core.noise as noise
-import spyrit.core.prep as prep
-import spyrit.core.recon as recon
 import spyrit.core.nnet as nnet
+import spyrit.core.prep as prep
+import spyrit.core.noise as noise
+import spyrit.core.recon as recon
 import spyrit.core.train as train
 import spyrit.misc.sampling as samp
 import spyrit.external.drunet as drunet
 
-import utility_dpgd as dpgd
-
 
 # %% 
 # General
-# ====================================================================
+# --------------------------------------------------------------------
 # Experimental data
-data_folder = 'data/'               # measurements
+data_folder = 'data/'              # measurements
 model_folder = 'model/'             # reconstruction models
 stat_folder  = 'stat/'              # statistics
-recon_folder = 'recon/figure_4/'    # reconstructed images
+recon_folder = 'recon/supplemental_figure_S6/'    # reconstructed images
 
-# Full paths    
+# Full paths
 data_folder_full = Path.cwd() / Path(data_folder)
 model_folder_full = Path.cwd() / Path(model_folder)
 stat_folder_full  = Path.cwd() / Path(stat_folder)
@@ -39,12 +38,10 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
 data_title = [
-    "tomato_slice_2_zoomx2",
+    "zoom_x12_usaf_group5",
     "zoom_x12_starsector",
-]
-savenames = [
-    "tomato",
-    "starsector"
+    "tomato_slice_2_zoomx12",
+    "tomato_slice_2_zoomx2",
 ]
 suffix = {
     "data": "_spectraldata.npz",
@@ -53,11 +50,9 @@ suffix = {
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
 print("Using device:", device)
-
-img_size = 128 # image size
-subsampling_factor = 2 # measure an equivalent image of size img_size // 2
+img_size = 128
+subsampling_factor = 2
 
 
 # %% 
@@ -133,6 +128,7 @@ for i in range(n_meas):
         measurements_slice[i]).to(device, dtype=torch.float32)
 
 
+
 # %% 
 # Pinv
 # ====================================================================
@@ -142,18 +138,14 @@ pinv = recon.PinvNet(noise_op, prep_op)
 # Use GPU if available
 pinv = pinv.to(device)
 
-# Reconstruct
-x_pinv = torch.zeros(1, 1, img_size, img_size)
-
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinv.prep.set_expe()
-        x_pinv = pinv.reconstruct_expe(y)
+        x_pinv =  pinv.reconstruct_expe(y)
 
-        filename = f'pinv_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinv.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinv[0, 0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_pinv[0,0,:,:].cpu().detach().numpy(), cmap='gray')
 
 
 # %% 
@@ -175,11 +167,34 @@ with torch.no_grad():
         pinvnet.prep.set_expe()
         x_pinvnet = pinvnet.reconstruct_expe(y) # NB: shape of measurement is (1,8192)
 
-        filename = f'pinvnet_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinvnet_unet.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
+        
 
+# %% 
+# LPGD
+# ====================================================================
+model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
+
+# Initialize network
+denoi = nnet.Unet()
+lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
+lpgd.eval()
+
+# load net and use GPU if available
+train.load_net(model_folder_full / model_name, lpgd, device, False)
+lpgd = lpgd.to(device)
+
+with torch.no_grad():
+    for ii, y in enumerate(measurements_slice):
+        lpgd.prep.set_expe()
+        x_lpgd = lpgd.reconstruct_expe(y) # NB: shape of measurement is (1,8192) as expected
+        
+        filename = f'{data_title[ii]}_{M}_{img_size}_lpgd_unet.png'
+        full_path = recon_folder_full / filename
+        plt.imsave(full_path, x_lpgd[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
+        
 
 # %% 
 # DC-Net
@@ -199,76 +214,48 @@ dcnet.eval()
 train.load_net(model_folder_full / model_name, dcnet, device, False)
 dcnet = dcnet.to(device)
 
-# Reconstruct
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         dcnet.prep.set_expe()
         x_dcnet = dcnet.reconstruct_expe(y) # NB: shape of measurement is (1,8192) as expected
 
-        filename = f'dcnet_{savenames[ii]}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_dc-net_unet.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_dcnet[0, 0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
-
-
-# %% 
-# LPGD
-# ====================================================================
-model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
-
-# Initialize network
-denoi = nnet.Unet()
-lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
-lpgd.eval()
-
-# load net and use GPU if available
-train.load_net(model_folder_full / model_name, lpgd, device, False)
-lpgd = lpgd.to(device)
-
-# Reconstruct
-with torch.no_grad():
-    for ii, y in enumerate(measurements_slice):
-        lpgd.prep.set_expe()
-        x_lpgd = lpgd.reconstruct_expe(y) # NB: shape of measurement is (1,8192) as expected
-        
-        filename = f'lpgd_{savenames[ii]}.png'
-        full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_lpgd[0, 0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_dcnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
 
 
 # %% 
 # Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
-noise_levels = [35, 55] # noise levels from 0 to 255 for each alpha
+
+# in order: USAF target, starsector, tomato x12, tomato x2
+nu_list = [30, 45, 40, 35] # noise levels for each label
 
 # Initialize network
 denoi = drunet.DRUNet()
 pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
 pinvnet.eval()
 
-# load_net(model_folder_full / model_name, pinvnet, device, True)
+#load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet.denoi.load_state_dict(
-    torch.load(model_folder_full / model_name, weights_only=True),
+    torch.load(model_folder_full / model_name, weights_only=True), 
     strict=False)
 pinvnet.denoi.eval()
 pinvnet = pinvnet.to(device)
 
-# Reconstruct
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         # set noise level for measurement operator and PnP denoiser
         pinvnet.prep.set_expe()
-        nu = noise_levels[ii]
+        nu = nu_list[ii]
         pinvnet.denoi.set_noise_level(nu)
         x_pinvnet = pinvnet.reconstruct_expe(y)
         
-        filename = f'pinv_pnp_{savenames[ii]}_nu_{nu:03}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
-        
+        plt.imsave(full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap='gray')
+
 
 # %% 
 # DPGD-PnP
@@ -282,13 +269,14 @@ denoi = dpgd.load_model(pth = (model_folder_full / model_name).as_posix(),
                     num_of_layers = n_layer)
 
 denoi.module.update_lip((1,50,50))
-denoi.to(device)
 denoi.eval()
 
 # Reconstruction hyperparameters
+
+# in order: USAF target, starsector, tomato x12, tomato x2
+mu_list = [2000, 4000, 3000, 4000] # noise levels for each label
 gamma = 1/img_size**2
 max_iter = 101
-mu_list = [4000, 4000]
 crit_norm = 1e-4
 
 # Init 
@@ -301,7 +289,8 @@ with torch.no_grad():
         x_dpgd =  dpgdnet.reconstruct(y, exp=True) # NB: shape of measurement is (1,8192) as expected
         
         # save
-        filename = f'dpgd_{savenames[ii]}_mu_{mu_list[ii]:04}.png'
+        filename = f'{data_title[ii]}_{M}_{img_size}_dfb-net_dfb_mu_{mu_list[ii]}.png'
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_dpgd[0,0, :, :].cpu().detach().numpy(), 
-            cmap='gray')
+        plt.imsave(full_path, x_dpgd[0,0, :, :].cpu().detach().numpy(), cmap='gray')
+
+# %%

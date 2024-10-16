@@ -22,7 +22,7 @@ git sparse-checkout set 2024_spyrit
 git checkout
 ```
 
-Alternatively, you can clone the whole `spyrit-examples` repository (which includes code for some other papers):
+Alternatively, you can clone the whole `spyrit-examples` repository (which contains code for some other papers):
 ```shell
 git clone https://github.com/openspyrit/spyrit-examples.git
 ```
@@ -80,6 +80,8 @@ The directory structure should be as follows:
 |   |   |---figure_2.py
 |   |   |---figure_3.py
 |   |   |---figure_4.py
+|   |   |---supplemental_figure_S1.py
+|   |   |---
 |   |   |---table_1.py
 |   |   |---train.py
 |   |   |---utility_dpgd.py
@@ -105,9 +107,11 @@ The directory structure should be as follows:
     pip install scikit-image
     ```
 
-## How to reproduce the paper's results?
+## How to reproduce the results of the paper?
 1. To reproduce the sampling masks, acquisition matrices, measurements, and images in Figure 2, run `figure_2.py`. 
 
-2. To reproduce the reconstructions in Figure 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images are saved in `\2024_spyrit\recon\`
+2. To reproduce the reconstructions in Figures 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images will be saved in `\2024_spyrit\recon\`
 
-3. Run `table_1.py` to reproduce the metrics in Table 1. To limit the computation time, the code runs only on a subset of the ImageNet validation set. For this reason, the obtained metrics are close to but not equal to those reported in the paper. 
+3. Run `table_1.py` to reproduce the metrics in Table 1. To limit the computation time, the code only runs on a subset of the ImageNet validation set. For this reason, the metrics obtained are close to, but not equal to, those reported in the paper.
+
+4. Run `supplemental_figure_Sxx.py` for `xx` in `{1, ..., 8}` to reproduce all the figures in the supplemental document. 
