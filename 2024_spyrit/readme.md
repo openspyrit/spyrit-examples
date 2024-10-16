@@ -4,11 +4,9 @@ We provide here the code to reproduce the results reported in
 
 > JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT: an open source package for single-pixel imaging based on deep learning," Preprint (2024). 
 
-*Preprint view (main PDF + supplemental document):* https://hal.science/hal-04662876v1
+*Preprint view (main PDF + supplemental document):* https://hal.science/hal-04662876
 
-*Preprint download (main PDF):* https://hal.science/hal-04662876v1/file/submitted.pdf
-
-*Preprint download (supplemental document):* https://hal.science/hal-04662876v1/file/supplemental.pdf
+*Preprint download (main PDF):* https://hal.science/hal-04662876/document
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
