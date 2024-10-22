@@ -29,10 +29,10 @@ gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
 
 
 folder = r'.\data\2023_03_13_2023_03_14_eGFP_DsRed_3D'
-subfolderList = [r'Preprocess',
-                 r'Reconstruction',
-                 r'Unmixing_calib_blind_shift' ,
-                 r'Visualisation_calib_blind_shift'
+subfolderList = [#r'Preprocess',
+                 #r'Reconstruction',
+                 r'Unmixing_shift' 
+                 r'Visualisation_shift'
                  ]
 
 folderId = '6708d7990e9f151150f3c100'

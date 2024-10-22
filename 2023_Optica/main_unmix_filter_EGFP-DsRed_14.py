@@ -183,30 +183,16 @@ axs[1].legend()
 
 fig.suptitle(f'DsRed estimation area; x in [{x1_r}-{x2_r}]; y in [{y1_r}-{y2_r}]')
 
-    
-#%% Manual registration (compensate for sample shift during acquisition)
-x_shift = 36
-y_shift = 12
-
-print('-- registration')
-
-xyzl_cube_reg = np.zeros((Nl-x_shift,Nh-y_shift,Nz,Nc))
-xyzl_cube_reg[:, :, :5,  :] = xyzl_cube[:(Nl-x_shift), :(Nh-y_shift), :5,   :]
-xyzl_cube_reg[:, :, 5:13,:] = xyzl_cube[:(Nl-x_shift), y_shift:,      5:13, :]
-xyzl_cube_reg[:, :, 13:, :] = xyzl_cube[x_shift:,      y_shift:,      13:,  :]
-
-# abond_unmix_4D_reg = abond_unmix_4D
-
 #%% Unmixing
 from pysptools import abundance_maps
 
 member_list = ['DsRed','EGFP','Autofluo'] #['DsRed','EGFP','Autofluo','Noise']
-unmix = 'calib_blind' + suffix # 'calib_blind_' 'calib_'
-unmixing_folder = '/Unmixing' + '_' + unmix + '/'
+unmix = '' + suffix   # '_calib_blind_' '_calib_' '' 
+unmixing_folder = '/Unmixing' +  unmix + '/'
 
-method_unmix = 'UCLS' # 'NNLS''_UCLS'
+method_unmix = 'NNLS' # 'NNLS''_UCLS'
 Nm = 4
-Nl,Nh = xyzl_cube_reg.shape[:2] # new shape after registration
+Nl,Nh = xyzl_cube.shape[:2] # new shape after registration
 
 # blind region (removed from unmixing)
 blind_start = 518   # in nm
@@ -224,7 +210,7 @@ folder_unmix = recon + '_' + method_unmix
 print('-- unmixing')
 
 # measurment matrix with all pixels across rows
-M = np.reshape(xyzl_cube_reg, (-1,Nc)) 
+M = np.reshape(xyzl_cube, (-1,Nc)) 
 
 # Remove blind region
 U_blind = U[:,ind[0]]
@@ -241,10 +227,25 @@ elif method_unmix == 'UCLS':
 
 abond_unmix_4D = np.reshape(Abondance,(Nl,Nh,Nz,Nm))
 
+#%% Manual registration (compensate for sample shift during acquisition)
+x_shift = 36
+y_shift = 12
+
+print('-- registration')
+abond_unmix_4D_reg = np.zeros_like(abond_unmix_4D)
+nl, nh = Nl-x_shift, Nh-y_shift
+dl, dh = x_shift//2, y_shift//2
+
+abond_unmix_4D_reg[dl:dl+nl, dh:dh+nh, :5,  :] = abond_unmix_4D[:(Nl-x_shift), :(Nh-y_shift), :5,   :]
+abond_unmix_4D_reg[dl:dl+nl, dh:dh+nh, 5:13,:] = abond_unmix_4D[:(Nl-x_shift), y_shift:,      5:13, :]
+abond_unmix_4D_reg[dl:dl+nl, dh:dh+nh, 13:, :] = abond_unmix_4D[x_shift:,      y_shift:,      13:,  :]
+
+abond_unmix_4D = abond_unmix_4D_reg
+
 #%% Separate fluorophores simulating two band-pass filters
 Nf = 2 # number of filter
 
-filtering_folder = '/Filtering' + '_' + unmix + '/'
+filtering_folder = '/Filtering' + unmix + '/'
 filter_list = ['green','red']
 
 c_egfp = 510  # in nm

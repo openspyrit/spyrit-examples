@@ -16,9 +16,9 @@ Nc = 128 # number of channels
 
 load_path = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D')
 
-suffix = '_calib_blind_shift' #
-recon = 'tikhonet50_div1.5_shift' # 'pinv_shift' 'tikhonet50_div1.5_shift'
-method_unmix = 'NNLS' # 'NNLS''_UCLS'
+suffix = '_shift'       # '_shift', '_calib_blind_shift'
+recon = 'pinv_shift'   # 'pinv_shift' 'tikhonet50_div1.5_shift'
+method_unmix = 'NNLS'               # 'NNLS''_UCLS'
 
 member_list = ['DsRed','EGFP','Autofluo']
 filter_list = ['green filter','red filter']
@@ -208,4 +208,4 @@ gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
 folder = load_path  / ('Visualisation' + suffix)
 
 folderId = '6708d7990e9f151150f3c100' # /2023_03_13_2023_03_14_eGFP_DsRed_3D/
-gc.upload(str(folder), folderId, reuseExisting=False)
+gc.upload(str(folder), folderId, reuseExisting=True)
