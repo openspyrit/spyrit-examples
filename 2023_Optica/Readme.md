@@ -8,8 +8,8 @@ This code generates the figures for the paper draft and allow to study the data 
 
 ## Install the dependencies
 
-* `main_unmix_*.py` run under the `pysptools` environnement (see `pysptools.yaml`)
-* The other scripts run under the `??` environnement (see `??.yaml`)
+* `main_recon_*.py` requires the `hspim` branch of the `spyrit` package.
+
 
 ## Get the notebooks and the data
 
@@ -21,7 +21,8 @@ This code generates the figures for the paper draft and allow to study the data 
 
 2. Download 
 
-* the raw data from this [link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/64218b0d0386da2747699efc). You can download the full folder with all subfolder or navigate to select a few of them.
+* The raw measurements can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/64218b0d0386da2747699efc).
+* The neural networks used for reconstruction (i.e., by Tikhonov-Net) can be can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/6464d5f585f48d3da071893c).
 
 
 Unzip the folders into `/data/`, respectively. The directory structure should be
@@ -45,5 +46,6 @@ Unzip the folders into `/data/`, respectively. The directory structure should be
 |   |   |---Notebooks
 |   |   |---env.yaml
 |   |   |---Readme.md
+|   |   |---model
+|   |   |   |---tikho-net_unet_imagenet_ph_50_exp_N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07.pth
 ```
-./2023_02_28_mRFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM/data_2023_02_28

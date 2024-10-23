@@ -209,3 +209,6 @@ folder = load_path  / ('Visualisation' + suffix)
 
 folderId = '6708d7990e9f151150f3c100' # /2023_03_13_2023_03_14_eGFP_DsRed_3D/
 gc.upload(str(folder), folderId, reuseExisting=True)
+
+#%%
+
