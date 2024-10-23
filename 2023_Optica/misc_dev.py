@@ -110,3 +110,45 @@ def spectral_colorization(M_gray, wav, axis=None):
     M_color = np.stack((M_red, M_green, M_blue), axis=-1)
     
     return M_color
+
+#%%
+from pathlib import Path
+from PIL import Image
+from natsort import natsorted
+
+def animated_gif_from_folder(gif_path, folder_path, pattern='*.png', duration=0.1):
+    """
+    Loads all images from a given folder and creates an animated GIF.
+
+    Args:
+        folder_path (str or Path): The path to the folder containing the images.
+        
+        gif_path (str or Path): The path to save the GIF file.
+        
+        duration (float, optional): Duration in seconds for each frame. Defaults to 0.1.
+        
+    Example:
+        >>> folder_path = "/path/to/your/images"
+        >>> gif_path = "animated.gif"
+        >>> animated_gif_from_folder(gif_path, folder_path)
+        
+    """
+
+    folder_path = Path(folder_path)
+    gif_path = Path(gif_path)
+
+    images = []
+    for image_path in natsorted(folder_path.glob(pattern)):
+        try:
+            image = Image.open(image_path)
+            pImage = image
+            #pImage = image.quantize(colors=256, method=Image.FASTOCTREE, dither=0)
+            images.append(pImage)
+        except:
+            print(f'ERROR: Unable to open {image_path}')
+
+    images[0].save(gif_path, 
+                   save_all=True, 
+                   append_images=images[1:], 
+                   duration=duration*1000,
+                   loop=0)
