@@ -362,7 +362,7 @@ class Tikhonov(nn.Module):
     .. math::
         \| y - Ax \|^2_{\Sigma^{-1}_\alpha} + \|x - x_0\|^2_{\Sigma^{-1}}
     
-    where :math:`\ell_0` is a mean prior, :math:`\Sigma` is a covariance 
+    where :math:`x_0` is a mean prior, :math:`\Sigma` is a covariance 
     prior, and :math:`\Sigma_\alpha` is the measurement noise covariance. 
     
     The class is constructed from :math:`A` and :math:`\Sigma`.
@@ -372,16 +372,14 @@ class Tikhonov(nn.Module):
         
         - :attr:`Sigma` (torch.tensor):  covariance prior with shape :math:`(N, N)`
         
-    Attributes: !Update!
-        :attr:`B`: The learnable completion layer initialized as 
-        :math:`\Sigma_1 \Sigma_{21}^{-1}`. This layer is a :class:`nn.Linear`
+    Attributes:
+        :attr:`B`: Initialized as :math:`A \Sigma`.
         
-        :attr:`C`: The learnable denoising layer initialized from 
-        :math:`\Sigma_1`.
+        :attr:`C`: Initialized as :math:`\Sigma^\top A^\top A`.
     
     Example:
-        >>> sigma = np.random.random([32*32, 32*32])
-        >>> recon_op = TikhonovMeasurementPriorDiag(sigma, 400)            
+        >>> sigma = ...
+        >>> recon = Tikhonov(...            
     """
     def __init__(self,  A: torch.tensor, Sigma: torch.tensor):
         super().__init__()
@@ -400,12 +398,7 @@ class Tikhonov(nn.Module):
         .. math::
             \hat{x} = x_0 + B^\top (C + \Sigma_\alpha)^{-1} (y - A x_0)
         
-        with :math:`y_1 = C(C + \Sigma_\alpha)^{-1} (y - GF x_0)` and 
-        :math:`y_2 = \Sigma_1 \Sigma_{21}^{-1} y_1`, where 
-        :math:`\Sigma = \begin{bmatrix} \Sigma_1 & \Sigma_{21}^\top \\ \Sigma_{21} & \Sigma_2\end{bmatrix}`
-        and  :math:`D_1 =\textrm{Diag}(\Sigma_1)`. Assuming the noise 
-        covariance :math:`\Sigma_\alpha` is diagonal, the matrix inversion 
-        involded in the computation of :math:`y_1` is straigtforward.
+        with :math:`\Sigma`
         
         Args:
             - :attr:`x`: A batch of measurement vectors :math:`y`
@@ -430,8 +423,8 @@ class Tikhonov(nn.Module):
             >>> x = recon_op(y, x_0, var, meas)
             torch.Size([85, 1024])       
         """
-        z = torch.linalg.lstsq(self.C + cov, x).solution # z = (C + cov)^-1 x
-        x = z @ self.B                                   # x = B^T z 
+        z = torch.linalg.lstsq(self.C + cov, x).solution    # z = (C + cov)^-1 x
+        x = z @ self.B                                      # x = B^T z 
         return x
 
 # =============================================================================    
