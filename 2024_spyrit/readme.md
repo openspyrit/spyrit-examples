@@ -12,18 +12,40 @@ We provide here the code to reproduce the results reported in
 
 ## Get the code from Github
 
-You can only clone the code corresponding to this paper using the  `sparse-checkout` git command.
-```shell
-git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
-cd spyrit-examples
-git sparse-checkout set 2024_spyrit
-git checkout
-```
+There are two options:
 
-Alternatively, you can clone the whole `spyrit-examples` repository (which contains code for some other papers):
-```shell
-git clone https://github.com/openspyrit/spyrit-examples.git
-```
+1. You can clone the entire `spyrit-examples` repository, which contains code for some other papers.
+    ```shell
+    git clone https://github.com/openspyrit/spyrit-examples.git
+    ```
+
+2. Or you can use the `sparse-checkout` command to get only the code corresponding to this paper.
+    ```shell
+    git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
+    cd spyrit-examples
+    git sparse-checkout set 2024_spyrit
+    git checkout
+    ```
+## Installation
+
+1. Create a conda environment
+    ```shell
+    conda create --name spyrit_2024
+    conda activate spyrit_2024
+    ```
+
+1. Install pytorch using conda. E.g.,
+    ```shell
+    conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+    ```
+    Visit https://pytorch.org/get-started/locally/ if you need a different installation.
+
+1. Install SPyRiT and a few more packages:
+    ```shell
+    pip install spyrit==2.3.3
+    pip install girder-client
+    pip install scikit-image
+    ```
 
 ## Download the models and data
 
@@ -84,26 +106,6 @@ The directory structure should be as follows:
 |   |   |---train.py
 |   |   |---utility_dpgd.py
 ```
-
-## Installation
-1. Create a conda environment
-    ```shell
-    conda create --name spyrit_2024
-    conda activate spyrit_2024
-    ```
-
-1. Install pytorch using conda. E.g.,
-    ```shell
-    conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
-    ```
-    Visit https://pytorch.org/get-started/locally/ if you need a different installation.
-
-1. Install SPyRiT and a few more packages:
-    ```shell
-    pip install spyrit==2.3.3
-    pip install girder-client
-    pip install scikit-image
-    ```
 
 ## How to reproduce the results of the paper?
 1. To reproduce the sampling masks, acquisition matrices, measurements, and images in Figure 2, run `figure_2.py`. 
