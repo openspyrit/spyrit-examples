@@ -45,7 +45,7 @@ M_list = [4096, 1024, 512] # for N_rec = 128
 #M_list = [4095, 1024, 512] # for N_rec = 64
 
 N0 = 10     # Check if we used 10 in the paper
-stat_folder_rec = Path('./stat/') # Path('../../stat/ILSVRC2012_v10102019/')
+stat_folder_rec = Path('./stat/')
 
 net_arch    = 'dc-net'      # ['dc-net','pinv-net']
 net_denoi   = 'unet'        # ['unet', 'cnn']
@@ -61,6 +61,8 @@ elif N_rec==128:
     cov_rec_file= stat_folder_rec/ ('Cov_8_{}x{}'.format(N_rec, N_rec)+'.npy')
     
 #%% Networks
+save_root.mkdir(parents=True, exist_ok=True)
+
 for M in M_list:
 
     if (N_rec == 128) and (M == 4096):
@@ -177,4 +179,3 @@ for M in M_list:
             
             full_path = save_root / (data_file_prefix + '_' + f'pinv_{N_rec}' + '.pdf')
             fig.savefig(full_path, bbox_inches='tight', dpi=600)
-# %%
