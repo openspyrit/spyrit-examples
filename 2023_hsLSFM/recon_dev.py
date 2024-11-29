@@ -157,10 +157,10 @@ class Pinv1Net(nn.Module):
 
         """   
         # Preprocessing
-        #x, norm = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+        #x, norm = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
                 
         # Alternative where the mean is computed on each row
-        x, norm = self.prep.forward_expe2(x, self.acqu.meas_op) # shape: [*, M]
+        x, norm = self.prep.forward_expe(x, self.acqu.meas_op) # shape: [*, M]
     
         # measurements to image domain processing
         x = self.pinv(x, self.acqu.meas_op)             # shape: [*,N]
@@ -172,181 +172,181 @@ class Pinv1Net(nn.Module):
         x = self.prep.denormalize_expe(x, norm)
         return x, norm
 
-# =============================================================================    
-class DC1Net(nn.Module):
-# =============================================================================
-    r""" Denoised completion reconstruction network
+# # =============================================================================    
+# class DC1Net(nn.Module):
+# # =============================================================================
+#     r""" Denoised completion reconstruction network
     
-    .. math:
+#     .. math:
         
     
-    Args:
-        :attr:`noise`: Acquisition operator (see :class:`~spyrit.core.noise`) 
+#     Args:
+#         :attr:`noise`: Acquisition operator (see :class:`~spyrit.core.noise`) 
         
-        :attr:`prep`: Preprocessing operator (see :class:`~spyrit.core.prep`)
+#         :attr:`prep`: Preprocessing operator (see :class:`~spyrit.core.prep`)
         
-        :attr:`sigma`: Covariance prior`
+#         :attr:`sigma`: Covariance prior`
         
-        :attr:`denoi` (optional): Image denoising operator 
-        (see :class:`~spyrit.core.nnet`). 
-        Default :class:`~spyrit.core.nnet.Identity`
+#         :attr:`denoi` (optional): Image denoising operator 
+#         (see :class:`~spyrit.core.nnet`). 
+#         Default :class:`~spyrit.core.nnet.Identity`
     
-    Input / Output:
-        :attr:`input`: Ground-truth images with shape :math:`(B,C,H,W)` 
+#     Input / Output:
+#         :attr:`input`: Ground-truth images with shape :math:`(B,C,H,W)` 
         
-        :attr:`output`: Reconstructed images with shape :math:`(B,C,H,W)`
+#         :attr:`output`: Reconstructed images with shape :math:`(B,C,H,W)`
     
-    Attributes:
-        :attr:`acqu`: Acquisition operator initialized as :attr:`noise`
+#     Attributes:
+#         :attr:`acqu`: Acquisition operator initialized as :attr:`noise`
         
-        :attr:`prep`: Preprocessing operator initialized as :attr:`prep`
+#         :attr:`prep`: Preprocessing operator initialized as :attr:`prep`
         
-        :attr:`tikho`: Data consistency layer initialized as :attr:`tikho`
+#         :attr:`tikho`: Data consistency layer initialized as :attr:`tikho`
         
-        :attr:`denoi`: Image denoising operator initialized as :attr:`denoi`
+#         :attr:`denoi`: Image denoising operator initialized as :attr:`denoi`
 
     
-    Example:
-        >>> B, C, H, M = 10, 1, 64, 64**2
-        >>> Ord = np.ones((H,H))
-        >>> meas = HadamSplit(M, H, Ord)
-        >>> noise = NoNoise(meas)
-        >>> prep = SplitPoisson(1.0, M, H*H)
-        >>> sigma = np.random.random([H**2, H**2])
-        >>> recnet = DCNet(noise,prep,sigma)
-        >>> x = torch.FloatTensor(B,C,H,H).uniform_(-1, 1)
-        >>> z = recnet(x)
-        >>> print(z.shape)
-        torch.Size([10, 1, 64, 64])
-    """
-    def __init__(self, 
-                 noise, 
-                 prep, 
-                 sigma,
-                 denoi = nn.Identity()):
+#     Example:
+#         >>> B, C, H, M = 10, 1, 64, 64**2
+#         >>> Ord = np.ones((H,H))
+#         >>> meas = HadamSplit(M, H, Ord)
+#         >>> noise = NoNoise(meas)
+#         >>> prep = SplitPoisson(1.0, M, H*H)
+#         >>> sigma = np.random.random([H**2, H**2])
+#         >>> recnet = DCNet(noise,prep,sigma)
+#         >>> x = torch.FloatTensor(B,C,H,H).uniform_(-1, 1)
+#         >>> z = recnet(x)
+#         >>> print(z.shape)
+#         torch.Size([10, 1, 64, 64])
+#     """
+#     def __init__(self, 
+#                  noise, 
+#                  prep, 
+#                  sigma,
+#                  denoi = nn.Identity()):
         
-        super().__init__()
-        self.acqu = noise 
-        self.prep = prep
-        #Perm = noise.meas_op.Perm.weight.data.cpu().numpy().T
-        # CHECK bellow as it may be the transpose of it
-        sigma = torch.from_numpy(sigma)
-        sigma_perm = noise.meas_op.Perm(noise.meas_op.Perm(sigma.mT)).mT
-        sigma_perm = sigma_perm.numpy()
-        self.tikho = TikhonovMeasurementPriorDiag(sigma_perm, noise.meas_op.M)
-        self.denoi = denoi
+#         super().__init__()
+#         self.acqu = noise 
+#         self.prep = prep
+#         #Perm = noise.meas_op.Perm.weight.data.cpu().numpy().T
+#         # CHECK bellow as it may be the transpose of it
+#         sigma = torch.from_numpy(sigma)
+#         sigma_perm = noise.meas_op.Perm(noise.meas_op.Perm(sigma.mT)).mT
+#         sigma_perm = sigma_perm.numpy()
+#         self.tikho = TikhonovMeasurementPriorDiag(sigma_perm, noise.meas_op.M)
+#         self.denoi = denoi
         
-    def forward(self, x):
-        r""" ! update ! Full pipeline of the reconstruction network
+#     def forward(self, x):
+#         r""" ! update ! Full pipeline of the reconstruction network
             
-        Args:
-            :attr:`x`: ground-truth images
+#         Args:
+#             :attr:`x`: ground-truth images
         
-        Shape:
-            :attr:`x`: ground-truth images with shape :math:`(B,C,H,W)`
+#         Shape:
+#             :attr:`x`: ground-truth images with shape :math:`(B,C,H,W)`
             
-            :attr:`output`: reconstructed images with shape :math:`(B,C,H,W)`
+#             :attr:`output`: reconstructed images with shape :math:`(B,C,H,W)`
         
-        Example: 
-            >>> B, C, H, M = 10, 1, 64, 64**2
-            >>> Ord = np.ones((H,H))
-            >>> meas = HadamSplit(M, H, Ord)
-            >>> noise = NoNoise(meas)
-            >>> prep = SplitPoisson(1.0, M, H*H)
-            >>> sigma = np.random.random([H**2, H**2])
-            >>> recnet = DCNet(noise,prep,sigma)
-            >>> x = torch.FloatTensor(B,C,H,H).uniform_(-1, 1)
-            >>> z = recnet(x)
-            >>> print(z.shape)
-            torch.Size([10, 1, 64, 64])
-        """
-        # Acquisition
-        x = self.acqu(x)                     # shape x = [b*c, 2*M]
-        # Reconstruction 
-        x = self.reconstruct(x)             # shape x = [bc, 1, h,w]
+#         Example: 
+#             >>> B, C, H, M = 10, 1, 64, 64**2
+#             >>> Ord = np.ones((H,H))
+#             >>> meas = HadamSplit(M, H, Ord)
+#             >>> noise = NoNoise(meas)
+#             >>> prep = SplitPoisson(1.0, M, H*H)
+#             >>> sigma = np.random.random([H**2, H**2])
+#             >>> recnet = DCNet(noise,prep,sigma)
+#             >>> x = torch.FloatTensor(B,C,H,H).uniform_(-1, 1)
+#             >>> z = recnet(x)
+#             >>> print(z.shape)
+#             torch.Size([10, 1, 64, 64])
+#         """
+#         # Acquisition
+#         x = self.acqu(x)                     # shape x = [b*c, 2*M]
+#         # Reconstruction 
+#         x = self.reconstruct(x)             # shape x = [bc, 1, h,w]
         
-        return x
+#         return x
 
-    def reconstruct(self, x):
-        r""" ! update ! Reconstruction step of a reconstruction network
+#     def reconstruct(self, x):
+#         r""" ! update ! Reconstruction step of a reconstruction network
             
-        Args:
-            :attr:`x`: raw measurement vectors
+#         Args:
+#             :attr:`x`: raw measurement vectors
         
-        Shape:
-            :attr:`x`: raw measurement vectors with shape :math:`(BC,2M)`
+#         Shape:
+#             :attr:`x`: raw measurement vectors with shape :math:`(BC,2M)`
             
-            :attr:`output`: reconstructed images with shape :math:`(BC,1,H,W)`
+#             :attr:`output`: reconstructed images with shape :math:`(BC,1,H,W)`
         
-        Example:
-            >>> B, C, H, M = 10, 1, 64, 64**2
-            >>> Ord = np.ones((H,H))
-            >>> meas = HadamSplit(M, H, Ord)
-            >>> noise = NoNoise(meas)
-            >>> prep = SplitPoisson(1.0, M, H*H)
-            >>> sigma = np.random.random([H**2, H**2])
-            >>> recnet = DCNet(noise,prep,sigma)
-            >>> x = torch.rand((B*C,2*M), dtype=torch.float)
-            >>> z = recnet.reconstruct(x)
-            >>> print(z.shape)
-            torch.Size([10, 1, 64, 64])
-        """    
-        # Preprocessing
-        var_noi = self.prep.sigma(x)
-        x = self.prep(x)
+#         Example:
+#             >>> B, C, H, M = 10, 1, 64, 64**2
+#             >>> Ord = np.ones((H,H))
+#             >>> meas = HadamSplit(M, H, Ord)
+#             >>> noise = NoNoise(meas)
+#             >>> prep = SplitPoisson(1.0, M, H*H)
+#             >>> sigma = np.random.random([H**2, H**2])
+#             >>> recnet = DCNet(noise,prep,sigma)
+#             >>> x = torch.rand((B*C,2*M), dtype=torch.float)
+#             >>> z = recnet.reconstruct(x)
+#             >>> print(z.shape)
+#             torch.Size([10, 1, 64, 64])
+#         """    
+#         # Preprocessing
+#         var_noi = self.prep.sigma(x)
+#         x = self.prep(x)
     
-        # measurements to image domain processing
-        size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
-        x_0 = torch.zeros(size, device=x.device)
-        x = self.tikho(x, x_0, var_noi, self.acqu.meas_op)
+#         # measurements to image domain processing
+#         size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
+#         x_0 = torch.zeros(size, device=x.device)
+#         x = self.tikho(x, x_0, var_noi, self.acqu.meas_op)
         
-        # Image domain denoising
-        x = self.denoi(x)               
+#         # Image domain denoising
+#         x = self.denoi(x)               
         
-        return x
+#         return x
 
-    def reconstruct_expe(self, x):
-        r""" Reconstruction step of a reconstruction network
+#     def reconstruct_expe(self, x):
+#         r""" Reconstruction step of a reconstruction network
         
-        Same as :meth:`reconstruct` reconstruct except that:
+#         Same as :meth:`reconstruct` reconstruct except that:
             
-        1. The preprocessing step estimates the image intensity for normalization
+#         1. The preprocessing step estimates the image intensity for normalization
         
-        2. The output images are "denormalized", i.e., have units of photon counts
+#         2. The output images are "denormalized", i.e., have units of photon counts
             
-        Args:
-            :attr:`x`: raw measurement vectors
+#         Args:
+#             :attr:`x`: raw measurement vectors
         
-        Shape:
-            :attr:`x`: Raw measurement vectors with shape :math:`(*,2M)`
+#         Shape:
+#             :attr:`x`: Raw measurement vectors with shape :math:`(*,2M)`
             
-            :attr:`output`: :math:`(*,W)`
+#             :attr:`output`: :math:`(*,W)`
     
-        """
+#         """
         
-        # Preprocessing
-        var_noi = self.prep.sigma_expe(x)
-        x, N0_est = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
-        print(N0_est)
+#         # Preprocessing
+#         var_noi = self.prep.sigma_expe(x)
+#         x, N0_est = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+#         print(N0_est)
         
-        x = x/self.prep.gain
-        norm = self.prep.gain*N0_est
+#         x = x/self.prep.gain
+#         norm = self.prep.gain*N0_est
         
-        # variance of preprocessed measurements
-        var_noi = var_noi / norm**2
-        #var_noi = torch.div(var_noi, (norm.view(-1,1).expand(bc,self.Acq.meas_op.M))**2)
+#         # variance of preprocessed measurements
+#         var_noi = var_noi / norm**2
+#         #var_noi = torch.div(var_noi, (norm.view(-1,1).expand(bc,self.Acq.meas_op.M))**2)
         
-        # measurements to image domain processing
-        size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
-        x_0 = torch.zeros(size, device=x.device)
-        x = self.tikho(x, x_0, var_noi, self.acqu.meas_op)
+#         # measurements to image domain processing
+#         size = x.shape[:-1] + torch.Size([self.acqu.meas_op.N])
+#         x_0 = torch.zeros(size, device=x.device)
+#         x = self.tikho(x, x_0, var_noi, self.acqu.meas_op)
         
-        # Image-domain denoising
-        x = self.denoi(x)                               # shape: [*,h,w]
+#         # Image-domain denoising
+#         x = self.denoi(x)                               # shape: [*,h,w]
         
-        # Denormalization 
-        x = self.prep.denormalize_expe(x, N0_est)
-        return x, N0_est
+#         # Denormalization 
+#         x = self.prep.denormalize_expe(x, N0_est)
+#         return x, N0_est
         
 
 # =============================================================================
@@ -435,7 +435,7 @@ class Tikho1Net(nn.Module):
         super().__init__()
         self.acqu = noise 
         self.prep = prep
-        device = noise.meas_op.H.weight.device
+        device = noise.meas_op.H.device        # spyrit 2.3.
         sigma = torch.as_tensor(sigma, dtype=torch.float32, device=device)
         self.tikho = Tikhonov(noise.meas_op.get_H(), sigma)
         self.denoi = denoi
@@ -540,10 +540,10 @@ class Tikho1Net(nn.Module):
         cov_meas = self.prep.sigma_expe(x)
         # print(cov_meas)
         # print(self.prep.nbin, self.prep.mudark)
-        #x, norm = self.prep.forward_expe2(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
+        #x, norm = self.prep.forward_expe(x, self.acqu.meas_op, (-2,-1)) # shape: [*, M]
         
         # Alternative where the mean is computed on each row
-        x, norm = self.prep.forward_expe2(x, self.acqu.meas_op) # shape: [*, M]
+        x, norm = self.prep.forward_expe(x, self.acqu.meas_op) # shape: [*, M]
 
     
         # covariance of measurements
@@ -559,6 +559,6 @@ class Tikho1Net(nn.Module):
         x = self.denoi(x)
 
         # Denormalization 
-        x = self.prep.denormalize_expe(x, norm)          
+        x = self.prep.denormalize_expe(x, norm, x.shape[-2], x.shape[-1])          
         
         return x, norm

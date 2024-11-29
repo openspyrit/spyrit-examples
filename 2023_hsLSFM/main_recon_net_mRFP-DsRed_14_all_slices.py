@@ -33,25 +33,40 @@ H_exp = np.load(Path(data_folder + mat_folder) / f'motifs_Hadamard_{M}_{N}.npy')
 H_exp /= H_exp[0,16:500].mean()
    
 #%% Init physics operators for experimental patterns
-import torch
+# import torch
+# from spyrit.core.meas import LinearSplit
+# from spyrit.core.prep import SplitPoisson
+# from spyrit.core.noise import Poisson
+# import matplotlib.pyplot as plt
+
+# M = 128
+# N = 512
+# alpha = 1e1 # in photons/pixels
+
+# linop = LinearSplit(H_exp, pinv=True)
+# noise = Poisson(linop, alpha)
+# prep  = SplitPoisson(alpha, linop)
+# prep.set_expe(gain, mudark, sigdark, nbin)
+
 from spyrit.core.meas import LinearSplit
-from spyrit.core.prep import SplitPoisson
 from spyrit.core.noise import Poisson
-import matplotlib.pyplot as plt
+from spyrit_dev import SplitPoisson1d
 
 M = 128
 N = 512
 alpha = 1e1 # in photons/pixels
 
-linop = LinearSplit(H_exp, pinv=True)
+# spyrit_23
+linop = LinearSplit(torch.from_numpy(H_exp), pinv=True, meas_shape=(1,512)) 
+# NB: (1,512) allows to work on last dimension only
 noise = Poisson(linop, alpha)
-prep  = SplitPoisson(alpha, linop)
+prep  = SplitPoisson1d(alpha, linop)
 prep.set_expe(gain, mudark, sigdark, nbin)
 
 #%% Tikhonov + unet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
-from recon_dev import Tikho1Net, Tikhonov
+from spyrit_dev import Tikho1Net, Tikhonov
 
 save_rec = True
 save_fig = True
@@ -77,7 +92,7 @@ sigma = np.load(Path(stat_folder) / cov_file)
 
 # Load net
 net_prefix = f'tikho-net_unet_imagenet_ph_{alpha}'
-net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07'
+net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07.pth'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 recnet = Tikho1Net(noise, prep, sigma, Unet())

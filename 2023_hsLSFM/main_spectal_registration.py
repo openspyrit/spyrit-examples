@@ -5,84 +5,85 @@ Created on Fri Dec  8 18:09:06 2023
 @author: ducros
 """
 
-#%% Load EGFP / DsRed raw data 
-from pathlib import Path
-import numpy as np
-import cv2
+#%% 1. Register raw measurements (i.e., before reconstruction)
+# Load EGFP / DsRed raw data 
+# from pathlib import Path
+# import numpy as np
+# import cv2
 
-Nl = 512 # number of pixcels along the y dimensions 
-Nh = 128 # number of measured patterns
-Nc = 128 # number of channels
+# Nl = 512 # number of pixcels along the y dimensions 
+# Nh = 128 # number of measured patterns
+# Nc = 128 # number of channels
 
-t_pix = 6.0 # maximum shift in pixel
+# t_pix = 6.0 # maximum shift in pixel
 
-data_folder = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D/')
-prep_folder = Path('Preprocess')
+# data_folder = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D/')
+# prep_folder = Path('Preprocess')
 
-nbin = 20*4
-T_list = range(1,27)    # slice indices
+# nbin = 20*4
+# T_list = range(1,27)    # slice indices
 
-prep_raw = np.zeros((Nl,Nh,Nc))
-prep_reg = np.zeros((Nl,Nh,Nc))
+# prep_raw = np.zeros((Nl,Nh,Nc))
+# prep_reg = np.zeros((Nl,Nh,Nc))
 
-#%% Register raw measurements (i.e., before reconstruction)
+#%% 1. Register raw measurements (i.e., before reconstruction)
 #  /!\ NOT working as expected. Problem at the border with extrapolation.
 
-save_folder = data_folder / Path(prep_folder.name + '_registered_constant')
-save_folder.mkdir(parents=True)
+# save_folder = data_folder / Path(prep_folder.name + '_registered_constant')
+# save_folder.mkdir(parents=True)
     
-for t in T_list:
-    if t<6:
-        #Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_03_13/'
-        date = '2023_03_13'
-        Run = f'RUN{t+1:04}'
-    else:
-        #Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_03_14/'
-        date = '2023_03_14'
-        Run = f'RUN{t-5:04}'
+# for t in T_list:
+#     if t<6:
+#         #Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_03_13/'
+#         date = '2023_03_13'
+#         Run = f'RUN{t+1:04}'
+#     else:
+#         #Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_03_14/'
+#         date = '2023_03_14'
+#         Run = f'RUN{t-5:04}'
 
-    # Load prep data (pos)
-    filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    print(filename)
-    prep_raw = np.load(data_folder / prep_folder / filename)
-    #prep_reg[:] = prep_raw.mean()
+#     # Load prep data (pos)
+#     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
+#     print(filename)
+#     prep_raw = np.load(data_folder / prep_folder / filename)
+#     #prep_reg[:] = prep_raw.mean()
     
-    # Spectral registration (spatial shift that varies linearly with wavelength)
-    # cv2.BORDER_REPLICATE not working as expected ??
-    for l in range(Nc):
-        print(f'\r-- Registration channel: {l}', end="", flush=True)
-        # register (pos)
-        tx = l * t_pix / Nc
-        translation_matrix = np.float32([[1,0,0], [0,1,tx] ])
-        prep_reg[:,:,l] = cv2.warpAffine(prep_raw[:,:,l], translation_matrix,
-                                         (Nh,Nl), cv2.INTER_CUBIC, cv2.BORDER_REPLICATE)
+#     # Spectral registration (spatial shift that varies linearly with wavelength)
+#     # cv2.BORDER_REPLICATE not working as expected ??
+#     for l in range(Nc):
+#         print(f'\r-- Registration channel: {l}', end="", flush=True)
+#         # register (pos)
+#         tx = l * t_pix / Nc
+#         translation_matrix = np.float32([[1,0,0], [0,1,tx] ])
+#         prep_reg[:,:,l] = cv2.warpAffine(prep_raw[:,:,l], translation_matrix,
+#                                          (Nh,Nl), cv2.INTER_CUBIC, cv2.BORDER_REPLICATE)
         
     
-    # save (pos)
-    print()
-    print(f'Saving {save_folder / filename}')
-    np.save(save_folder / filename, prep_reg)
+#     # save (pos)
+#     print()
+#     print(f'Saving {save_folder / filename}')
+#     np.save(save_folder / filename, prep_reg)
     
-    # Load prep data (neg)
-    filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    print(filename)
-    prep_raw = np.load(data_folder / prep_folder / filename)
+#     # Load prep data (neg)
+#     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
+#     print(filename)
+#     prep_raw = np.load(data_folder / prep_folder / filename)
     
-    # Spectral registration (spatial shift that varies linearly with wavelength)
-    for l in range(Nc):
-        print(f'\r-- Registration channel: {l}', end="", flush=True)
-        # register (neg)
-        tx = l * t_pix / Nc
-        translation_matrix = np.float32([[1,0,0], [0,1,tx] ])
-        prep_reg[:,:,l] = cv2.warpAffine(prep_raw[:,:,l], translation_matrix,
-                                         (Nh,Nl), cv2.INTER_CUBIC, cv2.BORDER_REPLICATE)
+#     # Spectral registration (spatial shift that varies linearly with wavelength)
+#     for l in range(Nc):
+#         print(f'\r-- Registration channel: {l}', end="", flush=True)
+#         # register (neg)
+#         tx = l * t_pix / Nc
+#         translation_matrix = np.float32([[1,0,0], [0,1,tx] ])
+#         prep_reg[:,:,l] = cv2.warpAffine(prep_raw[:,:,l], translation_matrix,
+#                                          (Nh,Nl), cv2.INTER_CUBIC, cv2.BORDER_REPLICATE)
     
-    # save (neg)
-    print()
-    print(f'Saving {save_folder / filename}')
-    np.save(save_folder / filename, prep_reg)
+#     # save (neg)
+#     print()
+#     print(f'Saving {save_folder / filename}')
+#     np.save(save_folder / filename, prep_reg)
 
-#%% Load EGFP / DsRed hypercube
+#%% 2. Load EGFP / DsRed hypercube
 
 from pathlib import Path
 import numpy as np
@@ -105,7 +106,7 @@ save_folder = Path(load_path) / 'Reconstruction/hypercube' / (recon + '_shift')
 xyl_raw = np.zeros((Nl,Nh,Nc))
 xyl_reg = np.zeros((Nl,Nh,Nc))
 
-#%% Register hypercube (i.e., after reconstruction)
+#%% 2. Register hypercube (i.e., after reconstruction)
 
 save_folder.mkdir(parents=True)
 
@@ -137,7 +138,7 @@ for t in T_list:
     np.save(save_folder / filename, xyl_reg)
 
 
-#%% Load data DsRed / mRFP
+#%% 3. Load data DsRed / mRFP
 
 from pathlib import Path
 import numpy as np
@@ -163,7 +164,7 @@ save_folder = Path(load_path) / 'Reconstruction/hypercube' / (recon + '_shift')
 xyl_raw = np.zeros((Nl,Nh,Nc))
 xyl_reg = np.zeros((Nl,Nh,Nc))
 
-#%% Register hypercube (i.e., after reconstruction)
+#%% 3. Register hypercube (i.e., after reconstruction)
 save_folder.mkdir(parents=True)
 
 # loop over z-slices

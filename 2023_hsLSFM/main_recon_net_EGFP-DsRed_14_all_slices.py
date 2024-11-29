@@ -20,7 +20,7 @@ fig_folder = './figure/'
 
 #%% Load experimental measurement matrix (after split compensation)
 from pathlib import Path
-from spyrit.misc.disp import imagesc, add_colorbar, noaxis
+from spyrit.misc.disp import add_colorbar, noaxis
 import matplotlib.pyplot as plt
 from spyrit.misc.walsh_hadamard import walsh_matrix
 import numpy as np
@@ -60,34 +60,35 @@ axs[1].get_xaxis().set_visible(False)
 
     
 #%% Init physics operators for experimental patterns
-import torch
 from spyrit.core.meas import LinearSplit
-from spyrit.core.prep import SplitPoisson
 from spyrit.core.noise import Poisson
-import matplotlib.pyplot as plt
+from spyrit_dev import SplitPoisson1d
 
 M = 128
 N = 512
 alpha = 1e1 # in photons/pixels
 
-linop = LinearSplit(H_exp, pinv=True)
+# spyrit_23
+linop = LinearSplit(torch.from_numpy(H_exp), pinv=True, meas_shape=(1,512)) 
+# NB: (1,512) allows to work on last dimension only
 noise = Poisson(linop, alpha)
-prep  = SplitPoisson(alpha, linop)
+prep  = SplitPoisson1d(alpha, linop)
 prep.set_expe(gain, mudark, sigdark, nbin)
 
 
 #%% Tikhonet + unet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
-from recon_dev import Tikho1Net, Tikhonov
+#from spyrit_dev import Tikho1Net, Tikhonov
+from spyrit.core.recon import Tikhonov
 
 save_rec = True
-save_fig = False
+save_fig = True
 
 div = 1.5
 alpha = 50
-channel = 10, 55, 100  # to be plotted
-Nl, Nh, Nc = 512, 128, 128 # shape of preprocessed data
+channel = 10, 55, 100       # to be plotted
+Nl, Nh, Nc = 512, 128, 128  # shape of preprocessed data
 
 # raw data
 save_tag = False
@@ -99,9 +100,9 @@ prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
 recon = f'tikhonet{alpha}_div{div}_exp'
 save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}/'
 
-prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
-recon = f'tikhonet{alpha}_div{div}_registered_exp'
-save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}_registered/'
+# prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
+# recon = f'tikhonet{alpha}_div{div}_registered_exp'
+# save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}_registered/'
 
 T_list = range(1,27)    # slice indices
 
@@ -119,7 +120,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 recnet = Tikho1Net(noise, prep, sigma, Unet())
 recnet.to(device)  
-title = './model/' + net_prefix + '_exp_' + net_suffix
+title = './model/' + net_prefix + '_exp_' + net_suffix + '.pth'
 load_net(title, recnet, device, False)
 recnet.tikho = Tikhonov(recnet.acqu.meas_op.get_H(), 
                         torch.as_tensor(sigma/div, 
@@ -213,7 +214,7 @@ for t in T_list:
 del recnet
 
 #%% Pinv
-from recon_dev import Pinv1Net
+from spyrit_dev import Pinv1Net
 
 save_rec = True
 save_fig = True
@@ -229,14 +230,15 @@ prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
 recon = 'pinv_exp'
 save_folder = 'Reconstruction/hypercube/pinv/'
 
-prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
-recon = 'pinv_registered_exp'
-save_folder = 'Reconstruction/hypercube/pinv_registered/'
+# prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
+# recon = 'pinv_registered_exp'
+# save_folder = 'Reconstruction/hypercube/pinv_registered/'
 
 # Load net
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-recnet = Pinv1Net(noise, prep)
+# Pseudo inverse solution (as denoiser identity by default)
+recnet = Pinv1Net(noise, prep) 
 recnet.to(device)  
 
 # Reconstruct all channels per batch
