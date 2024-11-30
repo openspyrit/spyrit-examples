@@ -68,24 +68,20 @@ M = 128
 N = 512
 alpha = 1e1 # in photons/pixels
 
-# spyrit_23
+# NB: (1,512) allows to work on last dimension only (512, 1) works also
 linop = LinearSplit(torch.from_numpy(H_exp), pinv=True, meas_shape=(1,512)) 
-# NB: (1,512) allows to work on last dimension only
 noise = Poisson(linop, alpha)
 prep  = SplitPoisson1d(alpha, linop)
 prep.set_expe(gain, mudark, sigdark, nbin)
 
-
 #%% Tikhonet + unet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
-#from spyrit_dev import Tikho1Net, Tikhonov
-from spyrit.core.recon import Tikhonov
 
 save_rec = True
 save_fig = True
 
-div = 1.5
+div = 1.5e0
 alpha = 50
 channel = 10, 55, 100       # to be plotted
 Nl, Nh, Nc = 512, 128, 128  # shape of preprocessed data
@@ -95,14 +91,9 @@ save_tag = False
 data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
 data_subfolder = 'data_2023_03_14/'
 
-
 prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
 recon = f'tikhonet{alpha}_div{div}_exp'
 save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}/'
-
-# prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
-# recon = f'tikhonet{alpha}_div{div}_registered_exp'
-# save_folder = f'Reconstruction/hypercube/tikhonet{alpha}_div{div}_registered/'
 
 T_list = range(1,27)    # slice indices
 
@@ -118,16 +109,29 @@ net_prefix = f'tikho-net_unet_imagenet_ph_{alpha}'
 net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-recnet = Tikho1Net(noise, prep, sigma, Unet())
-recnet.to(device)  
+# spyrit 2.3.3
+# from spyrit_dev import Tikho1Net, Tikhonov
+# recnet = Tikho1Net(noise, prep, sigma, Unet())
+# recnet.to(device)  
+# title = './model/' + net_prefix + '_exp_' + net_suffix + '.pth'
+# load_net(title, recnet, device, False)
+# recnet.tikho = Tikhonov(recnet.acqu.meas_op.get_H(), 
+#                         torch.as_tensor(sigma/div, 
+#                                         dtype=torch.float32, 
+#                                         device=device)
+#                         )
+# recnet.eval() # Mandantory when batchNorm is used
+
+# spyrit master
+# TODO: Solve device issues when relaunching sections independtly
+# TODO: Clean saved models to remove tikho.B and tikho.C
+
+from spyrit.core.recon import TikhoNet 
+recnet = TikhoNet(noise, prep, torch.from_numpy(sigma/div), Unet())  
 title = './model/' + net_prefix + '_exp_' + net_suffix + '.pth'
 load_net(title, recnet, device, False)
-recnet.tikho = Tikhonov(recnet.acqu.meas_op.get_H(), 
-                        torch.as_tensor(sigma/div, 
-                                        dtype=torch.float32, 
-                                        device=device)
-                        )
-recnet.eval() # Mandantory when batchNorm is used
+recnet.eval()   # Mandantory when batchNorm is used
+recnet.to(device)  
 
 # Reconstruct all channels per batch
 n_batch = 8 # a power of two
