@@ -62,7 +62,8 @@ axs[1].get_xaxis().set_visible(False)
 #%% Init physics operators for experimental patterns
 from spyrit.core.meas import LinearSplit
 from spyrit.core.noise import Poisson
-from spyrit_dev import SplitPoisson1d
+#from spyrit_dev import SplitPoisson1d
+from spyrit.core.prep import SplitPoissonRaw
 
 M = 128
 N = 512
@@ -71,7 +72,8 @@ alpha = 1e1 # in photons/pixels
 # NB: (1,512) allows to work on last dimension only (512, 1) works also
 linop = LinearSplit(torch.from_numpy(H_exp), pinv=True, meas_shape=(1,512)) 
 noise = Poisson(linop, alpha)
-prep  = SplitPoisson1d(alpha, linop)
+#prep  = SplitPoisson1d(alpha, linop)
+prep  = SplitPoissonRaw(alpha, linop)
 prep.set_expe(gain, mudark, sigdark, nbin)
 
 #%% Tikhonet + unet
@@ -81,7 +83,7 @@ from spyrit.core.train import load_net
 save_rec = True
 save_fig = True
 
-div = 1.5e0
+div = 1.5
 alpha = 50
 channel = 10, 55, 100       # to be plotted
 Nl, Nh, Nc = 512, 128, 128  # shape of preprocessed data
@@ -218,7 +220,8 @@ for t in T_list:
 del recnet
 
 #%% Pinv
-from spyrit_dev import Pinv1Net
+#from spyrit_dev import Pinv1Net        # v2.3.3
+from spyrit.core.recon import Pinv1Net  # master
 
 save_rec = True
 save_fig = True
@@ -234,15 +237,11 @@ prep_folder = '/Preprocess/' # '/Preprocess/' '/Preprocess_registered/'
 recon = 'pinv_exp'
 save_folder = 'Reconstruction/hypercube/pinv/'
 
-# prep_folder = '/Preprocess_registered/' # '/Preprocess/' '/Preprocess_registered/'
-# recon = 'pinv_registered_exp'
-# save_folder = 'Reconstruction/hypercube/pinv_registered/'
-
 # Load net
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Pseudo inverse solution (as denoiser identity by default)
-recnet = Pinv1Net(noise, prep) 
+recnet = Pinv1Net(noise, prep)
 recnet.to(device)  
 
 # Reconstruct all channels per batch

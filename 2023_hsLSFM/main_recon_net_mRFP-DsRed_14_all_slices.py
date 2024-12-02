@@ -33,24 +33,10 @@ H_exp = np.load(Path(data_folder + mat_folder) / f'motifs_Hadamard_{M}_{N}.npy')
 H_exp /= H_exp[0,16:500].mean()
    
 #%% Init physics operators for experimental patterns
-# import torch
-# from spyrit.core.meas import LinearSplit
-# from spyrit.core.prep import SplitPoisson
-# from spyrit.core.noise import Poisson
-# import matplotlib.pyplot as plt
-
-# M = 128
-# N = 512
-# alpha = 1e1 # in photons/pixels
-
-# linop = LinearSplit(H_exp, pinv=True)
-# noise = Poisson(linop, alpha)
-# prep  = SplitPoisson(alpha, linop)
-# prep.set_expe(gain, mudark, sigdark, nbin)
-
 from spyrit.core.meas import LinearSplit
 from spyrit.core.noise import Poisson
-from spyrit_dev import SplitPoisson1d
+#from spyrit_dev import SplitPoisson1d
+from spyrit.core.prep import SplitPoissonRaw
 
 M = 128
 N = 512
@@ -60,18 +46,18 @@ alpha = 1e1 # in photons/pixels
 linop = LinearSplit(torch.from_numpy(H_exp), pinv=True, meas_shape=(1,512)) 
 # NB: (1,512) allows to work on last dimension only
 noise = Poisson(linop, alpha)
-prep  = SplitPoisson1d(alpha, linop)
+prep  = SplitPoissonRaw(alpha, linop)
 prep.set_expe(gain, mudark, sigdark, nbin)
 
 #%% Tikhonov + unet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
-from spyrit_dev import Tikho1Net, Tikhonov
+from spyrit.core.recon import TikhoNet 
 
 save_rec = True
 save_fig = True
 
-div = 2
+div = 1.5
 
 alpha = 50
 channel = 10, 55, 100  # to be plotted
@@ -82,6 +68,9 @@ save_tag = False
 data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
 #T_list = range(9,25)    # slice indices
 T_list = [*range(4, 8), *range(9, 25)] # slice indices, Run0008 corrupted
+
+prep_folder = '/Preprocess/' 
+save_folder = '/Reconstruction/hypercube/' + f'tikhonet{alpha}_div{div}'
 
 # covariance prior in the image domain
 stat_folder = './stat/'
@@ -95,16 +84,12 @@ net_prefix = f'tikho-net_unet_imagenet_ph_{alpha}'
 net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07.pth'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-recnet = Tikho1Net(noise, prep, sigma, Unet())
-recnet.to(device)  
+recnet = TikhoNet(noise, prep, torch.from_numpy(sigma/div), Unet())  
 title = './model/' + net_prefix + '_exp_' + net_suffix
 load_net(title, recnet, device, False)
-recnet.tikho = Tikhonov(recnet.acqu.meas_op.get_H(), 
-                        torch.as_tensor(sigma/div, 
-                                        dtype=torch.float32, 
-                                        device=device)
-                        )
-recnet.eval() # Mandantory when batchNorm is used
+recnet.eval()   # Mandantory when batchNorm is used
+recnet.to(device)  
+
 
 # Reconstruct all channels per batch
 n_batch = 8 # a power of two
@@ -115,12 +100,11 @@ for t in T_list:
     Run = f'RUN{t:04}'
 
     # Load prep data
-    save_folder = '/Preprocess/'
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    prep_pos = np.load(Path(data_folder+save_folder) / filename)
+    prep_pos = np.load(Path(data_folder+prep_folder) / filename)
     
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+    prep_neg =  np.load(Path(data_folder+prep_folder) / filename)
     
     # spectral dimension comes first
     prep_pos = np.moveaxis(prep_pos, -1, 0)
@@ -161,8 +145,7 @@ for t in T_list:
                     
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         
-        if save_rec:
-            save_folder = 'Reconstruction/hypercube'  
+        if save_rec: 
             Path(data_folder+save_folder).mkdir(parents=True, exist_ok=True)
             
             save_filename = filename[:-20].replace('Had', f'rec_tikhonet{alpha}_div{div}_exp') + f'_{N}x{N}x{nc}.npy'
@@ -191,7 +174,7 @@ del recnet
 #%% Pinv + unet
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
-from recon_dev import Pinv1Net
+from spyrit.core.recon import Pinv1Net  # master
 
 save_rec = True
 save_fig = True
@@ -206,9 +189,11 @@ data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
 #T_list = range(9,25)    # slice indices
 T_list = [*range(4, 8), *range(9, 25)] # slice indices, Run0008 corrupted
 
+save_folder = 'Reconstruction/hypercube/' + f'pinvnet{alpha}'
+
 # Load net
 net_prefix = f'pinv-net_unet_imagenet_ph_{alpha}'
-net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07'
+net_suffix = 'N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07.pth'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 recnet = Pinv1Net(noise, prep, Unet())
@@ -226,12 +211,12 @@ for t in T_list:
     Run = f'RUN{t:04}'
 
     # Load prep data
-    save_folder = '/Preprocess/'
+    prep_folder = '/Preprocess/'
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    prep_pos = np.load(Path(data_folder+save_folder) / filename)
+    prep_pos = np.load(Path(data_folder+prep_folder) / filename)
     
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+    prep_neg =  np.load(Path(data_folder+prep_folder) / filename)
     
     # spectral dimension comes first
     prep_pos = np.moveaxis(prep_pos, -1, 0)
@@ -273,7 +258,6 @@ for t in T_list:
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         
         if save_rec:
-            save_folder = 'Reconstruction/hypercube'  
             Path(data_folder+save_folder).mkdir(parents=True, exist_ok=True)
             
             save_filename = filename[:-20].replace('Had', f'rec_pinvnet{alpha}_exp') + f'_{N}x{N}x{nc}.npy'
@@ -300,9 +284,7 @@ for t in T_list:
 del recnet
 
 #%% Pinv
-from spyrit.core.nnet import Unet
-from spyrit.core.train import load_net
-from recon_dev import Pinv1Net
+from spyrit.core.recon import Pinv1Net  # master
 
 save_rec = True
 save_fig = True
@@ -315,6 +297,8 @@ save_tag = False
 data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
 #T_list = range(9,25)    # slice indices
 T_list = [*range(4, 8), *range(9, 25)] # slice indices, Run0008 corrupted
+
+save_folder = 'Reconstruction/hypercube/pinv'
 
 # Load net
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -331,12 +315,12 @@ for t in T_list:
     Run = f'RUN{t:04}'
 
     # Load prep data
-    save_folder = '/Preprocess/'
+    prep_folder = '/Preprocess/'
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-    prep_pos = np.load(Path(data_folder+save_folder) / filename)
+    prep_pos = np.load(Path(data_folder+prep_folder) / filename)
     
     filename = f'{Run}_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-    prep_neg =  np.load(Path(data_folder+save_folder) / filename)
+    prep_neg =  np.load(Path(data_folder+prep_folder) / filename)
     
     # spectral dimension comes first
     prep_pos = np.moveaxis(prep_pos, -1, 0)
@@ -378,7 +362,6 @@ for t in T_list:
         rec = np.moveaxis(rec, 0, -1) # spectral channel is now the last axis
         
         if save_rec:
-            save_folder = 'Reconstruction/hypercube'  
             Path(data_folder+save_folder).mkdir(parents=True, exist_ok=True)
             
             save_filename = filename[:-20].replace('Had', f'rec_pinv_exp') + f'_{N}x{N}x{nc}.npy'
