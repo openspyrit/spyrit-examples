@@ -6,7 +6,7 @@ Created on Tue Nov 28 17:02:41 2023
 """
 import numpy as np
 from pathlib import Path
-from misc_dev import spectral_colorization
+from spyrit.misc.color import spectral_colorization
 
 #%% Load spatio-spectral data
 data_folder = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D/Preprocess') #_registered

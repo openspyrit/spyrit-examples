@@ -44,7 +44,7 @@ abond_filter_4D = np.rot90(abond_filter_4D, k=2, axes=(0, 1))
 
 import matplotlib.pyplot as plt
 import os
-from utility import colorize
+from spyrit.misc.color import colorize # v2.3.4
 
 save_tag = True
 

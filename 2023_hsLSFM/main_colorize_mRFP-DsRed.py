@@ -6,7 +6,7 @@ Created on Tue Nov 28 17:02:41 2023
 """
 import numpy as np
 from pathlib import Path
-from misc_dev import spectral_colorization
+from spyrit.misc.color import spectral_colorization # v2.3.4
 
 import sys
 sys.path.append('./fonction')
