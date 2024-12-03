@@ -114,5 +114,8 @@ Unzip the folders into `/data/`, respectively. The directory structure should be
 ### Miscellaneous
 
 1. The scripts  `main_colorize_*.py` show how to plot in color ("rainbow colors") the raw measurements and the reconstructed hypercubes. 
-1. The script  `main_stat.py` computes the mean and covariance matrices that are required to compute the Tikhonov step of the reconstruction.
-1. The script  `main_train.py` trains several Tikhonov networks.
+1. The script  `main_stat.py` shows examples to compute mean and covariance matrices "in 2D". To compute mean and covariance "in 1D", as required by the Tikhonov step of the reconstruction, see `stat_1.py` in `spyrit.misc.statistics`.
+1. Training:
+   * See `train.sh` for a typical shell script
+   * `train.py` is the main Python file (called in `train.sh`).
+   * `train_plot.py` load and plot the training loss.

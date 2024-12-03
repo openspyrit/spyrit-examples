@@ -16,13 +16,16 @@ import pickle
 
 from spyrit.core.noise import PoissonApproxGauss, Poisson
 from spyrit.core.meas import LinearSplit
-from spyrit.core.prep import SplitPoisson
+#from spyrit.core.prep import SplitPoisson
+from spyrit.core.prep import SplitPoissonRaw
+
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 from spyrit.misc.walsh_hadamard import walsh_matrix
 
 from meas_dev import Hadam1Split
-from recon_dev import DC1Net, Pinv1Net, Tikho1Net
+#from recon_dev import DC1Net, Pinv1Net, Tikho1Net
+from spyrit.core.recon import Pinv1Net, TikhoNet 
 from statistics_dev import data_loaders_ImageNet
 
 if __name__ == "__main__":
@@ -108,10 +111,12 @@ if __name__ == "__main__":
         meas = Hadam1Split(M, img_size)
         patt_type = 'Hadam1'
     else:
-        meas = LinearSplit(H, pinv=True)
+        #meas = LinearSplit(H, pinv=True)
+        meas = LinearSplit(torch.from_numpy(H), pinv=True, meas_shape=(1,img_size)) 
         patt_type = 'exp'
     
-    prep = SplitPoisson(opt.alpha, meas)
+    #prep = SplitPoisson(opt.alpha, meas)
+    prep  = SplitPoissonRaw(opt.alpha, meas)
     #noise = Poisson(meas, opt.alpha)
     noise = PoissonApproxGauss(meas, opt.alpha) # faster than Poisson
        
@@ -133,7 +138,8 @@ if __name__ == "__main__":
         model = DC1Net(noise, prep, H @ sigma @ H, denoi)
     # c. Tikhonov network
     elif opt.arch == 'tikho-net':
-        model = Tikho1Net(noise, prep, sigma, denoi)
+        #model = Tikho1Net(noise, prep, sigma, denoi)
+        model = TikhoNet(noise, prep, torch.from_numpy(sigma), denoi) 
             
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
