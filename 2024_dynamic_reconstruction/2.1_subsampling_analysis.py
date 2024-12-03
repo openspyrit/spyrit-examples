@@ -179,7 +179,7 @@ for i in range(subsampling_steps):
     x_hat = tikho(
         measurements,
         torch.zeros(measurements.shape[-1], measurements.shape[-1], device=device),
-    )
+    ).reshape(c, h, w)
     # 5. Save the images / tensors
     reconstruction_name = save_reconstruction_template.format(
         *eval(save_reconstruction_fillers)

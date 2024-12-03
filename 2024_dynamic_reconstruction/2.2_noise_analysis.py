@@ -220,17 +220,13 @@ for i in range(n_noise_values):
     prep_measurements = prep_op(measurements)
     var_measurements = prep_op.sigma(measurements)
     # 4
-    x_hat_tikho = tikho(prep_measurements, var_measurements)
+    x_hat_tikho = tikho(prep_measurements, var_measurements).reshape(1, c, h, w)
     # 5.
     for neural_network_name in valid_nn_names:
         if neural_network_name is None:
             x_hat = x_hat_tikho
         else:
-            x_hat = (
-                nn_dict[neural_network_name](x_hat_tikho.unsqueeze(0))
-                .squeeze(0)
-                .detach()
-            )
+            x_hat = nn_dict[neural_network_name](x_hat_tikho).detach()
         # 6.
         reconstruction_name = save_reconstruction_template.format(
             *eval(save_reconstruction_fillers)
