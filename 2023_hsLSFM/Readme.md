@@ -20,32 +20,20 @@
 
 1. Install SPyRiT and a few more packages:
     ```shell
-    pip install spyrit==2.3.3
+    pip install spyrit==2.4
     pip install girder-client
-    ...
-    ```
-OR 
-
-3. Install SPyRiT and a few more packages:
-    ```shell
-    git clone https://github.com/openspyrit/spyrit.git
-    cd spyrit
-    pip install -e .
     pip install spyder-kernels
-    ...
     ```
-
-    
 
 ## Code and data
 
-1.  Get source code and navigate to the `/2023_Optica/` folder
+1.  Get source code and navigate to the `/2023_hsLSFM/` folder
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
-    cd spyrit-examples/2023_Optica/ 
+    cd spyrit-examples/2023_hsLSFM/ 
     ```
 
-2. Download 
+2. Download
 
 * The raw measurements can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/64218b0d0386da2747699efc).
 * The neural networks used for reconstruction (i.e., by Tikhonov-Net) can be can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/6464d5f585f48d3da071893c).
