@@ -15,6 +15,7 @@ corresponding `_analysis` script.
 
 # %%
 
+import re
 import pathlib
 import configparser
 
@@ -24,6 +25,9 @@ import matplotlib.pyplot as plt
 
 import spyrit.misc.disp as disp
 import spyrit.core.meas as meas
+import spyrit.core.nnet as nnet
+import spyrit.core.prep as prep
+import spyrit.core.noise as noise
 import spyrit.core.recon as recon
 import spyrit.core.torch as spytorch
 from spyrit.misc.load_data import download_girder
@@ -35,9 +39,8 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 general = config["GENERAL"]
-subsampling_analysis = config["SUBSAMPLING_ANALYSIS"]
+noise_analysis = config["NOISE_ANALYSIS"]
 deformation = config["DEFORMATION"]
-save = config["SAVE"]
 folders = config["FOLDERS"]
 
 # General
@@ -48,18 +51,24 @@ siemens_star_branches = general.getint("siemens_star_branches")
 siemens_star_template = general.get("siemens_star_template")
 siemens_star_fillers = general.get("siemens_star_fillers")
 
-# Subsampling analysis
-subsampling_steps = subsampling_analysis.getint("subsampling_steps")
-save_images = subsampling_analysis.getboolean("save_images")
-save_tensors = subsampling_analysis.getboolean("save_tensors")
-save_reconstruction_template = subsampling_analysis.get("save_reconstruction_template")
-save_reconstruction_fillers = subsampling_analysis.get("save_reconstruction_fillers")
+# Noise analysis
+noise_values = eval(noise_analysis.get("noise_values"))
+keep_split_measurements = noise_analysis.getboolean("keep_split_measurements")
+save_images = noise_analysis.getboolean("save_images")
+save_tensors = noise_analysis.getboolean("save_tensors")
+save_reconstruction_template = noise_analysis.get("save_reconstruction_template")
+save_reconstruction_fillers = noise_analysis.get("save_reconstruction_fillers")
+save_metric_template = noise_analysis.get("save_metric_template")
+save_metric_fillers = noise_analysis.get("save_metric_fillers")
+dcnet_unet = noise_analysis.get("dcnet_unet")
+pinvnet_unet = noise_analysis.get("pinvnet_unet")
+nn_to_use = noise_analysis.get("nn_to_use")
 
 # Deformation
 torch_seed = deformation.getint("torch_seed")
 displacement_magnitude = deformation.getint("displacement_magnitude")
 displacement_smoothness = deformation.getint("displacement_smoothness")
-generated_frame_period = deformation.getint("generated_frame_period")
+frame_generation_period = deformation.getint("frame_generation_period")
 deformation_mode = deformation.get("deformation_mode")
 compensation_mode = deformation.get("compensation_mode")
 deformation_model_template = deformation.get("deformation_model_template")
@@ -69,20 +78,17 @@ deformation_model_fillers = deformation.get("deformation_model_fillers")
 siemens_star_folder = pathlib.Path(folders.get("siemens_star"))
 deformation_model_folder = pathlib.Path(folders.get("deformation_model"))
 nn_models_folder = pathlib.Path(folders.get("nn_models"))
-subsampling_reconstruction_folder = pathlib.Path(
-    folders.get("subsampling_reconstruction")
-)
+subsampling_reconstruction_folder = pathlib.Path(folders.get("noise_reconstruction"))
 
 
 # %%
 # Derived parameters
 # =============================================================================
-subsamplings = torch.tensor(
-    [(subsampling_steps - sub) / subsampling_steps for sub in range(subsampling_steps)]
-)
-n_measurements_list = [int(pattern_size**2 * subs) for subs in subsamplings]
-n_frames_list = [2 * n for n in n_measurements_list]
-frames = max(n_frames_list)
+
+n_measurements = pattern_size**2
+n_frames = 2 * n_measurements
+frames = n_frames  # this is used for the deformation field import
+n_noise_values = len(noise_values)
 
 device = torch.device(
     "cuda:0" if torch.cuda.is_available() and not force_cpu else "cpu"
@@ -135,73 +141,113 @@ measurements_variance = spytorch.Cov2Var(measurements_covariance)
 
 
 # %%
-# Load the deformation field, warp the image
+# Load the deformation field
 deform_load_name = deformation_model_template.format(*eval(deformation_model_fillers))
-
 ElasticDeform = torch.load(
     deformation_model_folder / f"{deform_load_name}.pt", weights_only=False
 ).to(device)
+# warp the image
 warped_image = ElasticDeform(x, mode=deformation_mode)
+
+# define measurement operator
+meas_op = meas.DynamicHadamSplit(
+    n_measurements,
+    pattern_size,
+    measurements_variance,
+    (image_size, image_size),
+).to(device)
+# build the dynamic measurement operator
+meas_op.build_H_dyn(ElasticDeform, mode=compensation_mode)
+
+# build the noise operator and preprocessing operator, we will update the noise
+# value in the loop
+noise_op = noise.Poisson(meas_op, 1).to(device)
+if keep_split_measurements:
+    prep_op = prep.DirectPoisson(1, meas_op).to(device)
+else:
+    prep_op = prep.SplitPoisson(1, meas_op).to(device)
+    # update the value of the H_dyn matrix in the measurement operator
+    meas_op.H_dyn = meas_op.H[::2, :] - meas_op.H[1::2, :]
+
+# build the tikho reconstructor
+tikho = recon.Tikhonov(meas_op, image_covariance, False).to(device)
+
+
+# %%
+# Load the neural networks
+valid_nn_names = [
+    valid_name for valid_name in re.split(r"\W", nn_to_use) if len(valid_name) > 0
+]
+nn_dict = {name: nnet.Unet().to(device) for name in valid_nn_names}
+
+for i, nn_name in enumerate(valid_nn_names):
+
+    model_path = nn_models_folder / eval(nn_to_use)[i]
+    print(f"Loading model `{nn_name}` at : {model_path}")
+    nn_weights = torch.load(model_path, weights_only=True)
+
+    # remove "denoi" prefix
+    for key in list(nn_weights.keys()):
+        nn_weights[key.removeprefix("denoi.")] = nn_weights.pop(key)
+
+    nn_dict[nn_name].load_state_dict(nn_weights)
+    nn_dict[nn_name].eval()
+
+# add a None neural network for the case where no denoising is applied
+valid_nn_names.append(None)
 
 
 # %%
 # 0. Update variable values
-# 1. Build the measurement operator
+# 1. Update noise value in noise/prep operators
 # 2. Measure the frames
-# 3. Build the dynamic measurement operator
+# 3. Preprocess measurements
 # 4. Reconstruct the images using Tikhonov class
-# 5. Save the images as png and pt
+# 5. Denoise if needed
+# 6. Save the images as png and pt
 
-for i in range(subsampling_steps):
-    print(f"Subsampling {i+1}/{subsampling_steps}")
+
+for i in range(n_noise_values):
+    print(f"Noise value {i+1}/{n_noise_values}")
     # 0.
-    n_measurements = n_measurements_list[i]
-    n_frames = n_frames_list[i]
+    noise_alpha = noise_values[i]
     # 1.
-    meas_op = meas.DynamicHadamSplit(
-        n_measurements,
-        pattern_size,
-        measurements_variance,
-        (image_size, image_size),
-    ).to(device)
+    noise_op.alpha = noise_alpha
+    prep_op.alpha = noise_alpha
     # 2.
-    warped_image = warped_image[:n_frames, :, :, :]
-    measurements = meas_op(warped_image)
+    measurements = noise_op(warped_image)
     # 3.
-    ElasticDeform.field = ElasticDeform.field[:n_frames, :, :, :]
-    meas_op.build_H_dyn(ElasticDeform, mode=compensation_mode)
-    # 3.5 we use the difference of the measurements, optional
-    measurements = measurements[..., ::2] - measurements[..., 1::2]  # diff
-    meas_op.H_dyn = meas_op.H[::2, :] - meas_op.H[1::2, :]  # diff
-    # 4.
-    tikho = recon.Tikhonov(meas_op, image_covariance, False).to(device)
-    # no noise so variance is 0
-    x_hat = tikho(
-        measurements,
-        torch.zeros(measurements.shape[-1], measurements.shape[-1], device=device),
-    ).reshape(c, h, w)
-    # 5. Save the images / tensors
-    reconstruction_name = save_reconstruction_template.format(
-        *eval(save_reconstruction_fillers)
-    )
-
-    if save_images:
-        plt.imsave(
-            subsampling_reconstruction_folder / f"{reconstruction_name}.png",
-            x_hat[0, :, :].cpu(),
-            cmap="gray",
+    prep_measurements = prep_op(measurements)
+    var_measurements = prep_op.sigma(measurements)
+    # 4
+    x_hat_tikho = tikho(prep_measurements, var_measurements).reshape(1, c, h, w)
+    # 5.
+    for neural_network_name in valid_nn_names:
+        if neural_network_name is None:
+            x_hat = x_hat_tikho
+        else:
+            x_hat = nn_dict[neural_network_name](x_hat_tikho).detach()
+        # 6.
+        reconstruction_name = save_reconstruction_template.format(
+            *eval(save_reconstruction_fillers)
         )
-        print(
-            "Reconstructed image saved in",
-            subsampling_reconstruction_folder / f"{reconstruction_name}.png",
-        )
-    if save_tensors:
-        torch.save(
-            x_hat, subsampling_reconstruction_folder / f"{reconstruction_name}.pt"
-        )
-        print(
-            "Reconstructed tensor saved in",
-            subsampling_reconstruction_folder / f"{reconstruction_name}.pt",
-        )
+        if save_images:
+            plt.imsave(
+                subsampling_reconstruction_folder / f"{reconstruction_name}.png",
+                x_hat[0, :, :].cpu(),
+                cmap="gray",
+            )
+            print(
+                "Reconstructed image saved in",
+                subsampling_reconstruction_folder / f"{reconstruction_name}.png",
+            )
+        if save_tensors:
+            torch.save(
+                x_hat, subsampling_reconstruction_folder / f"{reconstruction_name}.pt"
+            )
+            print(
+                "Reconstructed tensor saved in",
+                subsampling_reconstruction_folder / f"{reconstruction_name}.pt",
+            )
 
 # %%
