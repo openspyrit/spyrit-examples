@@ -5,6 +5,8 @@ Date: 2024-11-21
 """
 
 import time
+import pathlib
+import configparser
 
 import torch
 import torch.nn as nn
@@ -13,6 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge
 from matplotlib.collections import PatchCollection
+
+import spyrit.core.warp as warp
 
 
 def save_params(path, **kwargs):
@@ -157,3 +161,54 @@ def PSNR_from_file(estimate_path, reference_obj, center_crop=None, *args, **kwar
 def SSIM_from_file(estimate_path, reference_obj, center_crop=None, *args, **kwargs):
     ssim = metrics.StructuralSimilarityIndexMeasure(*args, **kwargs)
     return metric_from_file(estimate_path, reference_obj, ssim, center_crop)
+
+
+def save_elastic_deformation():
+
+    # READ PARAMETERS
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+
+    general = config["GENERAL"]
+    deformation = config["DEFORMATION"]
+
+    # General
+    force_cpu = general.getboolean("force_cpu")
+    image_size = general.getint("image_size")
+    pattern_size = general.getint("pattern_size")
+    deformation_folder = pathlib.Path(general.get("deformation_folder"))
+
+    # Deformation
+    torch_seed = deformation.getint("torch_seed")
+    displacement_magnitude = deformation.getint("displacement_magnitude")
+    displacement_smoothness = deformation.getint("displacement_smoothness")
+    frame_generation_period = deformation.getint("frame_generation_period")
+    deformation_model_template = deformation.get("deformation_model_template")
+    deformation_model_fillers = deformation.get("deformation_model_fillers")
+
+    # Derived parameters
+    image_shape = (image_size, image_size)
+    n_measurements = pattern_size**2
+    n_frames = 2 * n_measurements
+    frames = n_frames  # this is used for the deformation field export
+
+    device = torch.device(
+        "cuda:0" if torch.cuda.is_available() and not force_cpu else "cpu"
+    )
+    print(f"Saving on device: {device}")
+
+    save_name = deformation_model_template.format(*eval(deformation_model_fillers))
+    print("Saving Elastic Deformation in :", deformation_folder / save_name)
+
+    # Create the deformation field and save it
+    torch.manual_seed(torch_seed)
+    Elastic = warp.ElasticDeformation(
+        displacement_magnitude,
+        displacement_smoothness,
+        image_shape,
+        n_frames,
+        frame_generation_period,
+    ).to(device)
+
+    torch.save(Elastic, deformation_folder / save_name)
+    print("Done")
