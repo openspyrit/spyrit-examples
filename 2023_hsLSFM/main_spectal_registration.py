@@ -97,7 +97,7 @@ t_pix = 6.0 # maximum shift in pixel
 
 T_list = range(1,27)    # slice indices
 load_path = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D'
-recon = 'pinv'  # 'pinv' 'tikhonet50_div1.5'
+recon = 'tikhonet50_div1.5'  # 'pinv' 'tikhonet50_div1.5'
 
 load_folder = Path(load_path) / 'Reconstruction/hypercube' / recon 
 save_folder = Path(load_path) / 'Reconstruction/hypercube' / (recon + '_shift')

@@ -93,7 +93,7 @@ save_fig = True
 
 # hypercubes
 load_path = './data/2023_02_28_mRFP_DsRed_3D'
-recon = 'tikhonet50_div1.5'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
+recon = 'tikhonet50_div1.5_shift'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
 Nl, Nh, Nc = 512, 512, 128
 z_list = [3, 10, 15] # slice number
 

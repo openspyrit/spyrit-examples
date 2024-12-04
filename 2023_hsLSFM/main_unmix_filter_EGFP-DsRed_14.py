@@ -8,7 +8,6 @@ Created on Sat Jul 29 11:19:23 2023
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from fonction.matrix_tools import smooth
 
 #%% Load reference spectrum
 notch_path = "./data/Reference_spectra/ZET532NF_transmission.csv"

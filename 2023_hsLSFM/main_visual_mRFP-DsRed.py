@@ -17,7 +17,7 @@ Nc = 128 # number of channels
 load_path = Path('./data/2023_02_28_mRFP_DsRed_3D')
 T_list = range(1,27)    # slice indices
 
-suffix = '_calib_mrfp1_shift'      # '', '_calib_mrfp1_shift', '_calib_mrfp12_shift'
+suffix = '_shift'
 recon = 'tikhonet50_div1.5_shift'   # 'pinv_shift', 'tikhonet50_div1.5_shift'
 method_unmix = 'NNLS' # 'NNLS''_UCLS'
 
@@ -186,23 +186,23 @@ for z, t in enumerate(z_list):
 # microim = microplot.microshow(images=[test[0], test[1]], cmaps=['pure_cyan', 'YlGn'])
 
 #%% Upload to pilot-warehouse
-from pathlib import Path 
-import girder_client as gc
+# from pathlib import Path 
+# import girder_client as gc
 
-# api Rest url of the warehouse
-url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
-
-
-# Generate the warehouse client
-gc = gc.GirderClient(apiUrl=url)
-
-# Authentification
-txt_file = open(Path('C:/Users/ducros/.apikey/pilot-warehouse.txt'), 'r', encoding='utf8')
-apiKey = txt_file.read()
-gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
+# # api Rest url of the warehouse
+# url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
 
 
-folder = load_path  / ('Visualisation' + suffix)
+# # Generate the warehouse client
+# gc = gc.GirderClient(apiUrl=url)
 
-folderId = '66ff9c49ae27f5ad8259f38a' # /2023_02_28_mRFP_DsRed_3D/
-gc.upload(str(folder), folderId, reuseExisting=True)
+# # Authentification
+# txt_file = open(Path('C:/Users/ducros/.apikey/pilot-warehouse.txt'), 'r', encoding='utf8')
+# apiKey = txt_file.read()
+# gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
+
+
+# folder = load_path  / ('Visualisation' + suffix)
+
+# folderId = '66ff9c49ae27f5ad8259f38a' # /2023_02_28_mRFP_DsRed_3D/
+# gc.upload(str(folder), folderId, reuseExisting=True)

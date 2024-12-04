@@ -8,6 +8,10 @@ import numpy as np
 from pathlib import Path
 from spyrit.misc.color import spectral_colorization
 
+import sys
+sys.path.append('./fonction')
+from matrix_tools import bining_line
+
 #%% Load spatio-spectral data
 data_folder = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D/Preprocess') #_registered
 data_filename_pos = data_folder / 'T6_RUN0001_2023_03_14_Had_512_128_128_pos.npy'
@@ -22,6 +26,11 @@ M_neg = np.load(data_filename_neg) - (2**15-1)*nbin
 M_diff = M_pos - M_neg
  
 wav = np.linspace(lambda_min, lambda_max, 128)
+
+# to get square images (looks better)
+M_pos = bining_line(M_pos, 4)
+M_neg = bining_line(M_neg, 4)
+M_diff = bining_line(M_diff, 4)
 
 M_pos_color  = spectral_colorization(M_pos, wav, (0,2))
 M_neg_color  = spectral_colorization(M_neg, wav, (0,2))
@@ -64,21 +73,13 @@ for i, ind in enumerate(ind_plot):
     axs[i].set_title(f'diff: {ind}')
 
 #%% Save all spatio-spectral images
-import sys
-sys.path.append('./fonction')
-from matrix_tools import bining_line
 
-save_fig = False
+save_fig = True
 
 if save_fig:
     save_folder = data_folder / data_filename_pos.name.replace('_Had_512_128_128_pos.npy','').replace('_2023_03_14','').replace('_2023_03_13','')
     save_folder.mkdir(parents=True, exist_ok=True)
     print(f' Save colorized spatio-spectral measurement in {save_folder}')
-    
-    # to get square images (looks better)
-    M_pos_color = bining_line(M_pos_color, 4)
-    M_neg_color = bining_line(M_neg_color, 4)
-    M_diff_color = bining_line(M_diff_color, 4)
     
     for ind in range(128):
         # save
@@ -92,7 +93,7 @@ if save_fig:
 save_fig = True
 
 # hypercubes
-recon = 'tikhonet50_div1.5_registered'  # 'pinv', 'pinv_shift', 'pinv_registered', 'tikhonet50_div1.5' 'tikhonet50_div1.5_shift' 
+recon = 'tikhonet50_div1.5_shift'  # 'pinv', 'tikhonet50_div1.5' 'pinv_shit', 'tikhonet50_div1.5_shift'
 Nl, Nh, Nc = 512, 512, 128
 T_list = [3, 9, 15] # slice number
 

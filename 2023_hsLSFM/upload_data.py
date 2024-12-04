@@ -31,10 +31,44 @@ gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
 folder = r'.\data\2023_03_13_2023_03_14_eGFP_DsRed_3D'
 subfolderList = [#r'Preprocess',
                  #r'Reconstruction',
-                 r'Unmixing_shift' 
+                 r'Unmixing_shift',
                  r'Visualisation_shift'
                  ]
 
 folderId = '6708d7990e9f151150f3c100'
 for path in subfolderList:
-    gc.upload(str(Path(folder)/Path(path)), folderId)
+    gc.upload(str(Path(folder)/Path(path)), folderId, reuseExisting=True)
+    
+#%% red-red zebrafish
+folder = r'.\data\2023_02_28_mRFP_DsRed_3D'
+subfolderList = [#r'Preprocess',
+                 #r'Reconstruction',
+                 #r'Reconstruction/hypercube/tikhonet50_div1.5',
+                 #r'Reconstruction/hypercube/tikhonet50_div1.5_shift',
+                 r'Unmixing_shift',
+                 r'Visualisation_shift'
+                 ]
+
+folderId = '66ff9c49ae27f5ad8259f38a'
+for path in subfolderList:
+    gc.upload(str(Path(folder)/Path(path)), folderId, reuseExisting=True)
+
+#%% raw data
+folder = r'F:/HSPIM_seb_acquisition/Post_doc/'
+subfolderList = [r'data_2023_03_13',
+                 r'data_2023_03_14'
+                 ]
+
+# chSPSIM/Raw_data/2023_03_13_2023_03_14_eGFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM
+folderId = '672e1f190e9f151150f4234b'
+for path in subfolderList:
+    gc.upload(str(Path(folder)/Path(path)), folderId, reuseExisting=True)    
+    
+#%% raw data
+folder = r'F:/HSPIM_seb_acquisition/Post_doc/'
+subfolderList = [r'\data_2023_02_28'
+                 ]
+# chSPSIM/Raw_data/2023_02_28_mRFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM
+folderId = '672e1eb00e9f151150f4230d'
+for path in subfolderList:
+    gc.upload(str(Path(folder)/Path(path)), folderId, reuseExisting=True)    

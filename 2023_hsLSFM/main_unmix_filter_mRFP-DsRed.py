@@ -11,15 +11,15 @@ import matplotlib.pyplot as plt
 
 #%% Load reference spectrum
 DsRed_path = "./data/Reference_spectra//DsRed2_fpbase_spectra.csv" 
-mRFP_path =  "./data/Reference_spectra//mRFP1_fpbase_spectra.csv"
-
 data_DsRed = np.genfromtxt(DsRed_path, delimiter=',',skip_header=True)#,
+
+mRFP_path =  "./data/Reference_spectra//mRFP1_fpbase_spectra.csv"
 data_mRFP = np.genfromtxt(mRFP_path, delimiter=';',skip_header=True)
 
-mRFP_path =  "./data/Reference_spectra//mRFP12_fpbase_spectra.csv"
-data_mRFP = np.genfromtxt(mRFP_path, delimiter=',',skip_header=True)
+# mRFP_path =  "./data/Reference_spectra//mRFP12_fpbase_spectra.csv"
+# data_mRFP = np.genfromtxt(mRFP_path, delimiter=',',skip_header=True)
 
-suffix = 'calib_mrfp12_shift' # 'calib_mrfp12','calib_mrfp12_shift'
+suffix = 'shift' # 'calib_mrfp12','calib_mrfp12_shift'
 
 Nc = 128 # number of channels
 
@@ -44,7 +44,7 @@ Nc = 128 # number of channels
 
 T_list = [*range(4, 8), *range(9, 25)] # slice indices, Run0008 corrupted
 load_path = './data/2023_02_28_mRFP_DsRed_3D'
-recon = 'pinv_shift'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
+recon = 'tikhonet50_div1.5_shift'  # 'pinv' 'tikhonet50_div1.5' 'pinv_shift' 'tikhonet50_div1.5_shift'
 
 # all slices are unmixed jointly!
 Nz = len(T_list)
@@ -131,7 +131,7 @@ from pysptools import abundance_maps
 unmixing_folder =  '/Unmixing_' + suffix + '/'
 member_list = ['DsRed','mRFP','Autofluo']  # member_list = ['DsRed','mRFP','Autofluo','Noise'] 
 
-method_unmix = 'UCLS' # 'NNLS''_UCLS'
+method_unmix = 'NNLS' # 'NNLS''_UCLS'
 Nm = 4
 Nl,Nh = xyzl_cube.shape[:2] # new shape after registration
 

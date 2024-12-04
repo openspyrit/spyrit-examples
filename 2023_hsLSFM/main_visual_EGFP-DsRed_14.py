@@ -16,8 +16,8 @@ Nc = 128 # number of channels
 
 load_path = Path('./data/2023_03_13_2023_03_14_eGFP_DsRed_3D')
 
-suffix = '_shift'       # '_shift', '_calib_blind_shift'
-recon = 'pinv_shift'   # 'pinv_shift' 'tikhonet50_div1.5_shift'
+suffix = '_shift'
+recon = 'tikhonet50_div1.5_shift'   # 'pinv_shift' 'tikhonet50_div1.5_shift'
 method_unmix = 'NNLS'               # 'NNLS''_UCLS'
 
 member_list = ['DsRed','EGFP','Autofluo']
@@ -190,25 +190,22 @@ for z, t in enumerate(z_list):
 # microim = microplot.microshow(images=[test[0], test[1]], cmaps=['pure_cyan', 'YlGn'])
 
 #%% Upload to pilot-warehouse
-from pathlib import Path 
-import girder_client as gc
+# from pathlib import Path 
+# import girder_client as gc
 
-# api Rest url of the warehouse
-url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
+# # api Rest url of the warehouse
+# url='https://pilot-warehouse.creatis.insa-lyon.fr/api/v1'
 
 
-# Generate the warehouse client
-gc = gc.GirderClient(apiUrl=url)
+# # Generate the warehouse client
+# gc = gc.GirderClient(apiUrl=url)
 
-# Authentification
-txt_file = open(Path('C:/Users/ducros/.apikey/pilot-warehouse.txt'), 'r', encoding='utf8')
-apiKey = txt_file.read()
-gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
+# # Authentification
+# txt_file = open(Path('C:/Users/ducros/.apikey/pilot-warehouse.txt'), 'r', encoding='utf8')
+# apiKey = txt_file.read()
+# gc.authenticate(apiKey=apiKey)  # Authentication to the warehouse
 
-folder = load_path  / ('Visualisation' + suffix)
+# folder = load_path  / ('Visualisation' + suffix)
 
-folderId = '6708d7990e9f151150f3c100' # /2023_03_13_2023_03_14_eGFP_DsRed_3D/
-gc.upload(str(folder), folderId, reuseExisting=True)
-
-#%%
-
+# folderId = '6708d7990e9f151150f3c100' # /2023_03_13_2023_03_14_eGFP_DsRed_3D/
+# gc.upload(str(folder), folderId, reuseExisting=True)
