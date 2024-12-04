@@ -54,10 +54,7 @@ git checkout
 4. Install spas (more details [here](https://github.com/openspyrit/spas))
 
     ```shell
-    cd ..
-    git clone https://github.com/openspyrit/spas.git@df6cdd01dc4f25b2ff44cdfc82717f868317c7d9
-    cd spas
-    pip install -e .
+    pip install git+https://github.com/openspyrit/spas.git #d7ed5d23ad61f280d7321a5587e994541b51f801
     ```
 
 ## Get the scripts, networks and raw data
