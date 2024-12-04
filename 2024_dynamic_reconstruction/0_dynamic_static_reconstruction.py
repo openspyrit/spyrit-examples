@@ -30,25 +30,23 @@ t0 = 0  # initial time
 tf = 2  # final time
 
 # deformation field
-a = 0.2  # amplitude
-omega = 2 * math.pi  # [rad/s] frequency
 deform_mode = "bilinear"  # choose between 'bilinear' and 'bicubic'
 compensation_mode = "bilinear"  # choose between 'bilinear' and 'bicubic'
 
-# models' root paths
-model_paths = pathlib.Path(
-    r"C:\Users\phan\Documents\SPYRIT\optica2024\spyrit-examples\2024_Optics_Express\model"
-)
+# reconstruction
+reg = "H1"
+eta = 1e-6
 
 # use gpu ?
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")  # force cpu
 print(f"Using device: {device}")
 # =============================================================================
 
 
 # %%
 ## Get the image
-imgs_path = pathlib.Path(r"image_sample/")
+imgs_path = pathlib.Path(r"reference_images/")
 transform = stats.transform_gray_norm(img_size=image_size)
 dataset = torchvision.datasets.ImageFolder(root=imgs_path, transform=transform)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=7)
@@ -106,8 +104,7 @@ measurements = meas_op(warped_images)
 print("Shape of measurements:", measurements.shape)
 
 # reconstruct
-eta = 1e-6
-x_hat = meas_op.pinv(measurements, reg="H1", eta=eta, diff=False)
+x_hat = meas_op.pinv(measurements, reg=reg, eta=eta, diff=False)
 print("Shape of reconstructed image:", x_hat.shape)
 
 disp.imagesc(x_hat[0, 0, :, :], title=f"Reconstructed image, {eta=}")
