@@ -167,7 +167,7 @@ def save_elastic_deformation():
 
     # READ PARAMETERS
     config = configparser.ConfigParser()
-    config.read("config.ini")
+    config.read("robustness_config.ini")
 
     general = config["GENERAL"]
     deformation = config["DEFORMATION"]
