@@ -31,11 +31,14 @@ Email: nicolas.ducros@insa-lyon.fr
     pip install opencv-python
     pip install pysptools
     pip install girder-client
+    pip install natsort
     ```
 
 > opencv-python is required for spectral registration. It is not only necessary to run `main_spectal_registration.py`.
 
 > pysptools is required for spectral unmixing. It is not only necessary to run `main_unmix_filter_EGFP-DsRed_14.py` and `main_unmix_filter_mRFP-DsRed.py`.
+
+> natsoft is required to sort the files. It is not only necessary to run `main_create_gif.py`.
 
 ## Code and data
 
