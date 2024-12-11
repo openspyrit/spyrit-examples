@@ -1,0 +1,6 @@
+pattern/
+latex/
+stat/
+figure/
+*.pptx
+__pycache__
