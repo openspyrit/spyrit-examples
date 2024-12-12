@@ -8,7 +8,7 @@ from spyrit.misc.load_data import download_girder
 
 
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("robustness_config.ini")
 general = config["GENERAL"]
 
 # get directory names
@@ -32,4 +32,4 @@ file_ids = [
     "67486be9a438ad25e7a001fa",
     "67486be8a438ad25e7a001f7",
 ]
-download_girder(url, file_ids, folder)
+# download_girder(url, file_ids, folder)

@@ -15,6 +15,7 @@ corresponding `_analysis` script.
 
 # %%
 
+import re
 import pathlib
 import configparser
 
@@ -43,14 +44,18 @@ from aux_functions import PSNR_from_file, SSIM_from_file, fractions
 # %%
 # READ PARAMETERS
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("robustness_config.ini")
 
 general = config["GENERAL"]
-noise_analysis = config["NOISE_ANALYSIS"]
+networks = config["NETWORKS"]
+subsampling_analysis = config["SUBSAMPLING_ANALYSIS"]
 deformation = config["DEFORMATION"]
-folders = config["FOLDERS"]
 
 # General
+image_sample_folder = pathlib.Path(general.get("image_sample_folder"))
+stats_folder = pathlib.Path(general.get("stats_folder"))
+deformation_folder = pathlib.Path(general.get("deformation_folder"))
+nn_models_folder = pathlib.Path(general.get("nn_models_folder"))
 force_cpu = general.getboolean("force_cpu")
 image_size = general.getint("image_size")
 pattern_size = general.getint("pattern_size")
@@ -58,18 +63,14 @@ siemens_star_branches = general.getint("siemens_star_branches")
 siemens_star_template = general.get("siemens_star_template")
 siemens_star_fillers = general.get("siemens_star_fillers")
 
-# Noise analysis
-noise_values = eval(noise_analysis.get("noise_values"))
-keep_split_measurements = noise_analysis.getboolean("keep_split_measurements")
-save_images = noise_analysis.getboolean("save_images")
-save_tensors = noise_analysis.getboolean("save_tensors")
-save_reconstruction_template = noise_analysis.get("save_reconstruction_template")
-save_reconstruction_fillers = noise_analysis.get("save_reconstruction_fillers")
-save_metric_template = noise_analysis.get("save_metric_template")
-save_metric_fillers = noise_analysis.get("save_metric_fillers")
-dcnet_unet = noise_analysis.get("dcnet_unet")
-pinvnet_unet = noise_analysis.get("pinvnet_unet")
-nn_to_use = noise_analysis.get("nn_to_use")
+# Subsampling analysis
+subsampling_steps = subsampling_analysis.getint("subsampling_steps")
+save_images = subsampling_analysis.getboolean("save_images")
+save_tensors = subsampling_analysis.getboolean("save_tensors")
+reconstruction_folder = pathlib.Path(subsampling_analysis.get("reconstruction_folder"))
+save_reconstruction_template = subsampling_analysis.get("save_reconstruction_template")
+save_reconstruction_fillers = subsampling_analysis.get("save_reconstruction_fillers")
+nn_to_use = subsampling_analysis.get("nn_to_use")
 
 # Deformation
 torch_seed = deformation.getint("torch_seed")
@@ -78,44 +79,47 @@ displacement_smoothness = deformation.getint("displacement_smoothness")
 frame_generation_period = deformation.getint("frame_generation_period")
 deformation_mode = deformation.get("deformation_mode")
 compensation_mode = deformation.get("compensation_mode")
-deformation_model_template = deformation.get("deformation_model_template")
-deformation_model_fillers = deformation.get("deformation_model_fillers")
-
-# Folders
-siemens_star_folder = pathlib.Path(folders.get("siemens_star"))
-deformation_model_folder = pathlib.Path(folders.get("deformation_model"))
-nn_models_folder = pathlib.Path(folders.get("nn_models"))
-subsampling_reconstruction_folder = pathlib.Path(folders.get("noise_reconstruction"))
+save_deformation_template = deformation.get("save_deformation_template")
+save_deformation_fillers = deformation.get("save_deformation_fillers")
+save_metric_template = deformation.get("save_metric_template")
+save_metric_fillers = deformation.get("save_metric_fillers")
 
 
 # %%
 # Derived parameters
 # =============================================================================
-n_measurements = pattern_size**2
-n_frames = 2 * n_measurements
-frames = n_frames  # this is used for the deformation field import
-n_noise_values = len(noise_values)
+subsamplings = torch.tensor(
+    [(subsampling_steps - sub) / subsampling_steps for sub in range(subsampling_steps)]
+)
+n_measurements_list = [int(pattern_size**2 * subs) for subs in subsamplings]
+n_frames_list = [2 * n for n in n_measurements_list]
+frames = max(n_frames_list)
 
 device = torch.device(
     "cuda:0" if torch.cuda.is_available() and not force_cpu else "cpu"
 )
 print(f"Using device: {device}")
+
+valid_nn_names = [
+    valid_name for valid_name in re.split(r"\W", nn_to_use) if len(valid_name) > 0
+]
+nn_filenames = {name: networks.get(name) for name in valid_nn_names}
 # =============================================================================
 
 
 # %%
 # Load the reference image
 image_name = siemens_star_template.format(*eval(siemens_star_fillers))
-image_path = load_folder_siemens_star / image_name
+image_path = image_sample_folder / image_name
 
 if not image_path.exists():
     from aux_functions import save_siemens_star
 
-    print(f"Image {image_name} not found in {load_folder_siemens_star}, creating it")
+    print(f"Image {image_name} not found in {image_sample_folder}, creating it")
     save_siemens_star(image_path, figsize=image_size, n=siemens_star_branches)
 
 x = torchvision.io.read_image(
-    load_folder_siemens_star / image_name, torchvision.io.ImageReadMode.GRAY
+    image_sample_folder / image_name, torchvision.io.ImageReadMode.GRAY
 )
 x = x.detach().float().to(device)
 # rescale x from [0, 255] to [-1, 1]
@@ -134,24 +138,24 @@ for i in range(subsampling_steps):
 
     n_frames = n_frames_list[i]
     n_measurements = n_measurements_list[i]
-    reconstruction_name = (
-        f"{reconstruction_template.format(*eval(reconstruction_fillers))}.pt"
+    reconstruction_name = save_reconstruction_template.format(
+        *eval(save_reconstruction_fillers)
     )
-    reconstruction_path = save_folder_subsampling_reconstruction / reconstruction_name
+    reconstruction_path = reconstruction_folder / reconstruction_name
 
     PSNRs[i] = PSNR_from_file(reconstruction_path, x, center_crop=64)
     SSIMs[i] = SSIM_from_file(reconstruction_path, x, center_crop=64)
 
 # save the metrics
 metric_name = "PSNR"
-psnr_save_name = metric_template.format(*eval(metric_fillers))
+psnr_save_name = save_metric_template.format(*eval(save_metric_fillers))
 metric_name = "SSIM"
-ssim_save_name = metric_template.format(*eval(metric_fillers))
+ssim_save_name = save_metric_template.format(*eval(save_metric_fillers))
 
-torch.save(PSNRs, save_folder_subsampling_reconstruction / f"{psnr_save_name}.pt")
-print("PSNRs saved in", save_folder_subsampling_reconstruction / f"{psnr_save_name}.pt")
-torch.save(SSIMs, save_folder_subsampling_reconstruction / f"{ssim_save_name}.pt")
-print("SSIMs saved in", save_folder_subsampling_reconstruction / f"{ssim_save_name}.pt")
+torch.save(PSNRs, reconstruction_folder / psnr_save_name)
+print("PSNRs saved in", reconstruction_folder / psnr_save_name)
+torch.save(SSIMs, reconstruction_folder / ssim_save_name)
+print("SSIMs saved in", reconstruction_folder / ssim_save_name)
 
 
 # %%
@@ -198,3 +202,5 @@ ax.grid(axis="both")
 
 plt.title("Reconstruction quality when subsampling")
 plt.show()
+
+# %%

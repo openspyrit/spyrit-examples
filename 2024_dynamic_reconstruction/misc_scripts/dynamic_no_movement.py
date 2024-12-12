@@ -6,6 +6,7 @@ the case of a deformation equal to the identity.
 # %%
 
 import pathlib
+import configparser
 
 import math
 import torch
@@ -19,28 +20,48 @@ import spyrit.misc.statistics as stats
 
 
 # %%
-## PARAMETERS
+# READ PARAMETERS
+config = configparser.ConfigParser()
+config.read("robustness_config.ini")
+
+force_cpu = config.getboolean("GENERAL", "force_cpu")
+image_sample_folder = config.get("GENERAL", "image_sample_folder")
+
+
+# %%
+# Additional parameters
 # =============================================================================
-# image and measurements
-image_size = 64  # 80 or 128 or 160
-pattern_size = 64  # 64 or 128
-
-# time parameters
-t0 = 0  # initial time
-tf = 2  # final time
-
+pattern_size = 64
 # deformation field
 deform_mode = "bilinear"  # choose between 'bilinear' and 'bicubic'
 compensation_mode = "bilinear"  # choose between 'bilinear' and 'bicubic'
-
+# time parameters
+t0 = 0  # initial time
+tf = 2  # final time
 # reconstruction
 reg = "H1"
 eta = 1e-6
 
-# use gpu ?
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")  # force cpu
+image_size = pattern_size  # keep same size
+
+
+n_measurements = pattern_size**2
+n_frames = 2 * n_measurements
+frames = n_frames  # this is used for the deformation field import
+n_noise_values = len(noise_values)
+
+device = torch.device(
+    "cuda:0" if torch.cuda.is_available() and not force_cpu else "cpu"
+)
 print(f"Using device: {device}")
+# =============================================================================
+
+
+# PARAMETERS
+# =============================================================================
+# image and measurements
+
+
 # =============================================================================
 
 

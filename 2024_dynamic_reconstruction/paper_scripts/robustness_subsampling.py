@@ -15,6 +15,7 @@ corresponding `_analysis` script.
 
 # %%
 
+import re
 import pathlib
 import configparser
 
@@ -24,6 +25,7 @@ import matplotlib.pyplot as plt
 
 import spyrit.misc.disp as disp
 import spyrit.core.meas as meas
+import spyrit.core.nnet as nnet
 import spyrit.core.recon as recon
 import spyrit.core.torch as spytorch
 from spyrit.misc.load_data import download_girder
@@ -32,15 +34,18 @@ from spyrit.misc.load_data import download_girder
 # %%
 # READ PARAMETERS
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("robustness_config.ini")
 
 general = config["GENERAL"]
+networks = config["NETWORKS"]
 subsampling_analysis = config["SUBSAMPLING_ANALYSIS"]
 deformation = config["DEFORMATION"]
-save = config["SAVE"]
-folders = config["FOLDERS"]
 
 # General
+image_sample_folder = pathlib.Path(general.get("image_sample_folder"))
+stats_folder = pathlib.Path(general.get("stats_folder"))
+deformation_folder = pathlib.Path(general.get("deformation_folder"))
+nn_models_folder = pathlib.Path(general.get("nn_models_folder"))
 force_cpu = general.getboolean("force_cpu")
 image_size = general.getint("image_size")
 pattern_size = general.getint("pattern_size")
@@ -52,8 +57,10 @@ siemens_star_fillers = general.get("siemens_star_fillers")
 subsampling_steps = subsampling_analysis.getint("subsampling_steps")
 save_images = subsampling_analysis.getboolean("save_images")
 save_tensors = subsampling_analysis.getboolean("save_tensors")
+reconstruction_folder = pathlib.Path(subsampling_analysis.get("reconstruction_folder"))
 save_reconstruction_template = subsampling_analysis.get("save_reconstruction_template")
 save_reconstruction_fillers = subsampling_analysis.get("save_reconstruction_fillers")
+nn_to_use = subsampling_analysis.get("nn_to_use")
 
 # Deformation
 torch_seed = deformation.getint("torch_seed")
@@ -62,16 +69,8 @@ displacement_smoothness = deformation.getint("displacement_smoothness")
 frame_generation_period = deformation.getint("frame_generation_period")
 deformation_mode = deformation.get("deformation_mode")
 compensation_mode = deformation.get("compensation_mode")
-deformation_model_template = deformation.get("deformation_model_template")
-deformation_model_fillers = deformation.get("deformation_model_fillers")
-
-# Folders
-siemens_star_folder = pathlib.Path(folders.get("siemens_star"))
-deformation_model_folder = pathlib.Path(folders.get("deformation_model"))
-nn_models_folder = pathlib.Path(folders.get("nn_models"))
-subsampling_reconstruction_folder = pathlib.Path(
-    folders.get("subsampling_reconstruction")
-)
+save_deformation_template = deformation.get("save_deformation_template")
+save_deformation_fillers = deformation.get("save_deformation_fillers")
 
 
 # %%
@@ -88,22 +87,28 @@ device = torch.device(
     "cuda:0" if torch.cuda.is_available() and not force_cpu else "cpu"
 )
 print(f"Using device: {device}")
+
+valid_nn_names = [
+    valid_name for valid_name in re.split(r"\W", nn_to_use) if len(valid_name) > 0
+]
+nn_filenames = {name: networks.get(name) for name in valid_nn_names}
+nn_dict = {name: nnet.Unet().to(device) for name in valid_nn_names}
 # =============================================================================
 
 
 # %%
 # Load the image
 image_name = siemens_star_template.format(*eval(siemens_star_fillers))
-image_path = siemens_star_folder / image_name
+image_path = image_sample_folder / image_name
 
 if not image_path.exists():
     from aux_functions import save_siemens_star
 
-    print(f"Image {image_name} not found in {siemens_star_folder}, creating it")
+    print(f"Image {image_name} not found in {image_sample_folder}, creating it")
     save_siemens_star(image_path, figsize=image_size, n=siemens_star_branches)
 
 x = torchvision.io.read_image(
-    siemens_star_folder / image_name, torchvision.io.ImageReadMode.GRAY
+    image_sample_folder / image_name, torchvision.io.ImageReadMode.GRAY
 )
 x = x.detach().float().to(device)
 # rescale x from [0, 255] to [-1, 1]
@@ -117,7 +122,7 @@ disp.imagesc(x[0, :, :].cpu(), title="Original image")
 # %%
 # Get measurements covariance matrix / image covariance matrix
 url = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-data_folder = "./stat/"
+data_folder = stats_folder
 meas_cov_Id = "672b80acf03a54733161e973"  # different ID than tuto6 but same matrix
 image_cov_Id = "67486be8a438ad25e7a001f7"
 meas_cov_name = "Cov_64x64.pt"
@@ -136,8 +141,8 @@ measurements_variance = spytorch.Cov2Var(measurements_covariance)
 
 # %%
 # Load the deformation field, warp the image
-deform_load_name = deformation_model_template.format(*eval(deformation_model_fillers))
-deformation_model_path = deformation_model_folder / deform_load_name
+deform_load_name = save_deformation_template.format(*eval(save_deformation_fillers))
+deformation_model_path = deformation_folder / deform_load_name
 
 # if the field does not exist, generate it
 if not deformation_model_path.exists():
@@ -147,9 +152,29 @@ if not deformation_model_path.exists():
     # now it should exist
 
 ElasticDeform = torch.load(
-    deformation_model_folder / deform_load_name, weights_only=False
+    deformation_folder / deform_load_name, weights_only=False
 ).to(device)
 warped_image = ElasticDeform(x, mode=deformation_mode)
+
+
+# %%
+# Load the neural networks
+
+for i, nn_name in enumerate(valid_nn_names):
+
+    model_path = nn_models_folder / nn_filenames[nn_name]
+    print(f"Loading model `{nn_name}` at : {model_path}")
+    nn_weights = torch.load(model_path, weights_only=True)
+
+    # remove "denoi" prefix
+    for key in list(nn_weights.keys()):
+        nn_weights[key.removeprefix("denoi.")] = nn_weights.pop(key)
+
+    nn_dict[nn_name].load_state_dict(nn_weights)
+    nn_dict[nn_name].eval()
+
+# add a None neural network for the case where no denoising is applied
+valid_nn_names.append(None)
 
 
 # %%
@@ -158,7 +183,8 @@ warped_image = ElasticDeform(x, mode=deformation_mode)
 # 2. Measure the frames
 # 3. Build the dynamic measurement operator
 # 4. Reconstruct the images using Tikhonov class
-# 5. Save the images as png and pt
+# 5. APpply neural network
+# 6. Save the images as png and pt
 
 for i in range(subsampling_steps):
     print(f"Subsampling {i+1}/{subsampling_steps}")
@@ -184,32 +210,37 @@ for i in range(subsampling_steps):
     # 4.
     tikho = recon.Tikhonov(meas_op, image_covariance, False).to(device)
     # no noise so variance is 0
-    x_hat = tikho(
+    x_hat_tikho = tikho(
         measurements,
         torch.zeros(measurements.shape[-1], measurements.shape[-1], device=device),
-    ).reshape(c, h, w)
-    # 5. Save the images / tensors
-    reconstruction_name = save_reconstruction_template.format(
-        *eval(save_reconstruction_fillers)
-    )
+    ).reshape(1, c, h, w)
+    # 5.
+    for neural_network_name in valid_nn_names:
+        if neural_network_name is None:
+            x_hat = x_hat_tikho
+        else:
+            with torch.no_grad():
+                x_hat = nn_dict[neural_network_name](x_hat_tikho).detach()
+        # 6.
+        reconstruction_name = save_reconstruction_template.format(
+            *eval(save_reconstruction_fillers)
+        )
 
-    if save_images:
-        plt.imsave(
-            subsampling_reconstruction_folder / f"{reconstruction_name}.png",
-            x_hat[0, :, :].cpu(),
-            cmap="gray",
-        )
-        print(
-            "Reconstructed image saved in",
-            subsampling_reconstruction_folder / f"{reconstruction_name}.png",
-        )
-    if save_tensors:
-        torch.save(
-            x_hat, subsampling_reconstruction_folder / f"{reconstruction_name}.pt"
-        )
-        print(
-            "Reconstructed tensor saved in",
-            subsampling_reconstruction_folder / f"{reconstruction_name}.pt",
-        )
+        if save_images:
+            plt.imsave(
+                reconstruction_folder / f"{reconstruction_name}.png",
+                x_hat[0, 0, :, :].cpu(),
+                cmap="gray",
+            )
+            print(
+                "Reconstructed image saved in",
+                reconstruction_folder / f"{reconstruction_name}.png",
+            )
+        if save_tensors:
+            torch.save(x_hat, reconstruction_folder / f"{reconstruction_name}.pt")
+            print(
+                "Reconstructed tensor saved in",
+                reconstruction_folder / f"{reconstruction_name}.pt",
+            )
 
 # %%
