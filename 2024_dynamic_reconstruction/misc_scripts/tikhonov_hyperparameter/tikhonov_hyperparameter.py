@@ -36,11 +36,12 @@ from spyrit.misc.load_data import download_girder
 # %%
 # READ PARAMETERS
 config = configparser.ConfigParser()
-config.read("../../paper_scripts/robustness_config.ini")
+config.read("../../config.ini")
 
 general = config["GENERAL"]
 noise_analysis = config["NOISE_ANALYSIS"]
 deformation = config["DEFORMATION"]
+hyperparameter = config["HYPERPARAMETER"]
 
 # General
 image_sample_folder = pathlib.Path(general.get("image_sample_folder"))
@@ -57,11 +58,14 @@ siemens_star_fillers = general.get("siemens_star_fillers")
 # Noise analysis
 noise_values = [10, 100]  # eval(noise_analysis.get("noise_values"))
 keep_split_measurements = noise_analysis.getboolean("keep_split_measurements")
-save_images = noise_analysis.getboolean("save_images")
-save_tensors = noise_analysis.getboolean("save_tensors")
+save_images = True  # noise_analysis.getboolean("save_images")
+save_tensors = True  # noise_analysis.getboolean("save_tensors")
 reconstruction_folder = pathlib.Path(__file__).parent.resolve() / "output"
 save_reconstruction_template = noise_analysis.get("save_reconstruction_template")
 save_reconstruction_fillers = noise_analysis.get("save_reconstruction_fillers")
+
+# use any neural networks ?
+nn_to_use = hyperparameter.get("nn_to_use")
 
 # Deformation
 torch_seed = deformation.getint("torch_seed")
@@ -77,6 +81,8 @@ save_deformation_fillers = deformation.get("save_deformation_fillers")
 # %%
 # Derived parameters
 # =============================================================================
+pathlib.Path(reconstruction_folder).mkdir(parents=True, exist_ok=True)
+
 n_measurements = pattern_size**2
 n_frames = 2 * n_measurements
 frames = n_frames  # this is used for the deformation field import
@@ -87,10 +93,13 @@ device = torch.device(
 )
 print(f"Using device: {device}")
 
-# valid_nn_names = [
-#     valid_name for valid_name in re.split(r"\W", nn_to_use) if len(valid_name) > 0
-# ]
-# nn_dict = {name: nnet.Unet().to(device) for name in valid_nn_names}
+valid_nn_names = [
+    valid_name for valid_name in re.split(r"\W", nn_to_use) if len(valid_name) > 0
+]
+nn_dict = {name: nnet.Unet().to(device) for name in valid_nn_names}
+# add identity neural network
+valid_nn_names.append("identity")
+nn_dict["identity"] = nnet.Identity().to(device)
 # =============================================================================
 
 
@@ -108,35 +117,26 @@ x = 2 * (x / 255) - 1
 c, h, w = x.shape
 
 print(f"Shape of input image: {x.shape}")
-disp.imagesc(x[0, :, :].cpu(), title="Original image")
 
 
 # %%
 # Get measurements covariance matrix / image covariance matrix
-url = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-data_folder = stats_folder
-meas_cov_Id = "672b8077f03a54733161e970"  # different ID than tuto6 but same matrix
-image_cov_Id = "67486be8a438ad25e7a001f7"
-meas_cov_name = "Cov_64x64.pt"
-image_cov_name = "Image_Cov_8_128x128.pt"
-
-# download
-file_abs_path = download_girder(url, meas_cov_Id, data_folder, meas_cov_name)
+file_abs_path = stats_folder / "Cov_64x64.pt"
 measurements_covariance = torch.load(file_abs_path, weights_only=True)
-print(f"Cov matrix {meas_cov_name} loaded")
-file_abs_path = download_girder(url, image_cov_Id, data_folder, image_cov_name)
-image_covariance = torch.load(file_abs_path, weights_only=True).to(device)
-print("Image covariance matrix loaded")
+print("Measurement covariance matrix loaded")
 # get variance from covariance
 measurements_variance = spytorch.Cov2Var(measurements_covariance)
+
+file_abs_path = stats_folder / "Image_Cov_8_128x128.pt"
+image_covariance = torch.load(file_abs_path, weights_only=True).to(device)
+print("Image covariance matrix loaded")
 
 
 # %%
 # Load the deformation field
 deform_load_name = save_deformation_template.format(*eval(save_deformation_fillers))
-ElasticDeform = torch.load(
-    deformation_folder / f"{deform_load_name}", weights_only=False
-).to(device)
+deform_load_path = deformation_folder / deform_load_name
+ElasticDeform = torch.load(deform_load_path, weights_only=False).to(device)
 # warp the image
 warped_image = ElasticDeform(x, mode=deformation_mode)
 
@@ -176,10 +176,7 @@ tikho_identity = recon.Tikhonov(
 # 5. Denoise if needed
 # 6. Save the images as png and pt
 
-noise_scale_values = [
-    0
-]  # + [float(10**pow) for pow in [-10, -3, -2, -1, 0, 1, 2, 3, 4]]
-neural_network_name = "no"
+noise_scale_values = [0] + [float(10**pow) for pow in [-10, -3, -2, -1, 0, 1, 2, 3, 4]]
 
 for i in range(n_noise_values):
     print(f"Noise value {i+1}/{n_noise_values}")
@@ -193,20 +190,22 @@ for i in range(n_noise_values):
     # 3.
     prep_measurements = prep_op(measurements)
     var_measurements = prep_op.sigma(measurements)
-    # 4
 
     for nsv in noise_scale_values:
-        tikho.noise_scale = nsv
-
+        # 4
+        # artificially change the noise scale
+        var_measurements *= nsv
         # use the tikho_identity if the noise scale is 0
         if nsv == 0:
             x_hat_tikho = tikho_identity(prep_measurements, var_measurements)
         else:
             x_hat_tikho = tikho(prep_measurements, var_measurements)
         x_hat_tikho = x_hat_tikho.reshape(1, c, h, w)
-        # 5.
 
-        x_hat = x_hat_tikho.squeeze(0)
+        # 5.
+        for neural_network_name, nn_model in nn_dict.items():
+            x_hat = nn_model(x_hat_tikho)
+
         # 6.
         reconstruction_name = (
             save_reconstruction_template.format(*eval(save_reconstruction_fillers))
@@ -215,7 +214,7 @@ for i in range(n_noise_values):
         if save_images:
             plt.imsave(
                 reconstruction_folder / f"{reconstruction_name}.png",
-                x_hat[0, :, :].cpu(),
+                x_hat[0, 0, :, :].cpu(),
                 cmap="gray",
             )
             print(
