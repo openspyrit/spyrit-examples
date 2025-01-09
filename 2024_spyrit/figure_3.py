@@ -2,11 +2,9 @@
 # Imports
 # --------------------------------------------------------------------
 from pathlib import Path
-import time
 
 import torch
 import torchvision
-import numpy as np
 import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
@@ -15,7 +13,6 @@ import spyrit.core.prep as prep
 import spyrit.core.recon as recon
 import spyrit.core.nnet as nnet
 import spyrit.core.train as train
-import spyrit.misc.statistics as stats
 import spyrit.external.drunet as drunet
 
 import utility_dpgd as dpgd
