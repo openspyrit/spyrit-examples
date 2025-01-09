@@ -50,6 +50,14 @@ except Exception as e:
     print("Unable to download images from the Tomoradio warehouse")
     print(e)
 
+image_fig2_subfolder = data_subfolder / Path("images/figure_2")
+image_files_fig2 = "668e986a7d138728d4806d7a"  # ILSVRC2012_test_00000002.jpeg
+try:
+    download_girder(url_tomoradio, image_files_fig2, image_fig2_subfolder)
+except Exception as e:
+    print("Unable to download image for figure 2 from the Tomoradio warehouse")
+    print(e)
+
 
 # %%
 # download models from the Tomoradio warehouse
