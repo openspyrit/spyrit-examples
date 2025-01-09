@@ -3,7 +3,8 @@ main paper:
 
 SPyRiT: AN OPEN SOURCE PACKAGE FOR SINGLE-PIXEL IMAGING BASED ON DEEP LEARNING
 """
-#%%
+
+# %%
 import torch
 import torchvision
 import numpy as np
@@ -33,7 +34,7 @@ M = h**2
 # subsampling factor, when used
 sub_x = 2
 sub_y = 2
-sub = sub_x*sub_y
+sub = sub_x * sub_y
 
 # noise parameter (poisson distribution)
 alpha = 100
@@ -49,14 +50,16 @@ cmap_meas = plt.cm.cividis
 # set the seed for reproducibility
 seed = 404
 
-#%% GET IMAGE
+# %% GET IMAGE
 # download image from girder server
 url = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 dataID = "668e986a7d138728d4806d7a"
 local_folder = "./data/images/figure_2/"
 class_folder = "magpie/"
 data_name = "ILSVRC2012_test_00000002.jpeg"
-image_abs_path = load.download_girder(url, dataID, local_folder+class_folder, data_name)
+image_abs_path = load.download_girder(
+    url, dataID, local_folder + class_folder, data_name
+)
 
 # Create a transform for natural images to normalized grayscale image tensors
 transform = stats.transform_gray_norm(img_size=h)
@@ -80,12 +83,12 @@ aux.imagesc_mod(x_plot, figsize=figsize, dpi=dpi, minmax=orig_minmax)
 
 # %% SQUARE SAMPLING MAP
 Sampling_map = np.ones((h, h))
-Sampling_map[:, h//sub_x:] = 0
-Sampling_map[h//sub_y:, :] = 0
-#Sampling_map = np.random.rand(h, h)
+Sampling_map[:, h // sub_x :] = 0
+Sampling_map[h // sub_y :, :] = 0
+# Sampling_map = np.random.rand(h, h)
 Sampling_map = torch.from_numpy(Sampling_map)
 
-#%% MEASUREMENT OPERATORS
+# %% MEASUREMENT OPERATORS
 # define 3 measurement operators :
 # 1. full (meas.Linear)
 # 2. Split, poisson noise
@@ -93,7 +96,7 @@ Sampling_map = torch.from_numpy(Sampling_map)
 H = spytorch.walsh2_matrix(h)
 meas_op1 = meas.Linear(H)
 meas_op2 = meas.HadamSplit(M, h)
-meas_op3 = meas.HadamSplit(M//sub, h, Ord=Sampling_map)
+meas_op3 = meas.HadamSplit(M // sub, h, Ord=Sampling_map)
 
 # plot the mask matrices
 mask1 = (meas_op1.indices.argsort() < meas_op1.M).reshape(h, h)
@@ -112,12 +115,12 @@ aux.imagesc_mod(mask3.cpu().numpy(), figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1
 # show 1D walsh-ordered hadamard matrices for each case
 H_disp1 = spytorch.walsh_matrix(h_disp)
 H_disp2 = torch.cat((H_disp1, -H_disp1), dim=0)
-H_disp2[H_disp2 == -1] = 0 # take the positive part
+H_disp2[H_disp2 == -1] = 0  # take the positive part
 
-order = [0, 1, 2, 3]    # custom order for the subsampling
-zer = torch.zeros((h_disp-len(order), h_disp))
+order = [0, 1, 2, 3]  # custom order for the subsampling
+zer = torch.zeros((h_disp - len(order), h_disp))
 H_disp3 = torch.cat((H_disp1[order], zer, -H_disp1[order], zer), dim=0)
-H_disp3[H_disp3 == -1] = 0 # take the positive part
+H_disp3[H_disp3 == -1] = 0  # take the positive part
 
 aux.imagesc_mod(H_disp1, figsize=figsize, dpi=dpi, minmax=(-1, 1))
 aux.imagesc_mod(H_disp2, figsize=figsize_dbl, dpi=dpi, minmax=(-1, 1))
@@ -133,7 +136,7 @@ noise_op2 = noise.Poisson(meas_op2, alpha)
 noise_op3 = noise.Poisson(meas_op3, alpha)
 
 # vectorize image for measurements
-x = x.view(-1, h*h)
+x = x.view(-1, h * h)
 # measure
 y1 = noise_op1(x)
 y2 = noise_op2(x)
@@ -148,7 +151,7 @@ y3_plot = aux.split_meas2img(y3, meas_op3)
 y2_plot = aux.center_measurements(y2_plot)
 y3_plot = aux.center_measurements(y3_plot)
 
-norm = 'symlog'
+norm = "symlog"
 aux.imagesc_mod(y1_plot, figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
 aux.imagesc_mod(y2_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
 aux.imagesc_mod(y3_plot, figsize=figsize_dbl, dpi=dpi, norm=norm, colormap=cmap_meas)
@@ -168,15 +171,21 @@ m3 = prep_op3(y3)
 # show the measurements in the same order as the mask
 # show the mask as nan for custom color
 m2_plot = torch.from_numpy(samp.meas2img(m2, meas_op2.Ord.numpy()))
-m2_plot[m2_plot == 0] = torch.tensor(float('nan'))
+m2_plot[m2_plot == 0] = torch.tensor(float("nan"))
 
 m3_plot = torch.from_numpy(samp.meas2img(m3, meas_op3.Ord.numpy()))
-m3_plot[m3_plot == 0] = torch.tensor(float('nan'))
+m3_plot[m3_plot == 0] = torch.tensor(float("nan"))
 
 # plot the preprocessed measurements
-aux.imagesc_mod(m1.view(h, h).cpu(), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
-aux.imagesc_mod(m2_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
-aux.imagesc_mod(m3_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas)
+aux.imagesc_mod(
+    m1.view(h, h).cpu(), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas
+)
+aux.imagesc_mod(
+    m2_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas
+)
+aux.imagesc_mod(
+    m3_plot.reshape(h, h), figsize=figsize, dpi=dpi, norm=norm, colormap=cmap_meas
+)
 
 # %% RECONSTRUCTION
 # Reconstruct the image using the measurements
@@ -184,10 +193,16 @@ z1 = meas_op1.pinv(m1)
 z2 = meas_op2.pinv(m2)
 z3 = meas_op3.pinv(m3)
 
-#%%
+# %%
 # plot the reconstructions
-aux.imagesc_mod(z1.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
-aux.imagesc_mod(z2.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
-aux.imagesc_mod(z3.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax)
+aux.imagesc_mod(
+    z1.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax
+)
+aux.imagesc_mod(
+    z2.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax
+)
+aux.imagesc_mod(
+    z3.view(h, h).cpu().numpy(), figsize=figsize, dpi=dpi, minmax=orig_minmax
+)
 
 # %%
