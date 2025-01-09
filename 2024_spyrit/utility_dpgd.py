@@ -298,15 +298,15 @@ class DualPGD(nn.Module):
             tensor(5.8912e-06)
         """
 
-        b, c, _, _ = x.shape
+        # b, c, _, _ = x.shape
 
         # Acquisition
-        x = x.view(b * c, self.acqu.meas_op.N)  # shape x = [b*c,h*w] = [b*c,N]
+        # x = x.view(b * c, self.acqu.meas_op.N)  # shape x = [b*c,h*w] = [b*c,N]
         x = self.acqu(x)  # shape x = [b*c, 2*M]
 
         # Reconstruction
         x = self.reconstruct(x)  # shape x = [bc, 1, h,w]
-        x = x.view(b, c, self.acqu.meas_op.h, self.acqu.meas_op.w)
+        # x = x.view(b, c, self.acqu.meas_op.h, self.acqu.meas_op.w)
 
         return x
 
@@ -334,10 +334,10 @@ class DualPGD(nn.Module):
             torch.Size([10, 8192])
         """
 
-        b, c, _, _ = x.shape
+        # b, c, _, _ = x.shape
 
         # Acquisition
-        x = x.view(b * c, self.acqu.meas_op.N)  # shape x = [b*c,h*w] = [b*c,N]
+        # x = x.view(b * c, self.acqu.meas_op.N)  # shape x = [b*c,h*w] = [b*c,N]
         x = self.acqu(x)  # shape x = [b*c, 2*M]
 
         return x
@@ -368,7 +368,7 @@ class DualPGD(nn.Module):
         with torch.no_grad():
 
             # Measurement to image domain mapping
-            bc, _ = x.shape
+            # bc, _ = x.shape
 
             # Preprocessing in the measurement domain
             if exp:
@@ -381,7 +381,7 @@ class DualPGD(nn.Module):
             u = None
 
             for i in range(self.iter_stop):
-                x = x.view(bc, self.acqu.meas_op.N)
+                # x = x.view(bc, self.acqu.meas_op.N)
                 x_old = (
                     x.clone()
                 )  # Do we needs detach here? https://discuss.pytorch.org/t/clone-and-detach-in-v0-4-0/16861/21
@@ -392,15 +392,15 @@ class DualPGD(nn.Module):
 
                 # proximal step (prior). NB: scaling required as the prox was
                 # learned for images in [0,1]
-                x = x.view(
-                    bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w
-                )  # shape x = [b*c,1,h,w]
+                # x = x.view(
+                #     bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w
+                # )  # shape x = [b*c,1,h,w]
                 x = (x + 1) / 2
                 x, u = self.denoi.module.forward_eval(x, x, l=self.mu * self.gamma, u=u)
                 x = 2 * x - 1
 
                 # stopping criteria
-                x_old = x_old.view(bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w)
+                # x_old = x_old.view(bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w)
                 norm_it = torch.linalg.vector_norm(
                     x - x_old
                 ) / torch.linalg.vector_norm(x)
