@@ -190,7 +190,9 @@ def get_model(architecture, n_ch=3, features=64, num_of_layers=20):
 
 
 def load_checkpoint(model, filename):
-    checkpoint = torch.load(filename, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(
+        filename, map_location=lambda storage, loc: storage, weights_only=True
+    )
     try:
         model.module.load_state_dict(checkpoint, strict=True)
     except:
