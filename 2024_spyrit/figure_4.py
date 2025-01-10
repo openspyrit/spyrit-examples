@@ -175,10 +175,10 @@ with torch.no_grad():
 # DC-Net
 # ====================================================================
 model_name = "dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth"
-cov_name = stat_folder_full / "Cov_8_{}x{}.npy".format(img_size, img_size)
+cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
 
 # Load covariance prior
-Cov = torch.from_numpy(np.load(cov_name))
+Cov = torch.load(cov_name)
 
 # Init
 denoi = nnet.Unet()  # torch.nn.Identity()
