@@ -56,13 +56,13 @@ subsampling_factor = 2
 M = (img_size // subsampling_factor) ** 2
 
 # Measurement and noise operators
-Ord_rec = np.ones((img_size, img_size))
+Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, img_size, torch.from_numpy(Ord_rec))
-noise_op = noise.Poisson(meas_op, 2)  # parameter alpha is unimportant here
-prep_op = prep.SplitPoisson(2, meas_op)  # same here
+meas_op = meas.HadamSplit(M, img_size, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
+prep_op = prep.SplitPoisson(2, meas_op).to(device)  # same here
 
 
 # %%
@@ -115,7 +115,9 @@ for i in range(n_meas):
 
     lambda_index = wavelengths[i].index(lambda_select)
     # take only the first 2*M measurements of the right wavelength
-    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape((1, 2 * M))
+    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape(
+        (1, 1, 2 * M)
+    )
     measurements_slice[i] = torch.from_numpy(measurements_slice[i]).to(
         device, dtype=torch.float32
     )
@@ -154,7 +156,7 @@ with torch.no_grad():
         # iterate over noise levels
         for nu in nu_list[ii]:
             pinvnet.denoi.set_noise_level(nu)
-            x_pinvnet = pinvnet.reconstruct_expe(y)
+            x_pinvnet = pinvnet.reconstruct_expe(y)[0]
 
             filename = (
                 f"{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png"
