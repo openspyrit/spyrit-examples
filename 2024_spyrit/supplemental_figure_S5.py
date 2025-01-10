@@ -5,7 +5,6 @@ from pathlib import Path
 
 import torch
 import torchvision
-import numpy as np
 import matplotlib.pyplot as plt
 
 import utility_dpgd as dpgd
@@ -57,15 +56,14 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=6, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
+x = x.to(device)
 label_list = ["brain", "dog", "panther", "box", "bird", "car"]
 b, c, h, w = x.shape
 print("Batch shape:", x.shape)
 
 for i, label in enumerate(label_list):
-    x_plot = x[i, :, :, :].cpu().numpy()
-    plt.imsave(
-        recon_folder_full / f"sim{i}_{img_size}_gt.png", x_plot[0, :, :], cmap="gray"
-    )
+    x_plot = x[i, 0, :, :].cpu().numpy()
+    plt.imsave(recon_folder_full / f"sim{i}_{img_size}_gt.png", x_plot, cmap="gray")
 
 
 # %%
@@ -80,21 +78,16 @@ Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec)
-noise_op = noise.Poisson(meas_op, alpha)
-prep_op = prep.SplitPoisson(alpha, meas_op)
+meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, alpha).to(device)
+prep_op = prep.SplitPoisson(alpha, meas_op).to(device)
 
-# Vectorized images
-x = x.view(b, 1, h * w)
 # Measurement vectors
-y = torch.zeros(b, 2 * M)
+y = torch.zeros(b, c, 2 * M, device=device)
 
 for ii in range(b):
     torch.manual_seed(0)  # for reproducibility
     y[ii, :] = noise_op(x[ii, :])
-
-# Send to GPU if available
-y = y.to(device)
 
 
 # %%
@@ -107,7 +100,7 @@ pinv = recon.PinvNet(noise_op, prep_op)
 pinv = pinv.to(device)
 
 with torch.no_grad():
-    x_pinv = pinv.reconstruct(y)  # NB: shape of measurement is (1,8192)
+    x_pinv = pinv.reconstruct(y)
 
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png"
@@ -130,7 +123,7 @@ train.load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet = pinvnet.to(device)
 
 with torch.no_grad():
-    x_pinvnet = pinvnet.reconstruct(y)  # NB: shape of measurement is (1,8192)
+    x_pinvnet = pinvnet.reconstruct(y)
 
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinvnet_unet.png"
