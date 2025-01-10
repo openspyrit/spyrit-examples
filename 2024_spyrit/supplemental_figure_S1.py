@@ -53,18 +53,16 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=3, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
-x_dog, x_panther = x[1], x[2]
-c, h, w = x_dog.shape
+x_dog, x_panther = x[1].unsqueeze(0), x[2].unsqueeze(0)
+b, c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
 
-x_dog_plot = x_dog.view(-1, h, h).cpu().numpy()
-x_panther_plot = x_panther.view(-1, h, h).cpu().numpy()
 # save image as original
 plt.imsave(
-    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog_plot[0, :, :], cmap="gray"
+    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog[0, 0, :, :], cmap="gray"
 )
 plt.imsave(
-    recon_folder_full / f"sim2_{img_size}_gt.png", x_panther_plot[0, :, :], cmap="gray"
+    recon_folder_full / f"sim2_{img_size}_gt.png", x_panther[0, 0, :, :], cmap="gray"
 )
 
 
@@ -85,13 +83,10 @@ meas_op = meas.HadamSplit(M, h, Ord_rec)
 noise_op = noise.Poisson(meas_op, alpha_list[0])
 prep_op = prep.SplitPoisson(2, meas_op)
 
-# Vectorized images
-x_dog = x_dog.view(1, h * w)
-x_panther = x_panther.view(1, h * w)
 
 # Measurement vectors
-y_dog = torch.zeros(n_alpha, 2 * M)
-y_panther = torch.zeros(n_alpha, 2 * M)
+y_dog = torch.zeros(n_alpha, b, c, 2 * M)
+y_panther = torch.zeros(n_alpha, b, c, 2 * M)
 
 for ii, alpha in enumerate(alpha_list):
     noise_op.alpha = alpha
@@ -139,8 +134,8 @@ with torch.no_grad():
         for nu in noise_levels[alpha]:
 
             pinvnet.denoi.set_noise_level(nu)
-            x_dog_pinvnet = pinvnet.reconstruct(y_dog[ii : ii + 1, :])
-            x_panther_pinvnet = pinvnet.reconstruct(y_panther[ii : ii + 1, :])
+            x_dog_pinvnet = pinvnet.reconstruct(y_dog[ii, ...])
+            x_panther_pinvnet = pinvnet.reconstruct(y_panther[ii, ...])
 
             # save
             filename_dog = (
