@@ -44,7 +44,7 @@ suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+# device = torch.device("cpu")
 print("Using device:", device)
 
 img_size = 128  # image size
@@ -58,13 +58,13 @@ subsampling_factor = 2  # measure an equivalent image of size img_size // 2
 M = (img_size // subsampling_factor) ** 2
 
 # Measurement and noise operators
-Ord_rec = np.ones((img_size, img_size))
+Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, img_size, torch.from_numpy(Ord_rec))
-noise_op = noise.Poisson(meas_op, 2)  # parameter alpha is unimportant here
-prep_op = prep.SplitPoisson(2, meas_op)  # same here
+meas_op = meas.HadamSplit(M, img_size, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
+prep_op = prep.SplitPoisson(2, meas_op).to(device)  # same here
 
 
 # %%
@@ -117,7 +117,9 @@ for i in range(n_meas):
 
     lambda_index = wavelengths[i].index(lambda_select)
     # take only the first 2*M measurements of the right wavelength
-    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape((1, 2 * M))
+    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape(
+        (1, 1, 2 * M)
+    )
     measurements_slice[i] = torch.from_numpy(measurements_slice[i]).to(
         device, dtype=torch.float32
     )
@@ -138,7 +140,7 @@ x_pinv = torch.zeros(1, 1, img_size, img_size)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinv.prep.set_expe()
-        x_pinv = pinv.reconstruct_expe(y)
+        x_pinv = pinv.reconstruct_expe(y)[0]
 
         filename = f"pinv_{savenames[ii]}.png"
         full_path = recon_folder_full / filename
@@ -162,7 +164,7 @@ pinvnet = pinvnet.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinvnet.prep.set_expe()
-        x_pinvnet = pinvnet.reconstruct_expe(y)  # NB: shape of measurement is (1,8192)
+        x_pinvnet = pinvnet.reconstruct_expe(y)[0]
 
         filename = f"pinvnet_{savenames[ii]}.png"
         full_path = recon_folder_full / filename
@@ -191,9 +193,7 @@ dcnet = dcnet.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         dcnet.prep.set_expe()
-        x_dcnet = dcnet.reconstruct_expe(
-            y
-        )  # NB: shape of measurement is (1,8192) as expected
+        x_dcnet = dcnet.reconstruct_expe(y)
 
         filename = f"dcnet_{savenames[ii]}.png"
         full_path = recon_folder_full / filename
@@ -218,9 +218,7 @@ lpgd = lpgd.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         lpgd.prep.set_expe()
-        x_lpgd = lpgd.reconstruct_expe(
-            y
-        )  # NB: shape of measurement is (1,8192) as expected
+        x_lpgd = lpgd.reconstruct_expe(y)
 
         filename = f"lpgd_{savenames[ii]}.png"
         full_path = recon_folder_full / filename
@@ -252,7 +250,7 @@ with torch.no_grad():
         pinvnet.prep.set_expe()
         nu = noise_levels[ii]
         pinvnet.denoi.set_noise_level(nu)
-        x_pinvnet = pinvnet.reconstruct_expe(y)
+        x_pinvnet = pinvnet.reconstruct_expe(y)[0]
 
         filename = f"pinv_pnp_{savenames[ii]}_nu_{nu:03}.png"
         full_path = recon_folder_full / filename
@@ -289,11 +287,10 @@ with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         dpgdnet.prep.set_expe()
         dpgdnet.mu = mu_list[ii]
-        x_dpgd = dpgdnet.reconstruct(
-            y, exp=True
-        )  # NB: shape of measurement is (1,8192) as expected
-
+        x_dpgd = dpgdnet.reconstruct(y, exp=True)
         # save
         filename = f"dpgd_{savenames[ii]}_mu_{mu_list[ii]:04}.png"
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dpgd[0, 0, :, :].cpu().detach().numpy(), cmap="gray")
+
+# %%
