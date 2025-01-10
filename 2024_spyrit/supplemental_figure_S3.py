@@ -5,7 +5,6 @@ from pathlib import Path
 
 import torch
 import torchvision
-import numpy as np
 import matplotlib.pyplot as plt
 
 import utility_dpgd as dpgd
@@ -57,16 +56,15 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=6, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
+x = x.to(device)
 # labels are given by file alphabetical order
 label_list = ["brain", "dog", "panther", "box", "bird", "car"]
 b, c, h, w = x.shape
 print("Batch shape:", x.shape)
 
 for i, label in enumerate(label_list):
-    x_plot = x[i, :, :, :].cpu().numpy()
-    plt.imsave(
-        recon_folder_full / f"sim{i}_{img_size}_gt.png", x_plot[0, :, :], cmap="gray"
-    )
+    x_plot = x[i, 0, :, :].cpu().numpy()
+    plt.imsave(recon_folder_full / f"sim{i}_{img_size}_gt.png", x_plot, cmap="gray")
 
 
 # %%
@@ -77,25 +75,20 @@ alpha = 10  # Poisson law parameter for noisy image acquisitions
 M = img_size**2 // 4  # Number of measurements (here, 1/4 of the pixels)
 
 # Measurement and noise operators
-Ord_rec = torch.ones((img_size, img_size))
+Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec)
-noise_op = noise.Poisson(meas_op, alpha)
-prep_op = prep.SplitPoisson(alpha, meas_op)
+meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, alpha).to(device)
+prep_op = prep.SplitPoisson(alpha, meas_op).to(device)
 
-# Vectorized images
-x = x.view(b, 1, h * w)
 # Measurement vectors
-y = torch.zeros(b, 2 * M)
+y = torch.zeros(b, c, 2 * M, device=device)
 
 for ii in range(b):
     torch.manual_seed(0)  # for reproducibility
     y[ii, :] = noise_op(x[ii, :])
-
-# Send to GPU if available
-y = y.to(device)
 
 
 # %%
@@ -113,7 +106,7 @@ with torch.no_grad():
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png"
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_pinv[ii, 0].cpu().detach().numpy(), cmap="gray")
+        plt.imsave(full_path, x_pinv[ii, 0, :, :].cpu().detach().numpy(), cmap="gray")
 
 
 # %%
@@ -158,7 +151,7 @@ with torch.no_grad():
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_lpgd_unet.png"
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_lpgd[ii, 0].cpu().detach().numpy(), cmap="gray")
+        plt.imsave(full_path, x_lpgd[ii, 0, :, :].cpu().detach().numpy(), cmap="gray")
 
 
 # %%
@@ -185,7 +178,7 @@ with torch.no_grad():
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dc-net_unet.png"
         full_path = recon_folder_full / filename
-        plt.imsave(full_path, x_dcnet[ii, 0].cpu().detach().numpy(), cmap="gray")
+        plt.imsave(full_path, x_dcnet[ii, 0, :, :].cpu().detach().numpy(), cmap="gray")
 
 
 # %%
@@ -211,7 +204,7 @@ with torch.no_grad():
 
     for ii, nu in enumerate(nu_list):
         pinvnet.denoi.set_noise_level(nu)
-        x_pinvPnP = pinvnet.reconstruct(y[ii : ii + 1, :])
+        x_pinvPnP = pinvnet.reconstruct(y[ii, ...].unsqueeze(0))
 
         filename = (
             f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png"
@@ -250,9 +243,7 @@ with torch.no_grad():
 
     for ii, mu in enumerate(mu_list):
         dpgdnet.mu = mu
-        x_dpgd = dpgdnet.reconstruct(
-            y[ii : ii + 1, :]
-        )  # NB: shape of measurement is (1,8192) as expected
+        x_dpgd = dpgdnet.reconstruct(y[ii, ...].unsqueeze(0))
 
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png"
         full_path = recon_folder_full / filename
