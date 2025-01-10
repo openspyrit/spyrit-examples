@@ -101,7 +101,7 @@ pinv = recon.PinvNet(noise_op, prep_op)
 pinv = pinv.to(device)
 
 with torch.no_grad():
-    x_pinv = pinv.reconstruct(y)  # NB: shape of measurement is (1,8192)
+    x_pinv = pinv.reconstruct(y)
 
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv.png"
@@ -123,7 +123,7 @@ train.load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet = pinvnet.to(device)
 
 with torch.no_grad():
-    x_pinvnet = pinvnet.reconstruct(y)  # NB: shape of measurement is (1,8192)
+    x_pinvnet = pinvnet.reconstruct(y)
 
     for ii, label in enumerate(label_list):
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinvnet_unet.png"
