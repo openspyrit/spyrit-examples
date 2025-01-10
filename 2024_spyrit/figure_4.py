@@ -178,7 +178,7 @@ model_name = "dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_1
 cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
 
 # Load covariance prior
-Cov = torch.load(cov_name)
+Cov = torch.load(cov_name, weights_only=True)
 
 # Init
 denoi = nnet.Unet()  # torch.nn.Identity()
