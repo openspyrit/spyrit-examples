@@ -53,16 +53,18 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=3, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
-x_dog, x_panther = x[1].unsqueeze(0), x[2].unsqueeze(0)
+x_dog, x_panther = x[1].unsqueeze(0).to(device), x[2].unsqueeze(0).to(device)
 b, c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
 
 # save image as original
 plt.imsave(
-    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog[0, 0, :, :], cmap="gray"
+    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog[0, 0, :, :].cpu(), cmap="gray"
 )
 plt.imsave(
-    recon_folder_full / f"sim2_{img_size}_gt.png", x_panther[0, 0, :, :], cmap="gray"
+    recon_folder_full / f"sim2_{img_size}_gt.png",
+    x_panther[0, 0, :, :].cpu(),
+    cmap="gray",
 )
 
 
@@ -79,14 +81,14 @@ Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec)
-noise_op = noise.Poisson(meas_op, alpha_list[0])
-prep_op = prep.SplitPoisson(2, meas_op)
+meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, alpha_list[0]).to(device)
+prep_op = prep.SplitPoisson(2, meas_op).to(device)
 
 
 # Measurement vectors
-y_dog = torch.zeros(n_alpha, b, c, 2 * M)
-y_panther = torch.zeros(n_alpha, b, c, 2 * M)
+y_dog = torch.zeros(n_alpha, b, c, 2 * M, device=device)
+y_panther = torch.zeros(n_alpha, b, c, 2 * M, device=device)
 
 for ii, alpha in enumerate(alpha_list):
     noise_op.alpha = alpha
@@ -94,10 +96,6 @@ for ii, alpha in enumerate(alpha_list):
     y_dog[ii, :] = noise_op(x_dog)
     torch.manual_seed(0)  # for reproducibility
     y_panther[ii, :] = noise_op(x_panther)
-
-# Send to GPU if available
-y_dog = y_dog.to(device)
-y_panther = y_panther.to(device)
 
 
 # %%
