@@ -52,14 +52,13 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
-x_dog = x[1]
-c, h, w = x_dog.shape
+x_dog = x[1].unsqueeze(0).to(device)
+b, c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
 
-x_dog_plot = x_dog.view(-1, h, h).cpu().numpy()
 # save image as original
 plt.imsave(
-    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog_plot[0, :, :], cmap="gray"
+    recon_folder_full / f"sim1_{img_size}_gt.png", x_dog[0, 0, :, :].cpu(), cmap="gray"
 )
 
 
@@ -76,24 +75,18 @@ Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec)
-noise_op = noise.Poisson(meas_op, alpha_list[0])
-prep_op = prep.SplitPoisson(alpha_list[0], meas_op)
-
-# Vectorized images
-x_dog = x_dog.view(1, h * w)
+meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, alpha_list[0]).to(device)
+prep_op = prep.SplitPoisson(alpha_list[0], meas_op).to(device)
 
 # Measurement vectors
-y_dog = torch.zeros(n_alpha, 2 * M)
+y_dog = torch.zeros(n_alpha, b, c, 2 * M, device=device)
 
 for ii, alpha in enumerate(alpha_list):
     noise_op.alpha = alpha
     torch.manual_seed(0)  # for reproducibility
     # only need to measure, preprocessing is done in the dpgd, later
     y_dog[ii, :] = noise_op(x_dog)
-
-# Send to GPU if available
-y_dog = y_dog.to(device)
 
 
 # %%
@@ -135,11 +128,11 @@ with torch.no_grad():
         # set noise level for PnP denoiser
         for mu in mu_list[alpha]:
             dpgdnet.mu = mu
-            x_dog_dpgd = dpgdnet.reconstruct(y_dog[ii : ii + 1, :])
+            x_dog_dpgd = dpgdnet.reconstruct(y_dog[ii, ...])
 
             # save
             filename = f"sim1_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png"
             full_path = recon_folder_full / filename
-            plt.imsave(full_path, x_dog_dpgd[0, 0].cpu().detach().numpy(), cmap="gray")
+            plt.imsave(full_path, x_dog_dpgd[0, 0, :, :].cpu().detach(), cmap="gray")
 
 # %%
