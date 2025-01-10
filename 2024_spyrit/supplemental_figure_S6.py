@@ -59,13 +59,13 @@ subsampling_factor = 2
 M = (img_size // subsampling_factor) ** 2
 
 # Measurement and noise operators
-Ord_rec = np.ones((img_size, img_size))
+Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, img_size, torch.from_numpy(Ord_rec))
-noise_op = noise.Poisson(meas_op, 2)  # parameter alpha is unimportant here
-prep_op = prep.SplitPoisson(2, meas_op)  # same here
+meas_op = meas.HadamSplit(M, img_size, Ord_rec).to(device)
+noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
+prep_op = prep.SplitPoisson(2, meas_op).to(device)  # same here
 
 
 # %%
@@ -118,7 +118,9 @@ for i in range(n_meas):
 
     lambda_index = wavelengths[i].index(lambda_select)
     # take only the first 2*M measurements of the right wavelength
-    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape((1, 2 * M))
+    measurements_slice[i] = measurements[i][: 2 * M, lambda_index].reshape(
+        (1, 1, 2 * M)
+    )
     measurements_slice[i] = torch.from_numpy(measurements_slice[i]).to(
         device, dtype=torch.float32
     )
@@ -136,7 +138,7 @@ pinv = pinv.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinv.prep.set_expe()
-        x_pinv = pinv.reconstruct_expe(y)
+        x_pinv = pinv.reconstruct_expe(y)[0]
 
         filename = f"{data_title[ii]}_{M}_{img_size}_pinv.png"
         full_path = recon_folder_full / filename
@@ -160,7 +162,7 @@ pinvnet = pinvnet.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         pinvnet.prep.set_expe()
-        x_pinvnet = pinvnet.reconstruct_expe(y)  # NB: shape of measurement is (1,8192)
+        x_pinvnet = pinvnet.reconstruct_expe(y)[0]
 
         filename = f"{data_title[ii]}_{M}_{img_size}_pinvnet_unet.png"
         full_path = recon_folder_full / filename
@@ -184,9 +186,7 @@ lpgd = lpgd.to(device)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         lpgd.prep.set_expe()
-        x_lpgd = lpgd.reconstruct_expe(
-            y
-        )  # NB: shape of measurement is (1,8192) as expected
+        x_lpgd = lpgd.reconstruct_expe(y)
 
         filename = f"{data_title[ii]}_{M}_{img_size}_lpgd_unet.png"
         full_path = recon_folder_full / filename
@@ -249,7 +249,7 @@ with torch.no_grad():
         pinvnet.prep.set_expe()
         nu = nu_list[ii]
         pinvnet.denoi.set_noise_level(nu)
-        x_pinvnet = pinvnet.reconstruct_expe(y)
+        x_pinvnet = pinvnet.reconstruct_expe(y)[0]
 
         filename = f"{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png"
         full_path = recon_folder_full / filename
@@ -287,9 +287,7 @@ with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         dpgdnet.prep.set_expe()
         dpgdnet.mu = mu_list[ii]
-        x_dpgd = dpgdnet.reconstruct(
-            y, exp=True
-        )  # NB: shape of measurement is (1,8192) as expected
+        x_dpgd = dpgdnet.reconstruct(y, exp=True)
 
         # save
         filename = f"{data_title[ii]}_{M}_{img_size}_dfb-net_dfb_mu_{mu_list[ii]}.png"
