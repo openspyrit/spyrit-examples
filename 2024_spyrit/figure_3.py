@@ -2,9 +2,11 @@
 # Imports
 # --------------------------------------------------------------------
 from pathlib import Path
+from typing import OrderedDict
 
 import torch
 import torchvision
+import torch.nn as nn
 import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
@@ -35,6 +37,7 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 print("Using device:", device)
 
 
@@ -46,7 +49,7 @@ img_size = 128  # image size
 
 print("Loading image...")
 
-image_path = image_folder_full / "cropped/HSI_Brain_012-01_crop.jpeg"
+image_path = image_folder_full / "cropped/ILSVRC2012_val_00000003_crop.JPEG"
 x = torchvision.io.read_image(image_path, torchvision.io.ImageReadMode.GRAY)
 # Resize image
 x = torchvision.transforms.functional.resize(x, (img_size, img_size)).reshape(
@@ -55,7 +58,7 @@ x = torchvision.transforms.functional.resize(x, (img_size, img_size)).reshape(
 
 # Select image
 x = x.detach().clone()
-x = 2 * (x / 255) - 1
+x = x / 255
 b, c, h, w = x.shape
 print(f"Shape of input image: {x.shape}")
 
@@ -72,14 +75,15 @@ n_alpha = len(alpha_list)
 M = 128 * 128 // 4  # Number of measurements (here, 1/4 of the pixels)
 
 # Measurement and noise operators
-Ord_rec = torch.ones((img_size, img_size))
+Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
 # Send to GPU if available
-meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, alpha_list[0]).to(device)
-prep_op = prep.SplitPoisson(2, meas_op).to(device)
+noise_model = noise.Poisson(alpha_list[0])
+meas_op = meas.HadamSplit2d(M, h, Ord_rec, noise_model=noise_model, device=device)
+prep_op = prep.UnsplitRescale(alpha_list[0])
+rerange = prep.Rerange((0, 1), (-1, 1))
 x = x.to(device)
 
 # Measurement vectors
@@ -88,8 +92,8 @@ y = torch.zeros(y_shape, device=device)
 
 for ii, alpha in enumerate(alpha_list):
     torch.manual_seed(0)  # for reproducibility
-    noise_op.alpha = alpha
-    y[ii, ...] = noise_op(x)
+    noise_model.alpha = alpha
+    y[ii, ...] = meas_op(x)
 
 reconstruct_size = torch.Size([n_alpha]) + x.shape
 
@@ -98,13 +102,13 @@ reconstruct_size = torch.Size([n_alpha]) + x.shape
 # Pinv
 # ====================================================================
 # Init
-pinv = recon.PinvNet(noise_op, prep_op)
-
+pinv = recon.PinvNet(meas_op, prep_op, use_fast_pinv=True)
+# pinv.denoi = rerange
 # Use GPU if available
-pinv = pinv.to(device)
+# pinv = pinv.to(device)
 
 # Reconstruct
-x_pinv = torch.zeros(x.shape, device=device)
+x_pinv = torch.zeros(reconstruct_size, device=device)
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
@@ -121,13 +125,19 @@ with torch.no_grad():
 # Pinv-Net
 # ====================================================================
 model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07_retrained_light.pth"
+denoiser = OrderedDict(
+    {"rerange": rerange, "denoi": nnet.Unet(), "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
+# this function loads the model into the '.denoi' key present in the second
+# argument. It fails if it does not find the '.denoi' key.
+train.load_net(model_folder_full / model_name, denoiser, device, False)
 
 # Init
-pinvnet = recon.PinvNet(noise_op, prep_op, nnet.Unet())
+pinvnet = recon.PinvNet(meas_op, prep_op, denoiser, use_fast_pinv=True)
 pinvnet.eval()
 
 # Load net and use GPU if available
-train.load_net(model_folder_full / model_name, pinvnet, device, False)
 pinvnet = pinvnet.to(device)
 
 # Reconstruct
@@ -149,14 +159,19 @@ with torch.no_grad():
 # LPGD
 # ====================================================================
 model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
+denoiser = OrderedDict(
+    {"rerange": rerange, "denoi": nnet.Unet(), "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
+# this function loads the model into the '.denoi' key present in the second
+# argument. It fails if it does not find the '.denoi' key.
+train.load_net(model_folder_full / model_name, denoiser, device, False)
 
 # Initialize network
-denoi = nnet.Unet()
-lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
+lpgd = recon.LearnedPGD(meas_op, prep_op, denoiser, step_decay=0.9)
 lpgd.eval()
 
 # load net and use GPU if available
-train.load_net(model_folder_full / model_name, lpgd, device, False)
 lpgd = lpgd.to(device)
 
 # Reconstruct and save
@@ -179,18 +194,27 @@ with torch.no_grad():
 # DC-Net
 # ====================================================================
 model_name = "dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth"
-cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
+denoiser = OrderedDict(
+    {"rerange": rerange, "denoi": nnet.Unet(), "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
+# this function loads the model into the '.denoi' key present in the second
+# argument. It fails if it does not find the '.denoi' key.
+train.load_net(model_folder_full / model_name, denoiser, device, False)
 
 # Load covariance prior
+cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
 Cov = torch.load(cov_name, weights_only=True).to(device)
+# divide by 4 because the measurement covariance has been computed on images
+# with values in [-1, 1] (total span 2) whereas our image is in [0, 1] (total
+# span 1). The covariance is thus 2^2 = 4 times larger than expacted.
+Cov /= 4
 
 # Init
-denoi = nnet.Unet()  # torch.nn.Identity()
-dcnet = recon.DCNet(noise_op, prep_op, Cov, denoi)
+dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser)
 dcnet.eval()
 
 # Load net and use GPU if available
-train.load_net(model_folder_full / model_name, dcnet, device, False)
 dcnet = dcnet.to(device)
 
 # Reconstruct
@@ -213,36 +237,40 @@ with torch.no_grad():
 # ====================================================================
 model_name = "drunet_gray.pth"
 noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
+denoiser = OrderedDict(
+    {
+        "rerange": rerange,
+        "denoi": drunet.DRUNet(),
+        "rerange_inv": rerange.inverse(),
+    }
+)
+denoiser = nn.Sequential(denoiser)
 
 # Initialize network
-denoi = drunet.DRUNet()
-pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
-pinvnet.eval()
-
-# load_net(model_folder_full / model_name, pinvnet, device, False)
-pinvnet.denoi.load_state_dict(
+pinvpnp = recon.PinvNet(meas_op, prep_op, denoiser, use_fast_pinv=True)
+pinvpnp.denoi.denoi.load_state_dict(
     torch.load(model_folder_full / model_name, weights_only=True), strict=False
 )
-pinvnet.denoi.eval()
-pinvnet = pinvnet.to(device)
+pinvpnp.eval()
+pinvpnp = pinvpnp.to(device)
 
 # Reconstruct and save
-x_pinvnet = torch.zeros(reconstruct_size, device=device)
+x_pinvpnp = torch.zeros(reconstruct_size, device=device)
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
 
         # set noise level for measurement operator and PnP denoiser
-        pinvnet.prep.alpha = alpha
+        pinvpnp.prep.alpha = alpha
         nu = noise_levels[ii]
-        pinvnet.denoi.set_noise_level(nu)
-        x_pinvnet[ii, ...] = pinvnet.reconstruct(y[ii, ...])
+        pinvpnp.denoi.denoi.set_noise_level(nu)
+        x_pinvpnp[ii, ...] = pinvpnp.reconstruct(y[ii, ...])
 
         # save
         filename = f"pinv_pnp_alpha_{alpha:02}_nu_{nu:03}.png"
         full_path = recon_folder_full / filename
         plt.imsave(
-            full_path, x_pinvnet[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
+            full_path, x_pinvpnp[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
 
@@ -269,7 +297,7 @@ mu_list = [6000, 3500, 1500]
 crit_norm = 1e-4
 
 # Init
-dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+dpgdnet = dpgd.DualPGD(meas_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
 dpgdnet = dpgdnet.to(device)
 x_dpgd = torch.zeros(reconstruct_size, device=device)
 

@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
+import spyrit.core.meas as meas
+
 cuda = True if torch.cuda.is_available() else False
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
@@ -260,7 +262,14 @@ class DualPGD(nn.Module):
     """
 
     def __init__(
-        self, noise, prep, denoi, gamma=1.0, mu=1.0, iter_stop=1000, norm_stop=1e-4
+        self,
+        acqu: meas.HadamSplit2d,
+        prep,
+        denoi,
+        gamma=1.0,
+        mu=1.0,
+        iter_stop=1000,
+        norm_stop=1e-4,
     ):
         super().__init__()
         self.mu = mu
@@ -268,7 +277,7 @@ class DualPGD(nn.Module):
         self.norm_stop = norm_stop
         self.iter_stop = iter_stop
         # nn.module
-        self.acqu = noise
+        self.acqu = acqu
         self.prep = prep
         self.denoi = denoi
 
@@ -374,10 +383,11 @@ class DualPGD(nn.Module):
             if exp:
                 m, N0_est = self.prep.forward_expe(x, self.acqu.meas_op)
             else:
-                m = self.prep(x)  # shape x = [b*c, M]
+                m = self.prep(x)
 
             # init solution and dual variable
-            x = self.acqu.meas_op.pinv(m)  # shape x = [b*c,N]
+            x = self.acqu.fast_pinv(m)
+            x = self.acqu.unvectorize(x)
             u = None
 
             for i in range(self.iter_stop):
@@ -387,8 +397,8 @@ class DualPGD(nn.Module):
                 )  # Do we needs detach here? https://discuss.pytorch.org/t/clone-and-detach-in-v0-4-0/16861/21
 
                 # gradient step (data fidelity with scaling + quadratic regularization)
-                res = self.acqu.meas_op.forward_H(x) - m
-                x = x - self.gamma * self.acqu.meas_op.adjoint(res)
+                res = self.acqu.measure_H(x) - m
+                x = x - self.gamma * self.acqu.unvectorize(self.acqu.adjoint_H(res))
 
                 # proximal step (prior). NB: scaling required as the prox was
                 # learned for images in [0,1]
@@ -411,6 +421,6 @@ class DualPGD(nn.Module):
 
             if exp:
                 x = self.prep.denormalize_expe(
-                    x, N0_est, self.acqu.meas_op.h, self.acqu.meas_op.w
+                    x, N0_est, self.acqu.meas_shape[0], self.acqu.meas_shape[1]
                 )
         return x
