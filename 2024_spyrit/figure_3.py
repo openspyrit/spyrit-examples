@@ -81,7 +81,7 @@ Ord_rec[img_size // 2 :, :] = 0
 
 # Send to GPU if available
 noise_model = noise.Poisson(alpha_list[0])
-meas_op = meas.HadamSplit2d(M, h, Ord_rec, noise_model=noise_model, device=device)
+meas_op = meas.HadamSplit2d(h, M, Ord_rec, noise_model=noise_model, device=device)
 prep_op = prep.UnsplitRescale(alpha_list[0])
 rerange = prep.Rerange((0, 1), (-1, 1))
 x = x.to(device)
