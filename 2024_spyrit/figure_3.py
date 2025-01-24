@@ -37,7 +37,6 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
 print("Using device:", device)
 
 
