@@ -101,8 +101,8 @@ reconstruct_size = torch.Size([n_alpha]) + x.shape
 # Pinv
 # ====================================================================
 # Init
-pinv = recon.PinvNet(meas_op, prep_op, use_fast_pinv=True)
-# pinv.denoi = rerange
+pinv = recon.PinvNet(meas_op, prep_op, device=device)
+
 # Use GPU if available
 # pinv = pinv.to(device)
 
@@ -133,11 +133,8 @@ denoiser = nn.Sequential(denoiser)
 train.load_net(model_folder_full / model_name, denoiser, device, False)
 
 # Init
-pinvnet = recon.PinvNet(meas_op, prep_op, denoiser, use_fast_pinv=True)
+pinvnet = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
 pinvnet.eval()
-
-# Load net and use GPU if available
-pinvnet = pinvnet.to(device)
 
 # Reconstruct
 x_pinvnet = torch.zeros(reconstruct_size, device=device)
@@ -206,15 +203,12 @@ cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
 Cov = torch.load(cov_name, weights_only=True).to(device)
 # divide by 4 because the measurement covariance has been computed on images
 # with values in [-1, 1] (total span 2) whereas our image is in [0, 1] (total
-# span 1). The covariance is thus 2^2 = 4 times larger than expacted.
+# span 1). The covariance is thus 2^2 = 4 times larger than expected.
 Cov /= 4
 
 # Init
-dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser)
+dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser, device=device)
 dcnet.eval()
-
-# Load net and use GPU if available
-dcnet = dcnet.to(device)
 
 # Reconstruct
 x_dcnet = torch.zeros(reconstruct_size, device=device)
@@ -236,6 +230,7 @@ with torch.no_grad():
 # ====================================================================
 model_name = "drunet_gray.pth"
 noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
+noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
 denoiser = OrderedDict(
     {
         "rerange": rerange,
@@ -246,15 +241,15 @@ denoiser = OrderedDict(
 denoiser = nn.Sequential(denoiser)
 
 # Initialize network
-pinvpnp = recon.PinvNet(meas_op, prep_op, denoiser, use_fast_pinv=True)
+pinvpnp = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
 pinvpnp.denoi.denoi.load_state_dict(
     torch.load(model_folder_full / model_name, weights_only=True), strict=False
 )
 pinvpnp.eval()
-pinvpnp = pinvpnp.to(device)
 
 # Reconstruct and save
 x_pinvpnp = torch.zeros(reconstruct_size, device=device)
+
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
