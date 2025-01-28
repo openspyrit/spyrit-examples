@@ -400,14 +400,8 @@ class DualPGD(nn.Module):
                 res = self.acqu.measure_H(x) - m
                 x = x - self.gamma * self.acqu.unvectorize(self.acqu.adjoint_H(res))
 
-                # proximal step (prior). NB: scaling required as the prox was
-                # learned for images in [0,1]
-                # x = x.view(
-                #     bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w
-                # )  # shape x = [b*c,1,h,w]
-                x = (x + 1) / 2
+                # proximal step (prior). NB: the prox was learned for images in [0,1]
                 x, u = self.denoi.module.forward_eval(x, x, l=self.mu * self.gamma, u=u)
-                x = 2 * x - 1
 
                 # stopping criteria
                 # x_old = x_old.view(bc, 1, self.acqu.meas_op.h, self.acqu.meas_op.w)
