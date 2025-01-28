@@ -199,7 +199,7 @@ lpgd = recon.LearnedPGD(meas_op, prep_op, denoiser, step_decay=0.9)
 lpgd.eval()
 
 # load net and use GPU if available
-lpgd = lpgd.to(device)
+lpgd = lpgd.to(device)  
 
 # Reconstruct
 with torch.no_grad():
