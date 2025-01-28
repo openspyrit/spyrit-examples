@@ -46,7 +46,7 @@ suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+#device = torch.device("cpu")
 print("Using device:", device)
 
 img_size = 128  # image size
@@ -66,7 +66,7 @@ Ord_rec[img_size // 2 :, :] = 0
 
 meas_op = meas.HadamSplit2d(img_size, M, Ord_rec, device=device)
 # noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
-prep_op = prep.UnsplitRescaleEstim(meas_op, "pinv", use_fast_pinv=True)
+prep_op = prep.UnsplitRescaleEstim(meas_op, use_fast_pinv=True)
 rerange = prep.Rerange((0, 1), (-1, 1))
 
 

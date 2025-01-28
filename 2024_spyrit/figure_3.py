@@ -207,6 +207,7 @@ Cov = torch.load(cov_name, weights_only=True).to(device)
 Cov /= 4
 
 # Init
+#prep_op = prep.UnsplitRescaleEstim(meas_op, use_fast_pinv=True)
 dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser, device=device)
 dcnet.eval()
 
