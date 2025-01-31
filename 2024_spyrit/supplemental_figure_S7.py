@@ -4,14 +4,15 @@
 import ast
 import json
 from pathlib import Path
+from typing import OrderedDict
 
 import torch
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
 import spyrit.core.prep as prep
-import spyrit.core.noise as noise
 import spyrit.core.recon as recon
 import spyrit.misc.sampling as samp
 import spyrit.external.drunet as drunet
@@ -60,9 +61,9 @@ Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, img_size, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
-prep_op = prep.SplitPoisson(2, meas_op).to(device)  # same here
+meas_op = meas.HadamSplit2d(img_size, M, Ord_rec, device=device)
+prep_op = prep.UnsplitRescaleEstim(meas_op, use_fast_pinv=True)
+rerange = prep.Rerange((0, 1), (-1, 1))
 
 
 # %%
@@ -101,6 +102,7 @@ Ord_acq = [
 Perm_rec = samp.Permutation_Matrix(Ord_rec)
 Perm_acq = [samp.Permutation_Matrix(Ord_acq[i]).T for i in range(n_meas)]
 # each element of 'measurements' has shape (measurements, wavelengths)
+# THIS IS SLOW!!
 measurements = [samp.reorder(exp_data[i], Perm_acq[i], Perm_rec) for i in range(n_meas)]
 
 
@@ -121,6 +123,7 @@ for i in range(n_meas):
     measurements_slice[i] = torch.from_numpy(measurements_slice[i]).to(
         device, dtype=torch.float32
     )
+reconstruct_size = torch.Size([n_meas]) + (1, 1, img_size, img_size)
 
 
 # %%
@@ -136,27 +139,38 @@ nu_list = [
     [30, 40, 50],  # tomato x2
 ]
 
-# Initialize network
-denoi = drunet.DRUNet()
-pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
-pinvnet.eval()
+# /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
+# images in [-1,1]
+denoiser = OrderedDict(
+    {
+     # No rerange() needed with normalize=False
+     #"rerange": rerange,
+     "denoi": drunet.DRUNet(normalize=False),
+     # No rerange.inverse() here as DRUNet works for images in [0,1] 
+     #"rerange_inv": rerange.inverse(), 
+     }
+)
+denoiser = nn.Sequential(denoiser)
 
-# load_net(model_folder_full / model_name, pinvnet, device, False)
-pinvnet.denoi.load_state_dict(
+# Initialize network
+pinvpnp = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
+pinvpnp.denoi.denoi.load_state_dict(
     torch.load(model_folder_full / model_name, weights_only=True), strict=False
 )
-pinvnet.denoi.eval()
-pinvnet = pinvnet.to(device)
+pinvpnp.eval()
+
+# Reconstruct and save
+x_pinvpnp = torch.zeros(reconstruct_size, device=device)
 
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         # set noise level for measurement operator and PnP denoiser
-        pinvnet.prep.set_expe()
+        # pinvnet.prep.set_expe()
 
         # iterate over noise levels
         for nu in nu_list[ii]:
-            pinvnet.denoi.set_noise_level(nu)
-            x_pinvnet = pinvnet.reconstruct_expe(y)[0]
+            pinvpnp.denoi.denoi.set_noise_level(nu)
+            x_pinvnet = pinvpnp.reconstruct(y)#[0]
 
             filename = (
                 f"{data_title[ii]}_{M}_{img_size}_pinv-net_drunet_nlevel_{nu}.png"
@@ -165,6 +179,3 @@ with torch.no_grad():
             plt.imsave(
                 full_path, x_pinvnet[0, 0, :, :].cpu().detach().numpy(), cmap="gray"
             )
-
-
-# %%

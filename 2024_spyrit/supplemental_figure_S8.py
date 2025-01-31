@@ -12,9 +12,7 @@ import matplotlib.pyplot as plt
 import utility_dpgd as dpgd
 import spyrit.core.meas as meas
 import spyrit.core.prep as prep
-import spyrit.core.noise as noise
 import spyrit.misc.sampling as samp
-
 
 # %%
 # General
@@ -59,9 +57,9 @@ Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, img_size, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, 2).to(device)  # parameter alpha is unimportant here
-prep_op = prep.SplitPoisson(2, meas_op).to(device)  # same here
+meas_op = meas.HadamSplit2d(img_size, M, Ord_rec, device=device)
+prep_op = prep.UnsplitRescaleEstim(meas_op, use_fast_pinv=True)
+rerange = prep.Rerange((0, 1), (-1, 1))
 
 
 # %%
@@ -120,7 +118,7 @@ for i in range(n_meas):
     measurements_slice[i] = torch.from_numpy(measurements_slice[i]).to(
         device, dtype=torch.float32
     )
-
+reconstruct_size = torch.Size([n_meas]) + (1, 1, img_size, img_size)
 
 # %%
 # DPGD-PnP
@@ -152,16 +150,18 @@ max_iter = 101
 crit_norm = 1e-4
 
 # Init
-dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+dpgdnet = dpgd.DualPGD(meas_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+dpgdnet = dpgdnet.to(device)
+x_dpgd = torch.zeros(reconstruct_size, device=device)
 
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
-        dpgdnet.prep.set_expe()
+        #dpgdnet.prep.set_expe()
 
         # iterate over noise levels
         for mu in mu_list[ii]:
             dpgdnet.mu = mu
-            x_dpgd = dpgdnet.reconstruct(y, exp=True)
+            x_dpgd = dpgdnet.reconstruct(y)
 
             # save
             filename = f"{data_title[ii]}_{M}_{img_size}_dfb-net_dfb_mu_{mu}.png"
@@ -169,5 +169,3 @@ with torch.no_grad():
             plt.imsave(
                 full_path, x_dpgd[0, 0, :, :].cpu().detach().numpy(), cmap="gray"
             )
-
-# %%

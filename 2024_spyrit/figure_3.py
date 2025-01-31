@@ -234,9 +234,11 @@ noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
 noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
 denoiser = OrderedDict(
     {
-        "rerange": rerange,
-        "denoi": drunet.DRUNet(),
-        "rerange_inv": rerange.inverse(),
+        # No rerange() needed with normalize=False
+        #"rerange": rerange,
+        "denoi": drunet.DRUNet(normalize=False),
+        # No rerange.inverse() here as DRUNet works for images in [0,1] 
+        #"rerange_inv": rerange.inverse(), 
     }
 )
 denoiser = nn.Sequential(denoiser)

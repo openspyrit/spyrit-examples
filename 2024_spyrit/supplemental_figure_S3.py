@@ -2,9 +2,11 @@
 # Imports
 # --------------------------------------------------------------------
 from pathlib import Path
+from typing import OrderedDict
 
 import torch
 import torchvision
+import torch.nn as nn
 import matplotlib.pyplot as plt
 
 import utility_dpgd as dpgd
@@ -54,8 +56,10 @@ dataset = torchvision.datasets.ImageFolder(image_folder_full, transform=transfor
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=6, shuffle=False)
 
-# select the two images
+# /!\ spyrit v3 works with images in [0,1]
 x, _ = next(iter(dataloader))
+x = (x + 1)/2   
+
 x = x.to(device)
 # labels are given by file alphabetical order
 label_list = ["brain", "dog", "panther", "box", "bird", "car"]
@@ -79,26 +83,24 @@ Ord_rec = torch.ones(img_size, img_size)
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, alpha).to(device)
-prep_op = prep.SplitPoisson(alpha, meas_op).to(device)
+noise_op = noise.Poisson(alpha)
+meas_op = meas.HadamSplit2d(h, M, Ord_rec, noise_model=noise_op, device=device)
+prep_op = prep.UnsplitRescale(alpha)
+rerange = prep.Rerange((0, 1), (-1, 1))
 
 # Measurement vectors
 y = torch.zeros(b, c, 2 * M, device=device)
 
 for ii in range(b):
     torch.manual_seed(0)  # for reproducibility
-    y[ii, :] = noise_op(x[ii, :])
+    y[ii, :] = meas_op(x[ii, :])
 
 
 # %%
 # Pinv
 # ====================================================================
 # Init
-pinv = recon.PinvNet(noise_op, prep_op)
-
-# Use GPU if available
-pinv = pinv.to(device)
+pinv = recon.PinvNet(meas_op, prep_op, device=device)
 
 with torch.no_grad():
     x_pinv = pinv.reconstruct(y)
@@ -114,13 +116,21 @@ with torch.no_grad():
 # ====================================================================
 model_name = "pinv-net_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_512_reg_1e-07_retrained_light.pth"
 
-# Init
-pinvnet = recon.PinvNet(noise_op, prep_op, nnet.Unet())
-pinvnet.eval()
+# /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
+# images in [-1,1]
+denoiser = OrderedDict(
+    {"rerange": rerange, 
+     "denoi": nnet.Unet(), 
+     "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
 
-# Load net and use GPU if available
-train.load_net(model_folder_full / model_name, pinvnet, device, False)
-pinvnet = pinvnet.to(device)
+# load denoiser first (i.e., before instantiating PinvNet)
+train.load_net(model_folder_full / model_name, denoiser, device, False)
+
+# Init
+pinvnet = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
+pinvnet.eval()
 
 with torch.no_grad():
     x_pinvnet = pinvnet.reconstruct(y)
@@ -136,13 +146,23 @@ with torch.no_grad():
 # ====================================================================
 model_name = "lpgd_unet_imagenet_N0_10_m_hadam-split_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_128_reg_1e-07_uit_3_sdec0-9_light.pth"
 
+# /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
+# images in [-1,1]
+denoiser = OrderedDict(
+    {"rerange": rerange, 
+     "denoi": nnet.Unet(), 
+     "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
+
+# load denoiser first (i.e., before instantiating PinvNet)
+train.load_net(model_folder_full / model_name, denoiser, device, False)
+
 # Initialize network
-denoi = nnet.Unet()
-lpgd = recon.LearnedPGD(noise_op, prep_op, denoi, step_decay=0.9)
+lpgd = recon.LearnedPGD(meas_op, prep_op, denoiser, step_decay=0.9)
 lpgd.eval()
 
 # load net and use GPU if available
-train.load_net(model_folder_full / model_name, lpgd, device, False)
 lpgd = lpgd.to(device)
 
 with torch.no_grad():
@@ -160,17 +180,28 @@ with torch.no_grad():
 model_name = "dc-net_unet_imagenet_rect_N0_10_N_128_M_4096_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07_light.pth"
 cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
 
+# /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
+# images in [-1,1]
+denoiser = OrderedDict(
+    {"rerange": rerange, 
+     "denoi": nnet.Unet(), 
+     "rerange_inv": rerange.inverse()}
+)
+denoiser = nn.Sequential(denoiser)
+# this function loads the model into the '.denoi' key present in the second
+# argument. It fails if it does not find the '.denoi' key.
+train.load_net(model_folder_full / model_name, denoiser, device, False)
+
 # Load covariance prior
-Cov = torch.load(cov_name, weights_only=True)
+Cov = torch.load(cov_name, weights_only=True).to(device)
+# divide by 4 because the measurement covariance has been computed on images
+# with values in [-1, 1] (total span 2) whereas our image is in [0, 1] (total
+# span 1). The covariance is thus 2^2 = 4 times larger than expected.
+Cov /= 4
 
 # Init
-denoi = nnet.Unet()  # torch.nn.Identity()
-dcnet = recon.DCNet(noise_op, prep_op, Cov, denoi)
+dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser, device=device)
 dcnet.eval()
-
-# Load net and use GPU if available
-train.load_net(model_folder_full / model_name, dcnet, device, False)
-dcnet = dcnet.to(device)
 
 with torch.no_grad():
     x_dcnet = dcnet.reconstruct(y)
@@ -188,30 +219,37 @@ model_name = "drunet_gray.pth"
 # label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
 nu_list = [25, 45, 45, 45, 45, 45]  # noise levels for each label
 
-# Initialize network
-denoi = drunet.DRUNet()
-pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
-pinvnet.eval()
+# /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
+# images in [-1,1]
+denoiser = OrderedDict(
+    {
+     # No rerange() needed with normalize=False
+     #"rerange": rerange,
+     "denoi": drunet.DRUNet(normalize=False),
+     # No rerange.inverse() here as DRUNet works for images in [0,1] 
+     #"rerange_inv": rerange.inverse(), 
+     }
+)
+denoiser = nn.Sequential(denoiser)
 
-# load_net(model_folder_full / model_name, pinvnet, device, False)
-pinvnet.denoi.load_state_dict(
+# Initialize network
+pinvpnp = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
+pinvpnp.denoi.denoi.load_state_dict(
     torch.load(model_folder_full / model_name, weights_only=True), strict=False
 )
-pinvnet.denoi.eval()
-pinvnet = pinvnet.to(device)
+pinvpnp.eval()
 
 with torch.no_grad():
 
     for ii, nu in enumerate(nu_list):
-        pinvnet.denoi.set_noise_level(nu)
-        x_pinvPnP = pinvnet.reconstruct(y[ii, ...].unsqueeze(0))
+        pinvpnp.denoi.denoi.set_noise_level(nu)
+        x_pinvPnP = pinvpnp.reconstruct(y[ii, ...].unsqueeze(0))
 
         filename = (
             f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_pinv-net_drunet_nlevel_{nu}.png"
         )
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_pinvPnP[0, 0].cpu().detach().numpy(), cmap="gray")
-
 
 # %%
 # DPGD-PnP
@@ -237,7 +275,8 @@ max_iter = 101
 crit_norm = 1e-4
 
 # Init
-dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+dpgdnet = dpgd.DualPGD(meas_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
+dpgdnet = dpgdnet.to(device)
 
 with torch.no_grad():
 

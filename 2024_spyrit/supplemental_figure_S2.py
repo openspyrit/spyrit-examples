@@ -50,8 +50,11 @@ dataset = torchvision.datasets.ImageFolder(image_folder_full, transform=transfor
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=2, shuffle=False)
 
-# select the two images
+# /!\ spyrit v3 works with images in [0,1]
 x, _ = next(iter(dataloader))
+x = (x + 1)/2   
+
+# select the two images
 x_dog = x[1].unsqueeze(0).to(device)
 b, c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
@@ -75,19 +78,21 @@ Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, alpha_list[0]).to(device)
-prep_op = prep.SplitPoisson(alpha_list[0], meas_op).to(device)
+noise_op = noise.Poisson(alpha_list[0])
+meas_op = meas.HadamSplit2d(h, M, Ord_rec, noise_model=noise_op, device=device)
+prep_op = prep.UnsplitRescale(alpha_list[0])
+rerange = prep.Rerange((0, 1), (-1, 1))
+x = x.to(device)
 
 # Measurement vectors
-y_dog = torch.zeros(n_alpha, b, c, 2 * M, device=device)
+y_shape = torch.Size([n_alpha]) + meas_op(x).shape
+y_dog = torch.zeros(y_shape, device=device)
+y_panther = torch.zeros(y_shape, device=device)
 
 for ii, alpha in enumerate(alpha_list):
     noise_op.alpha = alpha
     torch.manual_seed(0)  # for reproducibility
-    # only need to measure, preprocessing is done in the dpgd, later
-    y_dog[ii, :] = noise_op(x_dog)
-
+    y_dog[ii, :] = meas_op(x_dog)
 
 # %%
 # DPGD-PnP
@@ -116,7 +121,7 @@ mu_list = {
 crit_norm = 1e-4
 
 # Init
-dpgdnet = dpgd.DualPGD(noise_op, prep_op, denoi, gamma, 10000, max_iter, crit_norm)
+dpgdnet = dpgd.DualPGD(meas_op, prep_op, denoi, gamma, 10000, max_iter, crit_norm)
 dpgdnet.to(device)
 x_dog_dpgd = torch.zeros(1, 1, img_size, img_size)
 

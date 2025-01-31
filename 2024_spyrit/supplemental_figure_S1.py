@@ -2,9 +2,11 @@
 # Imports
 # --------------------------------------------------------------------
 from pathlib import Path
+from typing import OrderedDict
 
 import torch
 import torchvision
+import torch.nn as nn
 import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
@@ -34,7 +36,6 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-
 # %%
 # Load images
 # --------------------------------------------------------------------
@@ -53,6 +54,9 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=3, shuffle=False)
 
 # select the two images
 x, _ = next(iter(dataloader))
+
+x = (x + 1)/2   # /!\ spyrit v3 works with images in [0,1]
+
 x_dog, x_panther = x[1].unsqueeze(0).to(device), x[2].unsqueeze(0).to(device)
 b, c, h, w = x_dog.shape
 print("Image shape:", x_dog.shape)
@@ -67,7 +71,6 @@ plt.imsave(
     cmap="gray",
 )
 
-
 # %%
 # Simulate measurements for three image intensities
 # --------------------------------------------------------------------
@@ -81,22 +84,23 @@ Ord_rec = torch.ones((img_size, img_size))
 Ord_rec[:, img_size // 2 :] = 0
 Ord_rec[img_size // 2 :, :] = 0
 
-meas_op = meas.HadamSplit(M, h, Ord_rec).to(device)
-noise_op = noise.Poisson(meas_op, alpha_list[0]).to(device)
-prep_op = prep.SplitPoisson(2, meas_op).to(device)
-
+noise_op = noise.Poisson(alpha_list[0])
+meas_op = meas.HadamSplit2d(h, M, Ord_rec, noise_model=noise_op, device=device)
+prep_op = prep.UnsplitRescale(alpha_list[0])
+rerange = prep.Rerange((0, 1), (-1, 1))
+x = x.to(device)
 
 # Measurement vectors
-y_dog = torch.zeros(n_alpha, b, c, 2 * M, device=device)
-y_panther = torch.zeros(n_alpha, b, c, 2 * M, device=device)
+y_shape = torch.Size([n_alpha]) + meas_op(x).shape
+y_dog = torch.zeros(y_shape, device=device)
+y_panther = torch.zeros(y_shape, device=device)
 
 for ii, alpha in enumerate(alpha_list):
     noise_op.alpha = alpha
     torch.manual_seed(0)  # for reproducibility
-    y_dog[ii, :] = noise_op(x_dog)
+    y_dog[ii, :] = meas_op(x_dog)
     torch.manual_seed(0)  # for reproducibility
-    y_panther[ii, :] = noise_op(x_panther)
-
+    y_panther[ii, :] = meas_op(x_panther)
 
 # %%
 # Pinv - PnP
@@ -108,17 +112,24 @@ noise_levels = {
     50: [10, 15, 20, 25, 30],
 }  # noise levels from 0 to 255 for each alpha for PnP
 
-# Initialize network
-denoi = drunet.DRUNet()
-pinvnet = recon.PinvNet(noise_op, prep_op, denoi)
-pinvnet.eval()
+denoiser = OrderedDict(
+    {
+        # No rerange() needed with normalize=False
+        #"rerange": rerange,
+        "denoi": drunet.DRUNet(normalize=False),
+        # No rerange.inverse() here as DRUNet works for images in [0,1] 
+        #"rerange_inv": rerange.inverse(), 
+    }
+)
+denoiser = nn.Sequential(denoiser)
 
-# load_net(model_folder_full / model_name, pinvnet, device, False)
-pinvnet.denoi.load_state_dict(
+
+# Initialize network: PinvNet and PnP denoiser
+pinvnet = recon.PinvNet(meas_op, prep_op, denoiser, device=device)
+pinvnet.denoi.denoi.load_state_dict(
     torch.load(model_folder_full / model_name, weights_only=True), strict=False
 )
-pinvnet.denoi.eval()
-pinvnet = pinvnet.to(device)
+pinvnet.eval()
 
 # Reconstruct and save
 x_pinvnet = torch.zeros(1, 1, img_size, img_size)
@@ -131,7 +142,7 @@ with torch.no_grad():
         # set noise level for PnP denoiser
         for nu in noise_levels[alpha]:
 
-            pinvnet.denoi.set_noise_level(nu)
+            pinvnet.denoi.denoi.set_noise_level(nu)
             x_dog_pinvnet = pinvnet.reconstruct(y_dog[ii, ...])
             x_panther_pinvnet = pinvnet.reconstruct(y_panther[ii, ...])
 

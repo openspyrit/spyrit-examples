@@ -249,7 +249,6 @@ with torch.no_grad():
             full_path, x_dcnet[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
-
 # %%
 # Pinv - PnP
 # ====================================================================
@@ -257,9 +256,11 @@ model_name = "drunet_gray.pth"
 noise_levels = [35, 55]  # noise levels from 0 to 255 for each alpha
 denoiser = OrderedDict(
     {
-        "rerange": rerange,
-        "denoi": drunet.DRUNet(),
-        "rerange_inv": rerange.inverse(),
+        # No rerange() needed with normalize=False
+        #"rerange": rerange,
+        "denoi": drunet.DRUNet(normalize=False),
+        # No rerange.inverse() here as DRUNet works for images in [0,1] 
+        #"rerange_inv": rerange.inverse(), 
     }
 )
 denoiser = nn.Sequential(denoiser)
@@ -287,7 +288,6 @@ with torch.no_grad():
         plt.imsave(
             full_path, x_pinvpnp[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
-
 
 # %%
 # DPGD-PnP
@@ -327,5 +327,3 @@ with torch.no_grad():
         plt.imsave(
             full_path, x_dpgd[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
-
-# %%
