@@ -22,9 +22,9 @@ import utility_dpgd as dpgd
 # %%
 # General Parameters
 # --------------------------------------------------------------------
-img_size = 128  # image size
-batch_size = 128
-n_batches = 3  # iterate over how many batches to get statistical data
+img_size = 128      # image size
+batch_size = 64
+n_batches = 160 #None    # None -> all images 
 
 # Experimental
 val_folder = "data/ILSVRC2012/val/"     # statistical analysis
@@ -51,8 +51,6 @@ print("Using device:", device)
 dataloader = stats.data_loaders_ImageNet(
     val_folder_full, val_folder_full, img_size, batch_size, normalize=False
 )["val"]
-metrics_eval = ["nrmse", "ssim"]
-
 
 # %%
 # Simulate measurements for three image intensities
@@ -72,6 +70,16 @@ meas_op = meas.HadamSplit2d(img_size, M, Ord_rec, noise_model=noise_op, device=d
 prep_op = prep.UnsplitRescale(alpha_list[0])
 rerange = prep.Rerange((0, 1), (-1, 1))
 
+# Results files
+for ii, alpha in enumerate(alpha_list):
+    
+    metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
+    with open(metric_file, 'a') as f:
+        
+        f.write(f'batch_size = {batch_size}\n')
+        f.write(f'n_batches = {n_batches}\n')
+        f.write('\n')
+
 # %%
 # Pinv
 # ====================================================================
@@ -85,22 +93,38 @@ print("\nPinv reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        print(f"For {alpha=}")
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # pinv.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        pinv.acqu.noise_model.alpha = alpha      
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # pinv.recon_modules.prep.alpha = alpha # works too
-        pinv.prep.alpha = alpha
-        
-        results = aux.eval_model_metrics_batch_cum(
-            pinv, dataloader, device, metrics_eval[0:1], n_batches
-        )
-        print(results)
-
+        with open(metric_file, 'a') as f:
+            
+            print(f"For {alpha=}")
+            torch.manual_seed(0)  # for reproducibility
+            
+            # Set alpha for the simulation of the measurements
+            # pinv.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            pinv.acqu.noise_model.alpha = alpha      
+            
+            # Set alpha for reconstruction
+            # pinv.recon_modules.prep.alpha = alpha # works too
+            pinv.prep.alpha = alpha
+            
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(pinv, dataloader, device, num_batchs=n_batches, img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(pinv, dataloader, device, num_batchs=n_batches, img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list
+            f.write(f'\\pinv{{}} & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n')
+    
 del pinv
 
 # %%
@@ -127,21 +151,40 @@ print("\nPinv-Net reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        print(f"For {alpha=}")
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # pinvnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        pinvnet.acqu.noise_model.alpha = alpha      
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # pinvnet.recon_modules.prep.alpha = alpha # works too
-        pinvnet.prep.alpha = alpha 
-        
-        results = aux.eval_model_metrics_batch_cum(
-            pinvnet, dataloader, device, metrics_eval, n_batches
-        )
-        print(results)
+        with open(metric_file, 'a') as f:
+            print(f"For {alpha=}")
+            torch.manual_seed(0)  # for reproducibility
+            
+            # Set alpha for the simulation of the measurements
+            # pinvnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            pinvnet.acqu.noise_model.alpha = alpha      
+            
+            # Set alpha for reconstruction
+            # pinvnet.recon_modules.prep.alpha = alpha # works too
+            pinvnet.prep.alpha = alpha 
+            
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(pinvnet, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(pinvnet, dataloader, device, 
+                                                  num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list
+            f.write(f'\\pinet{{}} & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n')
 
 del pinvnet
 
@@ -171,21 +214,40 @@ print("\nLPGD reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        print(f"For {alpha=}")
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # lpgd.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        lpgd.acqu.noise_model.alpha = alpha      
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # lpgd.recon_modules.prep.alpha = alpha # works too
-        lpgd.prep.alpha = alpha 
-
-        results = aux.eval_model_metrics_batch_cum(
-            lpgd, dataloader, device, metrics_eval, n_batches
-        )
-        print(results)
+        with open(metric_file, 'a') as f:
+            print(f"For {alpha=}")
+            torch.manual_seed(0)  # for reproducibility
+            
+            # Set alpha for the simulation of the measurements
+            # lpgd.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            lpgd.acqu.noise_model.alpha = alpha      
+            
+            # Set alpha for reconstruction
+            # lpgd.recon_modules.prep.alpha = alpha # works too
+            lpgd.prep.alpha = alpha 
+            
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(lpgd, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(lpgd, dataloader, device, 
+                                                  num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list
+            f.write(f'\\lpgd{{}} & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n')
 
 del lpgd
 
@@ -222,21 +284,41 @@ print("\nDC-Net reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        print(f"For {alpha=}")
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # dcnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        dcnet.acqu.noise_model.alpha = alpha      
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # dcnet.recon_modules.prep.alpha = alpha # works too
-        dcnet.prep.alpha = alpha 
-        
-        results = aux.eval_model_metrics_batch_cum(
-            dcnet, dataloader, device, metrics_eval, n_batches
-        )
-        print(results)
+        with open(metric_file, 'a') as f:
+            
+            print(f"For {alpha=}")
+            torch.manual_seed(0)  # for reproducibility
+            
+            # Set alpha for the simulation of the measurements
+            # dcnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            dcnet.acqu.noise_model.alpha = alpha      
+            
+            # Set alpha for reconstruction
+            # dcnet.recon_modules.prep.alpha = alpha # works too
+            dcnet.prep.alpha = alpha 
+            
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(dcnet, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(dcnet, dataloader, device, 
+                                                  num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list
+            f.write(f'\\dcnet{{}} & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n')
 
 del dcnet
 
@@ -246,9 +328,9 @@ del dcnet
 model_name = "drunet_gray.pth"
 #noise_levels = [115, 50, 20]  # noise levels from 0 to 255 for each alpha
 noise_levels = [
-    [115],   # 2 photons
-    [50],    # 10 photons
-    [20],    # 50 photons
+    115,   # 2 photons
+    50,    # 10 photons
+    20,    # 50 photons
 ]
 
 # Initialize network
@@ -273,28 +355,68 @@ print("\nPinv-PnP reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # pinvpnp.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        pinvpnp.acqu.noise_model.alpha = alpha
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # pinvpnp.recon_modules.prep.alpha = alpha # works too
-        pinvpnp.prep.alpha = alpha 
+        with open(metric_file, 'a') as f:
+            
+            torch.manual_seed(0)  # for reproducibility
         
-        for nu in noise_levels[ii]:
+            # Set alpha for the simulation of the measurements
+            # pinvpnp.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            pinvpnp.acqu.noise_model.alpha = alpha
+            
+            # Set alpha for reconstruction
+            # pinvpnp.recon_modules.prep.alpha = alpha # works too
+            pinvpnp.prep.alpha = alpha 
+            
+            nu = noise_levels[ii]
             pinvpnp.denoi.denoi.set_noise_level(nu)
-            print(f"For {alpha=} and {nu=}")
-    
-            results = aux.eval_model_metrics_batch_cum(
-                pinvpnp, dataloader, device, metrics_eval, n_batches
-            )
-            print(results)
+            print(f"For alpha={alpha} and nu={nu}")
+            
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(pinvpnp, dataloader, device, 
+                                                  num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(pinvpnp, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list
+            f.write(f'\\pipnp{{}} ($\\nu={nu}$) & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n\n')
 
 del pinvpnp
+del denoiser
 
 # %% DPGD-PnP
+# Fewer images than before to reduce the computation time
+batch_size = 64 
+n_batches = 6  
+dataloader = stats.data_loaders_ImageNet(
+    val_folder_full, val_folder_full, img_size, batch_size, normalize=False
+)["val"]
+
+# Results files
+for ii, alpha in enumerate(alpha_list):
+    
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
+        
+        with open(metric_file, 'a') as f:
+        
+        f.write(f'batch_size = {batch_size}\n')
+        f.write(f'n_batches = {n_batches}\n')
+        f.write('\n')
+
+  
 # load denoiser
 n_channel, n_feature, n_layer = 1, 100, 20
 model_name = "DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20.pth"
@@ -313,9 +435,9 @@ gamma = 1 / img_size**2
 max_iter = 101
 crit_norm = 1e-4
 mu_list = [
-    [6000],  # 2 photons
-    [3500],  # 10 photons
-    [1500],  # 50 photons
+    6000,  # 2 photons
+    3500,  # 10 photons
+    1500,  # 50 photons
 ]
 
 # Init
@@ -326,23 +448,45 @@ print("\nDPGD-PnP reconstruction metrics")
 
 with torch.no_grad():
     for ii, alpha in enumerate(alpha_list):
-        torch.manual_seed(0)  # for reproducibility
         
-        # Set alpha for the simulation of the measurements
-        # dpgdnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
-        dpgdnet.acqu.noise_model.alpha = alpha
+        metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
-        # Set alpha for reconstruction
-        # dpgdnet.recon_modules.prep.alpha = alpha # works too
-        dpgdnet.prep.alpha = alpha 
-        
-        for mu in mu_list[ii]:
+        with open(metric_file, 'a') as f:
+            
+            torch.manual_seed(0)  # for reproducibility
+            
+            # Set alpha for the simulation of the measurements
+            # dpgdnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
+            dpgdnet.acqu.noise_model.alpha = alpha
+            
+            # Set alpha for reconstruction
+            # dpgdnet.recon_modules.prep.alpha = alpha # works too
+            dpgdnet.prep.alpha = alpha 
+            
+            mu = mu_list[ii]
             dpgdnet.mu = mu
             
-            print(f"For {alpha=} and {mu=}")
-            results = aux.eval_model_metrics_batch_cum(
-                dpgdnet, dataloader, device, metrics_eval, n_batches
-            )
-            print(results)
+            print(f"For alpha={alpha} and mu={mu}")
             
+            # PSNR
+            mean_psnr, var_psnr = stats.stat_psnr(dpgdnet, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_psnr = mean_psnr.cpu().numpy()
+            std_psnr = torch.sqrt(var_psnr).cpu().numpy()
+            print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
+            
+            # SSIM
+            mean_ssim, var_ssim = stats.stat_ssim(dpgdnet, dataloader, 
+                                                  device, num_batchs=n_batches, 
+                                                  img_dyn=1.0)
+            mean_ssim = mean_ssim.cpu().numpy()
+            std_ssim = torch.sqrt(var_ssim).cpu().numpy()
+            print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
+            
+            # sample list 
+            f.write(f'\\dfbpnp{{}} ($\\mu={mu}$) & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
+            f.write('\n')
+                
 del dpgdnet
+del denoi
