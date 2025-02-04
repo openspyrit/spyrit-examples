@@ -66,8 +66,13 @@ def split_meas2img(measurements, meas_operator):
     meas_neg = meas[1::2]
 
     # fill img_pos and img_neg with the measurements
-    img_pos[meas_operator.indices[:M]] = meas_pos
-    img_neg[meas_operator.indices[:M]] = meas_neg
+    if hasattr(meas_operator, 'indices'):
+        indices = meas_operator.indices[:M]
+    else:
+        indices = np.arange(0, h*w, dtype=int)
+        
+    img_pos[indices] = meas_pos
+    img_neg[indices] = meas_neg
 
     # concatenate and reshape the images
     img = torch.cat((img_pos.reshape(h, w), img_neg.reshape(h, w)), dim=0)
