@@ -27,14 +27,14 @@ import utility_dpgd as dpgd
 # General Parameters
 # --------------------------------------------------------------------
 img_size = 128  # image size
-batch_size = 4
-n_batches = 2  # iterate over how many batches to get statistical data
+batch_size = 128
+n_batches = 30
 
 # Experimental
 val_folder = "data/ILSVRC2012/val/"  # used for statistical analysis
 model_folder = "model/"  # reconstruction models
 stat_folder = "stat/"  # statistics
-recon_folder = "recon/table_1/"  # table output
+recon_folder = "recon/table/"  # table output
 
 # Full paths
 val_folder_full = Path.cwd() / Path(val_folder)
@@ -152,82 +152,3 @@ with torch.no_grad():
 
 del pinvpnp
 del denoiser
-
-# %% DPGD-PnP
-# load denoiser
-n_channel, n_feature, n_layer = 1, 100, 20
-model_name = "DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20.pth"
-denoi = dpgd.load_model(
-    pth=(model_folder_full / model_name).as_posix(),
-    n_ch=n_channel,
-    features=n_feature,
-    num_of_layers=n_layer,
-)
-
-denoi.module.update_lip((1, 50, 50))
-denoi.eval()
-
-# Reconstruction hyperparameters
-gamma = 1 / img_size**2
-max_iter = 101
-crit_norm = 1e-4
-mu_list = [
-    [2000, 4000, 4500, 5000, 5500, 6000, 8000, 10000],  # 2 photons
-    [1000, 2000, 2500, 3000, 3500, 4000, 5000],         # 10 photons
-    [500, 1000, 1200, 1500, 1800, 2000, 3000, 4000],    # 50 photons
-]
-
-# Init
-dpgdnet = dpgd.DualPGD(meas_op, prep_op, denoi, gamma, mu_list[0], max_iter, crit_norm)
-dpgdnet = dpgdnet.to(device)
-
-print("\nDPGD-PnP reconstruction metrics")
-
-with torch.no_grad():
-    for ii, alpha in enumerate(alpha_list):
-        
-        metric_file = recon_folder_full / 'table_S2.tex'
-        
-        with open(metric_file, 'a') as f:
-            
-            f.write('\n')
-            f.write(f'$\\alpha={alpha}$ & & \\\\ \n')
-            
-            # Set alpha for the simulation of the measurements
-            # dpgdnet.acqu_modules.acqu.noise_model.alpha = alpha # works too
-            dpgdnet.acqu.noise_model.alpha = alpha
-            
-            # Set alpha for reconstruction
-            # dpgdnet.recon_modules.prep.alpha = alpha # works too
-            dpgdnet.prep.alpha = alpha 
-            
-            for mu in mu_list[ii]:
-                
-                torch.manual_seed(0)  # for reproducibility
-                
-                dpgdnet.mu = mu
-                
-                print(f"For alpha={alpha} and mu={mu}")
-                
-                # PSNR
-                mean_psnr, var_psnr = stats.stat_psnr(dpgdnet, dataloader, 
-                                                      device, num_batchs=n_batches, 
-                                                      img_dyn=1.0)
-                mean_psnr = mean_psnr.cpu().numpy()
-                std_psnr = torch.sqrt(var_psnr).cpu().numpy()
-                print(f"psnr = {mean_psnr:.2f} +/- {std_psnr:.2f} dB")
-                
-                # SSIM
-                mean_ssim, var_ssim = stats.stat_ssim(dpgdnet, dataloader, 
-                                                      device, num_batchs=n_batches, 
-                                                      img_dyn=1.0)
-                mean_ssim = mean_ssim.cpu().numpy()
-                std_ssim = torch.sqrt(var_ssim).cpu().numpy()
-                print(f"ssim = {mean_ssim:.3f} +/- {std_ssim:.3f}")
-                
-                # sample list 
-                f.write(f'$\\mu={mu}$ & {mean_psnr:.2f} ({std_psnr:.2f}) & {mean_ssim:.3f} ({std_ssim:.3f}) \\\\')
-
-del dpgdnet
-del denoi
-
