@@ -23,8 +23,8 @@ import utility_dpgd as dpgd
 # General Parameters
 # --------------------------------------------------------------------
 img_size = 128      # image size
-batch_size = 64
-n_batches = 160 #None    # None -> all images 
+batch_size = 512
+n_batches = None    # None -> all images 
 
 # Experimental
 val_folder = "data/ILSVRC2012/val/"     # statistical analysis
@@ -187,6 +187,7 @@ with torch.no_grad():
             f.write('\n')
 
 del pinvnet
+torch.cuda.empty_cache()
 
 # %%
 # LPGD
@@ -250,6 +251,7 @@ with torch.no_grad():
             f.write('\n')
 
 del lpgd
+torch.cuda.empty_cache()
 
 # %%
 # DC-Net
@@ -321,6 +323,8 @@ with torch.no_grad():
             f.write('\n')
 
 del dcnet
+del Cov
+torch.cuda.empty_cache()
 
 # %%
 # Pinv - PnP
@@ -396,11 +400,13 @@ with torch.no_grad():
 
 del pinvpnp
 del denoiser
+torch.cuda.empty_cache()
 
 # %% DPGD-PnP
 # Fewer images than before to reduce the computation time
-batch_size = 64 
-n_batches = 6  
+batch_size = 128
+n_batches = 5
+
 dataloader = stats.data_loaders_ImageNet(
     val_folder_full, val_folder_full, img_size, batch_size, normalize=False
 )["val"]
@@ -411,12 +417,10 @@ for ii, alpha in enumerate(alpha_list):
         metric_file = recon_folder_full / f'table_1_alpha_{alpha}.tex'
         
         with open(metric_file, 'a') as f:
-        
             f.write(f'batch_size = {batch_size}\n')
             f.write(f'n_batches = {n_batches}\n')
             f.write('\n')
 
-  
 # load denoiser
 n_channel, n_feature, n_layer = 1, 100, 20
 model_name = "DFBNet_l1_patchsize=50_varnoise0.1_feat_100_layers_20.pth"
@@ -490,3 +494,4 @@ with torch.no_grad():
                 
 del dpgdnet
 del denoi
+torch.cuda.empty_cache()
