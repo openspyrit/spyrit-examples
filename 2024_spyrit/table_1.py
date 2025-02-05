@@ -412,9 +412,9 @@ for ii, alpha in enumerate(alpha_list):
         
         with open(metric_file, 'a') as f:
         
-        f.write(f'batch_size = {batch_size}\n')
-        f.write(f'n_batches = {n_batches}\n')
-        f.write('\n')
+            f.write(f'batch_size = {batch_size}\n')
+            f.write(f'n_batches = {n_batches}\n')
+            f.write('\n')
 
   
 # load denoiser
