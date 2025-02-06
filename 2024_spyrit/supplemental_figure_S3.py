@@ -217,7 +217,7 @@ with torch.no_grad():
 # ====================================================================
 model_name = "drunet_gray.pth"
 # label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
-nu_list = [25, 45, 45, 45, 45, 45]  # noise levels for each label
+nu_list = [25, 50, 50, 50, 50, 50]  # noise levels for each label
 
 # /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
 # images in [-1,1]
@@ -287,4 +287,3 @@ with torch.no_grad():
         filename = f"sim{ii}_{img_size}_N0_{alpha}_M_{M}_rect_dfb-net_dfb_mu_{mu}.png"
         full_path = recon_folder_full / filename
         plt.imsave(full_path, x_dpgd[0, 0].cpu().detach().numpy(), cmap="gray")
-# %%

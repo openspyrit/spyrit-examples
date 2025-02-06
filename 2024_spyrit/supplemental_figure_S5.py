@@ -220,7 +220,7 @@ with torch.no_grad():
 # ====================================================================
 model_name = "drunet_gray.pth"
 # label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
-nu_list = [70, 115, 115, 100, 100, 100]  # noise levels for each label
+nu_list = [70, 130, 130, 130, 130, 130]  # noise levels for each label
 
 # /!\ spyrit v3 works with images in [0,1], but denoisers were trained for 
 # images in [-1,1]

@@ -271,7 +271,7 @@ denoi.eval()
 
 # Reconstruction hyperparameters
 # label_list = ['brain', 'dog', 'panther', 'box', 'bird', 'car']
-mu_list = [700, 1500, 1500, 1500, 1500, 1500]  # noise levels for each label
+mu_list = [700, 1200, 1200, 1200, 1200, 1200]  # noise levels for each label
 gamma = 1 / img_size**2
 max_iter = 101
 crit_norm = 1e-4

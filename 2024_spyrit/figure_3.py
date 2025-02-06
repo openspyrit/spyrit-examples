@@ -150,6 +150,9 @@ with torch.no_grad():
             full_path, x_pinvnet[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
+del denoiser
+del pinvnet
+torch.cuda.empty_cache()
 
 # %%
 # LPGD
@@ -185,6 +188,10 @@ with torch.no_grad():
             full_path, x_lpgd[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
+
+del denoiser
+del lpgd
+torch.cuda.empty_cache()
 
 # %%
 # DC-Net
@@ -225,13 +232,15 @@ with torch.no_grad():
             full_path, x_dcnet[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
+del denoiser
+del dcnet
+torch.cuda.empty_cache()
 
 # %%
 # Pinv - PnP
 # ====================================================================
 model_name = "drunet_gray.pth"
-noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
-noise_levels = [115, 45, 20]  # noise levels from 0 to 255 for each alpha
+noise_levels = [130, 50, 20]  # noise levels from 0 to 255 for each alpha
 denoiser = OrderedDict(
     {
         # No rerange() needed with normalize=False
@@ -270,6 +279,9 @@ with torch.no_grad():
             full_path, x_pinvpnp[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
+del denoiser
+del pinvpnp
+torch.cuda.empty_cache()
 
 # %%
 # DPGD-PnP
@@ -290,7 +302,7 @@ denoi.eval()
 # Reconstruction hyperparameters
 gamma = 1 / img_size**2
 max_iter = 101
-mu_list = [6000, 3500, 1500]
+mu_list = [6000, 3500, 1200]
 crit_norm = 1e-4
 
 # Init
@@ -311,4 +323,6 @@ with torch.no_grad():
             full_path, x_dpgd[ii, 0, 0, :, :].cpu().detach().numpy(), cmap="gray"
         )
 
-# %%
+del denoi
+del dpgdnet
+torch.cuda.empty_cache()
