@@ -107,7 +107,7 @@ for ii, alpha in enumerate(alpha_list):
 # ====================================================================
 model_name = "drunet_gray.pth"
 noise_levels = {
-    2: [80, 90, 100, 110, 115],
+    2: [100, 105, 110, 115, 120, 125, 130], #80, 90, 100, 110, 115
     10: [20, 25, 30, 40, 50],
     50: [10, 15, 20, 25, 30],
 }  # noise levels from 0 to 255 for each alpha for PnP
@@ -142,6 +142,8 @@ with torch.no_grad():
         # set noise level for PnP denoiser
         for nu in noise_levels[alpha]:
 
+            print(f"For alpha={alpha} and nu={nu}")
+
             pinvnet.denoi.denoi.set_noise_level(nu)
             x_dog_pinvnet = pinvnet.reconstruct(y_dog[ii, ...])
             x_panther_pinvnet = pinvnet.reconstruct(y_panther[ii, ...])
@@ -164,5 +166,3 @@ with torch.no_grad():
                 x_panther_pinvnet[0, 0].cpu().detach().numpy(),
                 cmap="gray",
             )
-
-# %%
