@@ -21,11 +21,12 @@ conda activate new-env
 ```
 Our notebook primarily relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 2.1.
 ```shell
+conda install pip
 pip install spyrit==2.1
+pip install ipykernel
 pip install scikit-image
 pip install h5py
 ```
-
 
 # Get the scripts and data
 1. Get source code from GitHub

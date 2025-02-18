@@ -42,7 +42,7 @@ There are two options:
 
 1. Install SPyRiT and a few more packages:
     ```shell
-    pip install spyrit==2.3.3
+    pip install spyrit==3
     pip install girder-client
     pip install scikit-image
     ```
@@ -112,6 +112,6 @@ The directory structure should be as follows:
 
 2. To reproduce the reconstructions in Figures 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images will be saved in `\2024_spyrit\recon\`
 
-3. Run `table_1.py` to reproduce the metrics in Table 1. To limit the computation time, the code only runs on a subset of the ImageNet validation set. For this reason, the metrics obtained are close to, but not equal to, those reported in the paper.
+3. Run `table_1.py` to reproduce the metrics in Table 1.
 
-4. Run `supplemental_figure_Sxx.py` for `xx` in `{1, ..., 8}` to reproduce all the figures in the supplemental document. 
+4. Run `supplemental_figure_Sxx.py` for `xx` in `{1, ..., 8}` to reproduce all the figures in the supplemental document.
