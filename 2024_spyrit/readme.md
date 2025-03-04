@@ -14,12 +14,12 @@ We provide here the code to reproduce the results reported in
 
 There are two options:
 
-1. You can clone the entire `spyrit-examples` repository, which contains code for some other papers.
+1. Clone the entire `spyrit-examples` repository, which contains code for some other papers.
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
     ```
 
-2. Or you can use the `sparse-checkout` command to get only the code corresponding to this paper.
+2. Or use the `sparse-checkout` command to get only the code corresponding to this paper.
     ```shell
     git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
     cd spyrit-examples
@@ -40,9 +40,9 @@ There are two options:
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-1. Install SPyRiT and a few more packages:
+1. Install SPyRiT and a few more packages (until release of v3, checkout the `spyrit_dev` branch):
     ```shell
-    pip install spyrit==3
+    pip install spyrit
     pip install girder-client
     pip install scikit-image
     ```

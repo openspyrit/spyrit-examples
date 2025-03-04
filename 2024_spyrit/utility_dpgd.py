@@ -387,7 +387,7 @@ class DualPGD(nn.Module):
 
             # init solution and dual variable
             x = self.acqu.fast_pinv(m)
-            x = self.acqu.unvectorize(x)
+            #x = self.acqu.unvectorize(x)
             u = None
 
             for i in range(self.iter_stop):
