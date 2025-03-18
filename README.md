@@ -41,6 +41,12 @@ Some of research contributions based on the SPyRiT package:
 
 Some of educational material based on the SPYRIT toolbox
 
+### 2025
+
+* [Deep image reconstruction using the PyTorch and SPyRiT 3.0 packages](./2025_DLMIS/readMe.md) (DLMIS 25)
+
+> XX, N Ducros, XX. Hands-on session XX. [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
+
 ### 2023
 
 * [Deep image reconstruction using the PyTorch and SPyRiT packages](./2023_DLMIS/readMe.md) (DLMIS 23)
