@@ -20,13 +20,15 @@ We recommend using a virtual (e.g., conda) environment.
 conda create --name new-env
 conda activate new-env
 ```
-Our notebook primarily relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.
+Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.
 ```shell
 conda install pip
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 pip install spyrit==3.0
 pip install ipykernel
 pip install scikit-image
 pip install h5py
+pip install opencv-python
 ```
 
 # Get the scripts and data
