@@ -8,7 +8,7 @@ The hands-on session followed a lecture on the topic.
 * [Slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) 
 * [Video](https://www.youtube.com/)
 
-*Authors:* (version 2025) XX, N Ducros, XX     
+*Authors:* (version 2025) N Ducros, S Hariga, T Kaprelian, Lorena Leon, T Maitre.  
 *Authors:* (version 2023) L Amador, E Chen, N Ducros, H-J Ling, K Mom, J Puig, T Grenier, E Saillard,      
 *Authors:* (version 2021): N Ducros, T Leuliet, A Lorente Mur, Louise Friot-Giroux
 
