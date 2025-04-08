@@ -21,13 +21,13 @@ from torchvision import transforms
 import argparse
 from pathlib import Path
 
-from model_radon import Linear, radonSpecifyAngles
+from model_radon import radonSpecifyAngles
 import pickle
-from spyrit.core.prep import DirectPoisson
 from spyrit.core.recon import PinvNet
-from spyrit.core.noise import NoNoise
 from spyrit.core.train import train_model, Weight_Decay_Loss, save_net, Train_par
 from spyrit.core.nnet import ConvNet
+from spyrit.core.meas import Linear
+
 
 
 if __name__ == "__main__":
@@ -99,20 +99,22 @@ if __name__ == "__main__":
     # 3. Define a Neural Network
     # ========================================================================= 
     Areduced = radonSpecifyAngles(A, opt.angle_nb)
-    meas = Linear(Areduced, True, reg = 1e-5)
-    meas.h, meas.w = opt.img_size, opt.img_size
-   
-    noise = NoNoise(meas)        
-    prep = DirectPoisson(1.0, meas)
+    meas = Linear(torch.from_numpy(Areduced), 
+                meas_shape=(opt.img_size, opt.img_size),  
+                device=device)
     denoi = ConvNet()
    
-    model = PinvNet(noise, prep, denoi)
-        
+    model = PinvNet(meas, 
+                nn.Identity(), 
+                denoi, 
+                store_H_pinv=True, 
+                device=device)
+
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
 
-    model = model.to(device)
+    #model = model.to(device)
 
     if opt.checkpoint_model:
         model.load_state_dict(torch.load(opt.checkpoint_model))
@@ -135,7 +137,7 @@ if __name__ == "__main__":
            opt.num_epochs, opt.lr, opt.step_size,
            opt.gamma, opt.batch_size, opt.reg
            )
-    title = opt.model_root / ('NET_' + suffix)
+    title = opt.model_root / ('NET_v3_' + suffix + '.pth')
     
     print(title)
     Path(opt.model_root).mkdir(parents=True, exist_ok=True)
@@ -156,6 +158,6 @@ if __name__ == "__main__":
     #- save training history
     params = Train_par(opt.batch_size, opt.lr, opt.img_size,reg=opt.reg);
     params.set_loss(train_info);
-    train_path = opt.model_root / ('TRAIN_' + suffix +'.pkl')
+    train_path = opt.model_root / ('TRAIN_v3_' + suffix +'.pkl')
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
