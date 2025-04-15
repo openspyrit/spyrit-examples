@@ -45,7 +45,7 @@ Some of educational material based on the SPYRIT toolbox
 
 * [Deep image reconstruction using the PyTorch and SPyRiT 3.0 packages](./2025_DLMIS/readMe.md) (DLMIS 25)
 
-> XX, N Ducros, XX. Hands-on session XX. [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
+> N Ducros, S Hariga, T Kaprelian, L Leon, T Maitre. Hands-on session 4. [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
 
 ### 2023
 
