@@ -1,6 +1,6 @@
 # Hands-on Session XX: Image Reconstruction using the PyTorch and SPyRiT Packages
 
-This code was used during a hands-on session given at the [Deep Learning for Medical Imaging School 2023](https://deepimaging2023.sciencesconf.org/).
+This code was used during a hands-on session given at the [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
 
 The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
 
