@@ -1,4 +1,4 @@
-# Hands-on Session XX: Image Reconstruction using the PyTorch and SPyRiT Packages
+# Hands-on Session: Image Reconstruction using PyTorch and the SPyRiT Package
 
 This code was used during a hands-on session given at the [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
 
@@ -8,13 +8,28 @@ The hands-on session followed a lecture on the topic.
 * [Slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) 
 * [Video](https://www.youtube.com/)
 
-*Authors:* (version 2025) N Ducros, S Hariga, T Kaprelian, Lorena Leon, T Maitre.  
+*Authors:* (version 2025) N Ducros, S Hariga, T Kaprelian, L Leon, T Maitre.  
 *Authors:* (version 2023) L Amador, E Chen, N Ducros, H-J Ling, K Mom, J Puig, T Grenier, E Saillard,      
 *Authors:* (version 2021): N Ducros, T Leuliet, A Lorente Mur, Louise Friot-Giroux
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
-# Install the dependencies
+
+# Option#1:  Using SaturnCloud
+
+1. In the 'Hardware' panel, choose `GPU`
+1. In the 'Environment' panel, type
+    * `htop zip unzip python3-opencv` in the 'Apt' tab
+    * `opencv-python` in the 'Pip' tab
+
+1. In the 'Git repositories' panel, add 
+    `git@github.com:openspyrit/spyrit-examples.git`
+ 
+You can also check this [video](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/LaunchSaturn.mp4).
+
+# Option#2: Using your own computer
+
+### Install the dependencies
 We recommend using a virtual (e.g., conda) environment.
 ```shell
 conda create --name new-env
@@ -31,7 +46,7 @@ pip install h5py
 pip install opencv-python
 ```
 
-# Get the scripts and data
+### Get the scripts and data
 1. Get source code from GitHub
    
         git clone https://github.com/openspyrit/spyrit-examples.git        
