@@ -2,11 +2,10 @@
 
 This code was used during a hands-on session given at the [Deep Learning for Medical Imaging School 2025](https://deepimaging2025.sciencesconf.org/).
 
-The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
+The session was a practical introduction to image reconstruction, considering the limited-angle computed tomography problem. Participants were invited to run the cells, answer the questions, and fill in the blanks in the code of `main.ipynb`. All answers and the solution code are given in `main_with_answers.ipynb`
 
 The hands-on session followed a lecture on the topic. 
-* [Slides](https://www.creatis.insa-lyon.fr/~ducros/hands_on/2023_DLMIS_ducros.pdf) 
-* [Video](https://www.youtube.com/)
+* [Slides](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/2025_DLMIS_Ducros.pdf) 
 
 *Authors:* (version 2025) N Ducros, S Hariga, T Kaprelian, L Leon, T Maitre.  
 *Authors:* (version 2023) L Amador, E Chen, N Ducros, H-J Ling, K Mom, J Puig, T Grenier, E Saillard,      
