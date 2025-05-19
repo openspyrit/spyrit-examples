@@ -1,12 +1,11 @@
-# SPyRiT: an open source package for single-pixel imaging based on deep learning
+# SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning
 
-We provide here the code to reproduce the results reported in
+We provide the code to reproduce the results reported in
 
-> JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT: an open source package for single-pixel imaging based on deep learning," Preprint (2024). 
-
-*Preprint view (main PDF + supplemental document):* https://hal.science/hal-04662876
-
-*Preprint download (main PDF):* https://hal.science/hal-04662876/document
+> JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning," Optics Express (2025). 
+* [DOI (open access)](https://doi.org/10.1364/OE.559227)
+* [Main PDF](https://hal.science/hal-04662876/document)
+* [Supplementary PDF](https://hal.science/hal-04662876/preview/supplemental_v3.pdf)
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
@@ -23,15 +22,15 @@ There are two options:
     ```shell
     git clone -n --depth=1 --filter=tree:0 https://github.com/openspyrit/spyrit-examples
     cd spyrit-examples
-    git sparse-checkout set 2024_spyrit
+    git sparse-checkout set 2025_spyrit_v3
     git checkout
     ```
 ## Installation
 
 1. Create a conda environment
     ```shell
-    conda create --name spyrit_2024
-    conda activate spyrit_2024
+    conda create --name spyrit_v3
+    conda activate spyrit_v3
     ```
 
 1. Install pytorch using conda. E.g.,
@@ -40,18 +39,18 @@ There are two options:
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-1. Install SPyRiT and a few more packages (until release of v3, checkout the `spyrit_dev` branch):
+1. Install SPyRiT v3 and a few more packages
     ```shell
-    pip install spyrit
+    pip install spyrit==3.0.1
     pip install girder-client
     pip install scikit-image
     ```
 
 ## Download the models and data
 
-Run the `download_data.py` script from the `2024_spyrit` subfolder
+Run the `download_data.py` script from the `2025_spyrit_v3` subfolder
 ```shell
-cd spyrit-examples/2024_spyrit/ 
+cd spyrit-examples/2025_spyrit_v3/ 
 python download_data.py
 ```
 
@@ -75,7 +74,7 @@ The directory structure should be as follows:
 
 ```
 |---spyrit-examples
-|   |---2024_spyrit
+|   |---2025_spyrit_v3
 |   |   |---data
 |   |   |   |---ILSVRC2012
 |   |   |   |   |---test
@@ -110,7 +109,7 @@ The directory structure should be as follows:
 ## How to reproduce the results of the paper?
 1. To reproduce the sampling masks, acquisition matrices, measurements, and images in Figure 2, run `figure_2.py`. 
 
-2. To reproduce the reconstructions in Figures 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images will be saved in `\2024_spyrit\recon\`
+2. To reproduce the reconstructions in Figures 3 and 4, run `figure_3.py` and `figure_4.py`, respectively. All images will be saved in `\2025_spyrit_v3\recon\`
 
 3. Run `table_1.py` to reproduce the metrics in Table 1.
 
