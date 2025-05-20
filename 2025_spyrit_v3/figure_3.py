@@ -49,7 +49,7 @@ img_size = 128  # image size
 print("Loading image...")
 
 image_path = image_folder_full / "cropped/ILSVRC2012_val_00000003_crop.JPEG"
-x = torchvision.io.read_image(image_path, torchvision.io.ImageReadMode.GRAY)
+x = torchvision.io.read_image(str(image_path), torchvision.io.ImageReadMode.GRAY)
 # Resize image
 x = torchvision.transforms.functional.resize(x, (img_size, img_size)).reshape(
     1, 1, img_size, img_size
