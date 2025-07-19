@@ -5,7 +5,7 @@ We provide the code to reproduce the results reported in
 > JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning," Optics Express (2025). 
 * [DOI (open access)](https://doi.org/10.1364/OE.559227)
 * [Main PDF](https://hal.science/hal-04662876/document)
-* [Supplementary PDF](https://hal.science/hal-04662876/preview/supplemental_v3.pdf)
+* [Supplementary PDF](https://hal.science/hal-04662876/preview/supplementary_v4.pdf)
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
@@ -41,7 +41,7 @@ There are two options:
 
 1. Install SPyRiT v3 and a few more packages
     ```shell
-    pip install spyrit==3.0.1
+    pip install spyrit==3.0.2
     pip install girder-client
     pip install scikit-image
     ```

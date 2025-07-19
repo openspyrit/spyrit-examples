@@ -9,7 +9,7 @@ Some of research contributions based on the SPyRiT package:
 
 * [SPyRiT 3.0](./2025_spyrit_v3/) (Optics Express, 2025)
 
-> JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning," Optics Express (2025).  [DOI](https://doi.org/10.1364/OE.559227), [main PDF](https://hal.science/hal-04662876/document), [supplementary PDF](https://hal.science/hal-04662876/preview/supplemental_v3.pdf).
+> JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning," Optics Express (2025).  [DOI](https://doi.org/10.1364/OE.559227), [main PDF](https://hal.science/hal-04662876/document), [supplementary PDF](https://hal.science/hal-04662876/preview/supplementary_v4.pdf).
 
 ### 2023
 
