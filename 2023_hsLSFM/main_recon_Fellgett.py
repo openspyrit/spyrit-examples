@@ -56,8 +56,8 @@ data_folder = './data/2023_03_07_mRFP_DsRed_can_vs_had/'
 Run = 'RUN0004' 
 
 # save
-save_rec = True
-save_fig = True
+save_rec = False
+save_fig = False
 ext_fig = 'pdf'
 dpi_fig = 600
 
