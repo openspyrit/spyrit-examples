@@ -80,8 +80,8 @@ prep.set_expe(gain, mudark, sigdark, nbin)
 from spyrit.core.nnet import Unet
 from spyrit.core.train import load_net
 
-save_rec = True
-save_fig = True
+save_rec = False
+save_fig = False
 
 div = 1.5
 alpha = 50
@@ -223,8 +223,8 @@ del recnet
 #from spyrit_dev import Pinv1Net        # v2.3.3
 from spyrit.core.recon import Pinv1Net  # master
 
-save_rec = True
-save_fig = True
+save_rec = False
+save_fig = False
 
 channel = 10, 55, 100  # to be plotted
 Nl, Nh, Nc = 512, 128, 128 # shape of preprocessed data

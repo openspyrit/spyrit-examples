@@ -1,15 +1,16 @@
-# Hyperspectral Structured Light Sheet Fluorescence Microscopy
+# Hyperspectral LSFM with DMD-only Shaping and Neural Network Reconstruction
 
+We provide the code to reproduce the results reported in
 
+> Sébastien Crombez, Cédric Ray, Chloé Exbrayat-Héritier,Florence Ruggiero, Nicolas Ducros, "*Hyperspectral LSFM with DMD-only Shaping and Neural Network Reconstruction*," (2025). 
 
+<!---
+* [DOI (open access)](https://doi.org/10.1364/OE.559227)
+-->
+* [Main PDF](https://hal.science/hal-04824372/document)
+* [Supplementary PDF](https://hal.science/hal-04824372/preview/hspim_nature_supp.pdf)
 
-## Contact
-
-For any inquiries, please contact:
-
-Nicolas Ducros  
-CREATIS Laboratory, University of Lyon, France  
-Email: nicolas.ducros@insa-lyon.fr
+*Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
 ## Installation
 1. Create a conda environment
@@ -21,12 +22,17 @@ Email: nicolas.ducros@insa-lyon.fr
 1. Install pytorch using conda. E.g.,
     ```shell
     conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+    conda install pip
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
 1. Install SPyRiT and a few more packages:
+
+> Make sure spyrit 2.3.4 works well!
+
     ```shell
-    pip install spyrit==2.4
+    pip install spyrit==2.3.4
     pip install spyder-kernels
     pip install opencv-python
     pip install pysptools
@@ -42,10 +48,10 @@ Email: nicolas.ducros@insa-lyon.fr
 
 ## Code and data
 
-1.  Get source code and navigate to the `/2023_hsLSFM/` folder
+1.  Get source code and navigate to the `/2025_hLSFM/` folder
     ```shell
     git clone https://github.com/openspyrit/spyrit-examples.git
-    cd spyrit-examples/2023_hsLSFM/ 
+    cd spyrit-examples/2025_hLSFM/ 
     ```
 
 2. Download
@@ -59,7 +65,7 @@ The directory structure should be
 
 ```
 |---spyrit-examples
-|   |---2023_hsLSFM
+|   |---2025_hLSFM
 |   |   |---data
 |   |   |   |---2023_02_28_mRFP_DsRed_3D
 |   |   |   |	|---Raw_data_chSPSIM_and_SPIM
@@ -84,7 +90,15 @@ The directory structure should be
 ```
 
 ## How to reproduce the results of the paper?
-### Figure 2: EGFP-DsRed sample
+
+### Figure 3: Fellgett's advantage and Tikhonov-Net
+
+> All the results are saved in `.\data\2023_03_07_mRFP_DsRed_can_vs_had\`. They can also be found on our warehouse (see [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/642d24900386da274769abd4)). 
+
+1. Run `main_preprocess_Fellgett.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
+1. Run `figure_3.py` to reconstruct hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\` and generate Fig. 3 of the paper.
+
+### Figure 4: EGFP-DsRed sample
 
 > All the results are saved in `.\data\2023_03_13_2023_03_14_eGFP_DsRed_3D\`. They can also be found on our warehouse (see [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/6708d7990e9f151150f3c100)). 
 
@@ -96,7 +110,7 @@ The directory structure should be
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.
 1. Run `main_visual_EGFP-DsRed_14.py` to visualise the filter maps and quantitative maps in color. The resulting visualisations will be saved in the subfolder `.\Visualisation_shift\`.
 
-### Figure 3: DsRed-mRFP sample
+### Figure 5: DsRed-mRFP sample
 
 > All the results are saved in `.\data\2023_02_28_mRFP_DsRed_3D\`. They can also be found on our warehouse (see [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/66ff9c49ae27f5ad8259f38a)). 
 
@@ -108,16 +122,11 @@ The directory structure should be
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.
 1. Run `main_unmix_filter_mRFP-DsRed.py` to visualise the filter maps and quantitative maps in color. The resulting visualisations will be saved in the subfolder `.\Visualisation_shift\`.
 
-### Demonstration of the Fellgett's effect
 
-> All the results are saved in `.\data\2023_03_07_mRFP_DsRed_can_vs_had\`. They can also be found on our warehouse (see [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/642d24900386da274769abd4)). 
-
-1. Run `main_preprocess_Fellgett.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
-1. Run `main_recon_Fellgett.py` to reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`. The corresponding figures are included in Fig. 11 of the supplementary document.
 
 ### Miscellaneous
 
-1. The script `main_pattern_full_visu.py` reproduces the illumination patterns of Fig. 6 of the supplementary document.
+1. The script `main_pattern_full_visu.py` reproduces the illumination patterns of Fig. S6 of the supplementary document.
 1. The scripts  `main_colorize_*.py` plot in color ("rainbow colors") 
     * the raw measurements in `./Preprocess/Run*/`,
     * the reconstructed hypercubes in `./Reconstruction/hypercube/tikhonet50_div1.5/RUN*/`. 
