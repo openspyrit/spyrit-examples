@@ -13,6 +13,9 @@ model_path_list = [
     'dc-net_unet_imagenet_var_N0_10_N_128_M_2048_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
     'dc-net_unet_imagenet_var_N0_10_N_128_M_1024_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
     'dc-net_unet_imagenet_var_N0_10_N_128_M_512_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
+    'dc-net_unet_imagenet_var_N0_10_N_64_M_4095_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
+    'dc-net_unet_imagenet_var_N0_10_N_64_M_1024_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
+    'dc-net_unet_imagenet_var_N0_10_N_64_M_512_epo_30_lr_0.001_sss_10_sdr_0.5_bs_256_reg_1e-07.pth',
     ]
 
 

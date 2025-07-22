@@ -4,23 +4,32 @@ Created on Wed Sep  7 15:25:43 2022
 
 @author: ducros
 """
+
 from __future__ import print_function, division
 import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.optim import lr_scheduler
+import torch.profiler
+from torch.utils.tensorboard import SummaryWriter
+
 import numpy as np
 import argparse
 from pathlib import Path
 import pickle
+import os
+import datetime
 
 from spyrit.core.noise import PoissonApproxGauss
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet
+from spyrit.core.recon import DCNet, PinvNet, UPGD
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10
+
+# pip install -e git+https://github.com/openspyrit/spas.git@v1.4#egg=spas
+# python3 ./spyrit-examples/2022_OE_spyrit2/download_data.py
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -30,14 +39,15 @@ if __name__ == "__main__":
     parser.add_argument("--subs",       type=str,   default="var",  help="Among 'var','rect'")
     
     # Network and training
-    parser.add_argument("--data",       type=str,   default="imagenet", help="stl10 or imagenet")
+    parser.add_argument("--data",       type=str,   default="stl10", help="stl10 or imagenet")
     parser.add_argument("--model_root", type=str,   default='./model/', help="Path to model saving files")
-    parser.add_argument("--data_root",  type=str,   default="./data/ILSVRC2012_v10102019", help="Path to the dataset")
+    parser.add_argument("--data_root",  type=str,   default="./data/", help="Path to the dataset")
     
     parser.add_argument("--N0",         type=float, default=10,   help="Mean maximum total number of photons")
     parser.add_argument("--stat_root",  type=str,   default="./stat/", help="Path to precomputed data")
     parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net',")
     parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
+    parser.add_argument("--device",     type=str,   default="", help="Choose among 'cuda','cpu'")
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
 
@@ -49,14 +59,15 @@ if __name__ == "__main__":
     parser.add_argument("--step_size",  type=int,   default=10,   help="Scheduler Step Size")
     parser.add_argument("--gamma",      type=float, default=0.5,  help="Scheduler Decrease Rate")
     parser.add_argument("--checkpoint_model", type=str, default="", help="Optional path to checkpoint model")
-    parser.add_argument("--checkpoint_interval", type=int, default=0, help="Interval between saving model checkpoints"
-    )
+    parser.add_argument("--checkpoint_interval", type=int, default=0, help="Interval between saving model checkpoints")
+    
+    # Tensorboard
+    parser.add_argument("--tb_path",    type=str,   default=False, help="Relative path for Tensorboard experiment tracking logs")
+    parser.add_argument("--tb_prof",    type=bool,   default=False, help="Profiler for code with Tensorboard")
+
     opt = parser.parse_args()
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
-    
-    if opt.data == 'stl10':
-        opt.data_root = './data/'
     
     print(opt)
     
@@ -65,7 +76,10 @@ if __name__ == "__main__":
     #==========================================================================
     # The device of the machine, number of workers...
     # 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if opt.device: 
+        device = torch.device(opt.device)
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f'Device: {device}')
     
     #==========================================================================
@@ -76,7 +90,11 @@ if __name__ == "__main__":
                                         img_size=opt.img_size, 
                                         batch_size=opt.batch_size, 
                                         seed=7,
-                                        shuffle=True)        
+                                        shuffle=True, download=True)   
+
+        #now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        #opt.tb_path = f'runs/runs_stdl10_n100_m1024/{now}'
+
     elif opt.data == 'imagenet':
         dataloaders = data_loaders_ImageNet(opt.data_root / 'test', 
                                         opt.data_root / 'val', 
@@ -136,6 +154,9 @@ if __name__ == "__main__":
         
     elif opt.arch == 'pinv-net':    # Pseudo Inverse Network
         model = PinvNet(noise, prep, denoi)
+
+    elif opt.arch == 'upgd':        # Unrolled Proximal Gradient Descent
+        model = UPGD(noise, prep, denoi, num_iter=2)
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -145,7 +166,7 @@ if __name__ == "__main__":
     
     if opt.checkpoint_model:
         model.load_state_dict(torch.load(opt.checkpoint_model))
-    
+
     #==========================================================================
     # 4. Define a Loss function optimizer and scheduler
     #==========================================================================
@@ -161,7 +182,7 @@ if __name__ == "__main__":
     # We  loop over our data iterator, feed the inputs to the
     model, train_info = train_model(model, criterion, \
             optimizer, scheduler, dataloaders, device, opt.model_root, num_epochs=opt.num_epochs,\
-            disp=True, do_checkpoint=opt.checkpoint_interval)
+            disp=True, do_checkpoint=opt.checkpoint_interval, tb_path=opt.tb_path)
     
     #==========================================================================
     # 6. Saving the model so that it can later be utilized
@@ -192,3 +213,4 @@ if __name__ == "__main__":
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
     torch.cuda.empty_cache()
+

@@ -4,40 +4,114 @@ Created on Wed Sep  7 15:25:43 2022
 
 @author: ducros
 """
+
 from __future__ import print_function, division
 import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.optim import lr_scheduler
+import torch.profiler
+from torch.utils.tensorboard import SummaryWriter
+
 import numpy as np
 import argparse
 from pathlib import Path
 import pickle
+import os
+import datetime
 
 from spyrit.core.noise import PoissonApproxGauss
 from spyrit.core.meas import HadamSplit
 from spyrit.core.prep import SplitPoisson
-from spyrit.core.recon import DCNet, PinvNet
+from spyrit.core.recon import DCNet, PinvNet, UPGD
 from spyrit.core.train import train_model, Train_par, save_net, Weight_Decay_Loss
 from spyrit.core.nnet import Unet, ConvNet, ConvNetBN
 from spyrit.misc.statistics import Cov2Var, data_loaders_ImageNet, data_loaders_stl10
 
+from spyrit.core.noise import NoNoise
+from spyrit.core.prep import DirectPoisson
+from spyrit.core.noise import Poisson
+
+
+# pip install -e git+https://github.com/openspyrit/spas.git@v1.4#egg=spas
+# python3 ./spyrit-examples/2022_OE_spyrit2/download_data.py
+
+def get_meas_operator(opt, Ord):
+    """
+    Define the most used measurement definitions
+    """
+    if opt.meas == 'hadam-split':
+        # Hadamard split operator given Ord
+        meas_op = HadamSplit(opt.M, opt.img_size, Ord)
+    elif opt.meas == 'hadam-pos':
+        # Hadamard positive operator with cartesian subsampling
+        from spyrit.misc.walsh_hadamard import walsh2_matrix
+        from spyrit.misc.sampling import Permutation_Matrix
+        from spyrit.core.meas import Linear
+
+        F = walsh2_matrix(opt.img_size)
+        F = np.where(F>0, F, 0)
+
+        Sampling_map = np.ones((opt.img_size,opt.img_size))
+        M_xy = math.ceil(opt.M**0.5)
+        Sampling_map[:,M_xy:] = 0
+        Sampling_map[M_xy:,:] = 0
+
+        Perm = Permutation_Matrix(Sampling_map)
+        F = Perm@F 
+        H = F[:opt.M,:]
+
+        meas_op = Linear(H, pinv=True)  
+    return meas_op
+
+def get_noise_operator(opt, meas_op):
+    """
+    Define the most used noise definitions
+    """ 
+    if opt.N0 == 1:  # if opt.noise == 'no_noise':
+        # Noiseless case
+        noise_op = NoNoise(meas_op)        
+    else:
+        # Poisson noise
+        if opt.noise == 'gauss-approx':
+            noise_op = PoissonApproxGauss(meas_op, opt.N0) # faster than Poisson
+        elif opt.noise == 'poisson':
+            noise_op = Poisson(meas_op, opt.N0)        
+    return noise_op
+
+def get_prep_operator(opt, meas_op):
+    """
+    Define the most used preprocessing definitions
+    """
+    if opt.prep == 'split-poisson':
+        prep_op = SplitPoisson(opt.N0, meas_op) 
+    elif opt.prep == 'dir-poisson':
+        from spyrit.core.prep import DirectPoisson
+        prep_op = DirectPoisson(opt.N0, meas_op)   # "Undo" the NoNoise operator
+    return prep_op
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # Forward model
+    parser.add_argument("--meas",       type=str, default="hadam-pos",   help="Measurement type: 'hadam-split', 'hadam-pos'")
+    parser.add_argument("--noise",      type=str, default="poisson",   help="Noise types: 'poisson', 'gauss-approx', 'no-noise'")
+    parser.add_argument("--prep",       type=str, default="dir-poisson",   help="Preprocessing types: 'dir-poisson', 'split-poisson'")
+
     # Acquisition
     parser.add_argument("--img_size",   type=int,   default=64,   help="Height / width dimension")
     parser.add_argument("--M",          type=int,   default=512,  help="Number of patterns")
-    parser.add_argument("--subs",       type=str,   default="var",  help="Among 'var','rect'")
-    
+    parser.add_argument("--subs",       type=str,   default="rect",  help="Among 'var','rect'")
+
     # Network and training
-    parser.add_argument("--data",       type=str,   default="imagenet", help="stl10 or imagenet")
+    parser.add_argument("--data",       type=str,   default="stl10", help="stl10 or imagenet")
     parser.add_argument("--model_root", type=str,   default='./model/', help="Path to model saving files")
-    parser.add_argument("--data_root",  type=str,   default="./data/ILSVRC2012_v10102019", help="Path to the dataset")
+    parser.add_argument("--data_root",  type=str,   default="./data/", help="Path to the dataset")
     
     parser.add_argument("--N0",         type=float, default=10,   help="Mean maximum total number of photons")
-    parser.add_argument("--stat_root",  type=str,   default="./stat/", help="Path to precomputed data")
+    parser.add_argument("--stat_root",  type=str,   default="", help="Path to precomputed data covariance and mean")
     parser.add_argument("--arch",       type=str,   default="dc-net", help="Choose among 'dc-net','pinv-net',")
     parser.add_argument("--denoi",      type=str,   default="unet", help="Choose among 'cnn','cnnbn', 'unet'")
+    parser.add_argument("--device",     type=str,   default="", help="Choose among 'cuda','cpu'")
     #parser.add_argument("--no_denoi",   default=False, action='store_true', help="No denoising layer")
 
 
@@ -49,23 +123,40 @@ if __name__ == "__main__":
     parser.add_argument("--step_size",  type=int,   default=10,   help="Scheduler Step Size")
     parser.add_argument("--gamma",      type=float, default=0.5,  help="Scheduler Decrease Rate")
     parser.add_argument("--checkpoint_model", type=str, default="", help="Optional path to checkpoint model")
-    parser.add_argument("--checkpoint_interval", type=int, default=0, help="Interval between saving model checkpoints"
-    )
+    parser.add_argument("--checkpoint_interval", type=int, default=0, help="Interval between saving model checkpoints")
+    
+    # Tensorboard
+    parser.add_argument("--tb_path",    type=str,   default=False, help="Relative path for Tensorboard experiment tracking logs")
+    parser.add_argument("--tb_prof",    type=bool,   default=False, help="Profiler for code with Tensorboard")
+
     opt = parser.parse_args()
     opt.model_root = Path(opt.model_root)
     opt.data_root = Path(opt.data_root)
     
-    if opt.data == 'stl10':
-        opt.data_root = './data/'
-    
+    # Define other parameters (for testing)
+    if False:
+        opt.meas = 'hadam-pos'
+        opt.noise = 'no-noise' # noise type
+        opt.prep = 'dir-poisson'    # preprocessing type
+        opt.N0 = 1.0        # ph/pixel m
+        opt.M = opt.img_size**2 // 4
+        opt.arch = 'pinv-net' # Network architecture
+        opt.denoi = 'cnn' 
+        name_run = "stdl10_hadampos"
+        now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        opt.tb_path = f'runs/runs_{name_run}_n{int(opt.N0)}_m{opt.M}/{now}'
+
     print(opt)
-    
+
     #==========================================================================
     # 0. Setting up parameters for training
     #==========================================================================
     # The device of the machine, number of workers...
     # 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if opt.device: 
+        device = torch.device(opt.device)
+    else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f'Device: {device}')
     
     #==========================================================================
@@ -76,7 +167,11 @@ if __name__ == "__main__":
                                         img_size=opt.img_size, 
                                         batch_size=opt.batch_size, 
                                         seed=7,
-                                        shuffle=True)        
+                                        shuffle=True, download=True)   
+
+        #now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        #opt.tb_path = f'runs/runs_stdl10_n100_m1024/{now}'
+
     elif opt.data == 'imagenet':
         dataloaders = data_loaders_ImageNet(opt.data_root / 'test', 
                                         opt.data_root / 'val', 
@@ -88,16 +183,23 @@ if __name__ == "__main__":
     #==========================================================================
     # 2. Statistics of the training images
     #==========================================================================
-    print('Loading covariance and mean')
-    if opt.img_size == 64:
-        my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+    if opt.stat_root:
+        # Load covariance and mean from path
+        print('Loading covariance and mean')
+        if opt.img_size == 64:
+            my_average_file = Path(opt.stat_root) / ('Average_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            my_cov_file = Path(opt.stat_root) / ('Cov_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+        else:
+            my_average_file = Path(opt.stat_root) / ('Average_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            my_cov_file = Path(opt.stat_root) / ('Cov_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
+            
+        Mean = np.load(my_average_file)
+        Cov  = np.load(my_cov_file)
     else:
-        my_average_file = Path(opt.stat_root) / ('Average_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        my_cov_file = Path(opt.stat_root) / ('Cov_8_{}x{}'.format(opt.img_size, opt.img_size)+'.npy')
-        
-    Mean = np.load(my_average_file)
-    Cov  = np.load(my_cov_file)
+        # Covariance not provided, set it to the identity
+        if opt.arch == 'dc-net':
+            Cov = np.eye(opt.img_size**2)
+            print("Seting Cov matrix to the identity: Not optimal for dc-net!!!")
 
     #==========================================================================
     # 3. Subsampling
@@ -114,13 +216,16 @@ if __name__ == "__main__":
         n_sub = math.ceil(opt.M**0.5)
         Ord[:,n_sub:] = 0
         Ord[n_sub:,:] = 0
+    else:
+        Ord = None
 
     #==========================================================================
     # 3. Define a Neural Network
     #==========================================================================
-    meas = HadamSplit(opt.M, opt.img_size, Ord)
-    prep = SplitPoisson(opt.N0, meas)
-    noise = PoissonApproxGauss(meas, opt.N0) # faster than Poisson
+    # Measurement, noise and preprocessing operators
+    meas_op = get_meas_operator(opt, Ord)
+    noise_op = get_noise_operator(opt, meas_op)
+    prep_op = get_prep_operator(opt, meas_op)
     
     # Image-domain denoising layer
     if opt.denoi == 'cnn':      # CNN no batch normalization
@@ -130,12 +235,16 @@ if __name__ == "__main__":
     elif opt.denoi == 'unet':   # Unet
         denoi = Unet()
     
+    
     # Global Architecture
     if opt.arch == 'dc-net':        # Denoised Completion Network
-        model = DCNet(noise, prep, Cov, denoi)
+        model = DCNet(noise_op, prep_op, Cov, denoi)
         
     elif opt.arch == 'pinv-net':    # Pseudo Inverse Network
-        model = PinvNet(noise, prep, denoi)
+        model = PinvNet(noise_op, prep_op, denoi)
+
+    elif opt.arch == 'upgd':        # Unrolled Proximal Gradient Descent
+        model = UPGD(noise_op, prep_op, denoi, num_iter=2)
     
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -145,7 +254,7 @@ if __name__ == "__main__":
     
     if opt.checkpoint_model:
         model.load_state_dict(torch.load(opt.checkpoint_model))
-    
+
     #==========================================================================
     # 4. Define a Loss function optimizer and scheduler
     #==========================================================================
@@ -161,7 +270,7 @@ if __name__ == "__main__":
     # We  loop over our data iterator, feed the inputs to the
     model, train_info = train_model(model, criterion, \
             optimizer, scheduler, dataloaders, device, opt.model_root, num_epochs=opt.num_epochs,\
-            disp=True, do_checkpoint=opt.checkpoint_interval)
+            disp=True, do_checkpoint=opt.checkpoint_interval, tb_path=opt.tb_path)
     
     #==========================================================================
     # 6. Saving the model so that it can later be utilized
@@ -192,3 +301,4 @@ if __name__ == "__main__":
     with open(train_path, 'wb') as param_file:
         pickle.dump(params,param_file)
     torch.cuda.empty_cache()
+
