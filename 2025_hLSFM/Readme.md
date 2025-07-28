@@ -89,6 +89,15 @@ The directory structure should be
 |   |   |---
 ```
 
+## Visualisation of the data
+
+* [Dataset 1](https://pilot-warehouse.creatis.insa-lyon.fr/api/v1/file/6752fdfa74c908c83b35e030/download?contentDisposition=inline) shows the raw measurements for one slice of the Tg(fli1:EGFP;olig2:DsRed) sample.
+* [Dataset 2](https://pilot-warehouse.creatis.insa-lyon.fr/api/v1/item/6753224074c908c83b35e39c/download?contentDisposition=inline) shows the abundance of EGFP (in green) and DsRed (in red) for all of the 25 slices of the Tg(fli1:EGFP;olig2:DsRed) sample. Many more visualizations of the abundance maps can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/675321a374c908c83b35e03c).
+* [Dataset 3](https://pilot-warehouse.creatis.insa-lyon.fr/api/v1/item/67532a0274c908c83b35e8e1/download?contentDisposition=inline) shows the conventional LSFM images for 21 slices of the Tg(fli1:EGFP;olig2:DsRed) sample. Other conventional LSFM images of the sample can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/672e1f280e9f151150f4234c).
+* [Dataset 4](https://pilot-warehouse.creatis.insa-lyon.fr/api/v1/file/675311ac74c908c83b35e036/download?contentDisposition=inline) shows the abundance of mRFP (in cyan) and DsRed (in red) for all of the 20 slices of the Tg(sox10:mRFP;olig2:DsRed) sample. Many more visualizations of the abundance maps can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/6750832874c908c83b353457).
+* [Dataset 5](https://pilot-warehouse.creatis.insa-lyon.fr/api/v1/item/67533f5074c908c83b35e8ec/download?contentDisposition=inline) shows the conventional LSFM images for all slices of the Tg(sox10:mRFP;olig2:DsRed) sample. Other conventional LSFM images of the sample can be found [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/672e1edb0e9f151150f4230e).
+
+
 ## How to reproduce the results of the paper?
 
 ### Figure 3: Fellgett's advantage and Tikhonov-Net
