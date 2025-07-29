@@ -27,12 +27,10 @@ We provide the code to reproduce the results reported in
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-1. Install SPyRiT and a few more packages:
-
-> Make sure spyrit 2.3.4 works well!
+1. Install SPyRiT **v2.4.1** and a few more packages:
 
     ```shell
-    pip install spyrit==2.3.4
+    pip install spyrit==2.4.1
     pip install spyder-kernels
     pip install opencv-python
     pip install pysptools
