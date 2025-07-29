@@ -7,6 +7,10 @@ Some of research contributions based on the SPyRiT package:
 
 ### 2025
 
+* [Hyperspectral LSFM](./2025_hLSFM/) (2025)
+
+> S Crombez, C Ray, C Exbrayat-Héritier, F Ruggiero, NDucros, "Hyperspectral LSFM with DMD-only Shaping and Neural Network Reconstruction," (2025). [main PDF](https://hal.science/hal-04824372/document), [supplementary PDF](https://hal.science/hal-04824372/preview/hspim_nature_supp.pdf).
+
 * [SPyRiT 3.0](./2025_spyrit_v3/) (Optics Express, 2025)
 
 > JFJP Abascal, T Baudier, R Phan, A Repetti, N Ducros, "SPyRiT 3.0: an open source package for single-pixel imaging based on deep learning," Optics Express (2025).  [DOI](https://doi.org/10.1364/OE.559227), [main PDF](https://hal.science/hal-04662876/document), [supplementary PDF](https://hal.science/hal-04662876/preview/supplementary_v4.pdf).
