@@ -15,17 +15,16 @@ import os
 from pathlib import Path
 from IPython.display import clear_output
 
-from spyrit.misc.disp import torch2numpy, imagesc
-from spyrit.misc.statistics import transform_gray_norm, Cov2Var, data_loaders_stl10
 import spyrit.core.torch as spytorch
-import spyrit.misc.metrics as score
-from spyrit.core.noise import Poisson
-from spyrit.core.warp import DeformationField
 from spyrit.core.prep import Unsplit
 from spyrit.core.meas import DynamicHadamSplit2d
+from spyrit.core.noise import Poisson
+from spyrit.core.warp import DeformationField
 
+from spyrit.misc.disp import torch2numpy, imagesc, blue_box
+from spyrit.misc.statistics import transform_gray_norm, Cov2Var, data_loaders_stl10
+import spyrit.misc.metrics as score
 
-from utils_exp import blue_box
 
 
 #%% LOAD IMAGE DATA

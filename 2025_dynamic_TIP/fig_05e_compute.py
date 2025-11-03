@@ -18,15 +18,13 @@ from tqdm import tqdm
 from pathlib import Path
 
 import spyrit.core.torch as spytorch
-import spyrit.misc.metrics as score
-from spyrit.misc.statistics import data_loaders_stl10
-from spyrit.misc.statistics import Cov2Var
-
-from spyrit.core.warp import DeformationField
-from spyrit.core.meas import DynamicHadamSplit2d
-
-from spyrit.core.noise import Poisson
 from spyrit.core.prep import Unsplit
+from spyrit.core.meas import DynamicHadamSplit2d
+from spyrit.core.noise import Poisson
+from spyrit.core.warp import DeformationField
+
+from spyrit.misc.statistics import Cov2Var, data_loaders_stl10
+import spyrit.misc.metrics as score
 
 
 
