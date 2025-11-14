@@ -1,10 +1,10 @@
+#%% [markdown]
 """
 This script is used to reproduce the results given in Fig. 5a, 5b, 5c and 5d.
 It compares reconstruction methods using pattern warping (wh) and image warping (wf), 
 and the influence of the extended FOV, for a given random elastic deformation field,
 on a single image from the STL-10 dataset.
 """
-
 
 # %% Import bib
 import torch
@@ -176,7 +176,7 @@ with torch.no_grad():
 
     
     # %% Reconstruction with pattern warping (in X or in X_{ext})
-    meas_op.build_H_dyn(def_field_inv, warping=True, mode=mode)
+    meas_op.build_H_dyn(def_field_inv, warping='pattern', mode=mode)
     H_dyn_diff = meas_op.H_dyn_diff.to(device='cpu')
         
     ## in X_ext
@@ -199,7 +199,7 @@ with torch.no_grad():
 
 
     # %% Reconstruction with image warping (in X or in X_{ext})
-    meas_op.build_H_dyn(def_field, warping=False, mode=mode)
+    meas_op.build_H_dyn(def_field, warping='image', mode=mode)
     H_dyn_diff = meas_op.H_dyn_diff.to(device='cpu')
         
     ## in X_ext

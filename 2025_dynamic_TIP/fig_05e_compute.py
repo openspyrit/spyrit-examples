@@ -1,3 +1,4 @@
+#%% [markdown]
 """
 This script is used to reproduce the results given in Fig. 5e.
 It compares reconstruction methods using pattern warping (wh) and image warping (wf), 
@@ -24,6 +25,7 @@ from spyrit.core.noise import Poisson
 from spyrit.core.warp import DeformationField
 
 from spyrit.misc.statistics import Cov2Var, data_loaders_stl10
+from spyrit.misc.load_data import download_girder
 import spyrit.misc.metrics as score
 
 

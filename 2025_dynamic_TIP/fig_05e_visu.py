@@ -1,4 +1,4 @@
-
+# %% [markdown]
 """
 This script is used to reproduce the results given in Fig. 5e.
 It visualizes the results obtained with fig_05e_compute.py over the test set of STL-10. 
@@ -8,13 +8,12 @@ These results have been pre-computed and stored in the 'raw_fig_05' folder.
 # %% Import bib
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import json
-from tqdm import tqdm
 
+from tqdm import tqdm
 from pathlib import Path
 
-from spyrit.misc.statistics import data_loaders_stl10
+from spyrit.misc.load_data import download_girder
 
 
 #%% LOAD IMAGE DATA
@@ -23,25 +22,25 @@ meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
-data_root = '../data/data_online/' 
-imgs_path = os.path.join(data_root, "spyrit/")
-
-raw_path = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('raw_fig_05')  # replace with your path
-
-batch_size = 16
-
-# Dataloader for STL-10 dataset
-dataloaders = data_loaders_stl10(
-    data_root,
-    img_size=img_size,
-    batch_size=batch_size,
-    seed=7,
-    shuffle=True,
-    download=False,
-)
+n_deform = 500  # number of deformations used for data simulation
+batch_size = 16  # each batch was subjected to one deformation
 
 
-# %% SIMULATE DATA
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+local_folder = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('raw_fig_05')  # replace with your path
+id_files = [
+    "690b5f7304d23f6e964b1434",  # motion_params.json
+    "690b5f7304d23f6e964b1437"   # scores.json
+]
+try:
+    download_girder(url_tomoradio, id_files, local_folder)
+
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
+
+
+# %% Instantiate scores arrays
 alpha_list = [1000, 500, 300, 100, 50, 25, 10]
 reg_list = ['H1']
 is_in_X_list = [False, True]
@@ -65,18 +64,18 @@ for is_in_X in is_in_X_list:
         else:
             etas[int(is_in_X), int(warping), :, :] = np.array(eta_nowarp_list_list)         
 
-data_size = len(dataloaders['val'].dataset)
+data_size = batch_size * n_deform
+
 psnr_array = np.zeros((len(is_in_X_list), len(warping_list), len(reg_list), len(alpha_list), data_size))
 ssim_array = np.zeros((len(is_in_X_list), len(warping_list), len(reg_list), len(alpha_list), data_size))
-
-amp_array = np.zeros(len(dataloaders['val']))
+amp_array = np.zeros(n_deform)
 
 
 # %% READ JSON
 psnr_array = np.zeros((len(is_in_X_list), len(warping_list), len(reg_list), len(alpha_list), data_size))
 ssim_array = np.zeros((len(is_in_X_list), len(warping_list), len(reg_list), len(alpha_list), data_size))
 
-with open(str(raw_path / Path('scores.json')), "r") as infile:
+with open(str(local_folder / Path('scores.json')), "r") as infile:
     scores = json.load(infile)
 
 for is_in_X in is_in_X_list:
@@ -88,7 +87,7 @@ for is_in_X in is_in_X_list:
                 ssim_array[int(is_in_X), int(warping), reg_ind, alpha_ind, :] = np.array(scores_alpha[reg + '_warping_' + str(warping) +'_in_X_' + str(is_in_X)]['SSIMs'])
 
 
-with open(str(raw_path / Path('motion_params.json')), "r") as infile:
+with open(str(local_folder / Path('motion_params.json')), "r") as infile:
     motion_params = json.load(infile)
 
 amp_array = np.array(motion_params['amp'])
