@@ -1,0 +1,10 @@
+*.png
+*.PNG
+*.pdf
+*.PDF
+*.gif
+*.npy
+data
+data/
+figures/
+patterns/
