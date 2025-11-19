@@ -46,7 +46,7 @@ suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#device = torch.device("cpu")
+device = torch.device("cpu")
 print("Using device:", device)
 
 img_size = 128  # image size
