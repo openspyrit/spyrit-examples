@@ -40,7 +40,14 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
-data_title = ["tomato_slice_2_zoomx2/tomato_slice_2_zoomx2", "zoom_x12_starsector/zoom_x12_starsector"]
+data_subfolder = ["",
+                "2025-11-10_test_HCERES"
+                ]
+data_title = [#"tomato_slice_2_zoomx2/tomato_slice_2_zoomx2", 
+              "zoom_x12_starsector",
+              "obj_Cat_bicolor_thin_overlap_source_white_LED_Walsh_im_64x64_ti_9ms_zoom_x1"
+              ]
+
 savenames = ["tomato", "starsector"]
 suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 n_meas = len(data_title)
@@ -77,14 +84,16 @@ print("Looking for data in", data_folder_full)
 
 # Collect data in numpy
 exp_data = [
-    np.load(data_folder_full / (title + suffix["data"]))["spectral_data"]
-    for title in data_title
+    np.load(data_folder_full / subfolder / 
+            title / (title + suffix["data"]))["spectral_data"]
+    for (subfolder,title) in zip(data_subfolder,data_title) 
 ]
 # Collect metadata
 patterns = [[] for _ in range(n_meas)]
 wavelengths = [[] for _ in range(n_meas)]
-for ii, title in enumerate(data_title):
-    file = open(data_folder_full / (title + suffix["metadata"]), "r")
+for ii, (subfolder,title) in enumerate(zip(data_subfolder,data_title)):
+    file = open(data_folder_full / subfolder 
+                / title / (title + suffix["metadata"]), "r")
     json_metadata = json.load(file)[3]
     file.close()
     patterns[ii] = ast.literal_eval(json_metadata["patterns"])
