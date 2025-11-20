@@ -67,42 +67,24 @@ If the images are already available on your computer, just create a symbolic lin
     ```shell
     New-Item -ItemType SymbolicLink -Name \data\ILSVRC2012\ -Target <imagenet folder>
     ```
-*Todo: Update!* 
-
 The directory structure should be as follows:
 
 ```
 |---spyrit-examples
 |   |---2025_spyrit_v3
 |   |   |---data
-|   |   |   |---ILSVRC2012
-|   |   |   |   |---test
-|   |   |   |   |   |---all
-|   |   |   |   |   |   |---ILSVRC2012_test_00000001.JPEG
-|   |   |   |   |   |   |---
-|   |   |   |   |---val
-|   |   |   |   |   |---all
-|   |   |   |   |   |   |---ILSVRC2012_val_00000001.JPEG
-|   |   |   |   |   |   |---
-|   |   |   |---?????_spectraldata.npz
-|   |   |   |---images
+|   |   |   |---2025-11-10_test_HCERES
+|   |   |   |--- obj_Cat_bicolor_thin_overlap_...
+|   |   |   |   |---obj_Cat_bicolor_thin_overlap_..._metadata.json
+|   |   |   |   |---obj_Cat_bicolor_thin_overlap_..._had_reco.npz
+|   |   |   |   |---obj_Cat_bicolor_thin_overlap_..._spectraldata.npz
 |   |   |   |---
 |   |   |---model
 |   |   |   |---
 |   |   |---stat
 |   |   |   |---
-|   |   |---recon
-|   |   |   |---
 |   |   |---aux_functions.py
 |   |   |---download_data.py
-|   |   |---figure_2.py
-|   |   |---figure_3.py
-|   |   |---figure_4.py
-|   |   |---supplemental_figure_S1.py
-|   |   |---
-|   |   |---table_1.py
-|   |   |---train.py
-|   |   |---utility_dpgd.py
 ```
 
 ## How to reproduce the results of the paper?

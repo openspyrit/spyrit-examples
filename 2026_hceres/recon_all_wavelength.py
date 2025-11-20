@@ -40,11 +40,12 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
-data_subfolder = ["",
+data_subfolder = ["2025-11-10_test_HCERES",
                 "2025-11-10_test_HCERES"
                 ]
-data_title = [#"tomato_slice_2_zoomx2/tomato_slice_2_zoomx2", 
-              "zoom_x12_starsector",
+data_title = [#"tomato_slice_2_zoomx2", 
+              #"zoom_x12_starsector",
+              "obj_Cat_bicolor_source_white_LED_Walsh_im_64x64_ti_10ms_zoom_x1",
               "obj_Cat_bicolor_thin_overlap_source_white_LED_Walsh_im_64x64_ti_9ms_zoom_x1"
               ]
 
@@ -94,11 +95,22 @@ wavelengths = [[] for _ in range(n_meas)]
 for ii, (subfolder,title) in enumerate(zip(data_subfolder,data_title)):
     file = open(data_folder_full / subfolder 
                 / title / (title + suffix["metadata"]), "r")
-    json_metadata = json.load(file)[3]
+    
+    # "old" metadata
+    # json_metadata = json.load(file)[3]
+    # file.close()
+    # patterns[ii] = ast.literal_eval(json_metadata["patterns"])
+    # wavelengths[ii] = ast.literal_eval(json_metadata["wavelengths"])
+    
+    # "new" metadata
+    json_metadata = json.load(file)[4]
     file.close()
-    patterns[ii] = ast.literal_eval(json_metadata["patterns"])
+    
+    # replace "np.int32(" with an empty string and ")" with an empty string
+    tmp = json_metadata["patterns"]
+    tmp = tmp.replace("np.int32(", "").replace(")", "")
+    patterns[ii] = ast.literal_eval(tmp)
     wavelengths[ii] = ast.literal_eval(json_metadata["wavelengths"])
-
 
 # %%
 # Reorder measurements to match with the reconstruction order
@@ -199,6 +211,8 @@ with torch.no_grad():
             x_pinvnet[ii, lambda_start:lambda_end, ...] = pinvnet.reconstruct(
                                                 y[lambda_start:lambda_end]
                                                 )
+            # denormalize
+            x_pinvnet[ii, lambda_start:lambda_end, ...] *= pinvnet.prep.alpha[...,None]
             
 del pinvnet
 del denoiser
@@ -207,11 +221,19 @@ torch.cuda.empty_cache()
 #%% Plot Pinv-Net
 from spyrit.misc.disp import imagesc 
 
-lambda_plot = 500 
+data_ind = 0
+lambda_list = [500, 1500, 2000] 
 
-for ii, _ in enumerate(measurements_slice):
-    imagesc(x_pinvnet[ii,lambda_plot,0].cpu(), 
-            title=f'{wavelengths[ii][lambda_plot]} nm')
+
+wav_list = [wavelengths[data_ind][lamb] for lamb in lambda_list]
+
+for lamb, wav in zip(lambda_list, wav_list):
+    
+    imagesc(x_pinvnet[data_ind,lamb,0].rot90(k=2).cpu(),
+            colormap = wav,
+            #colormap = wavelength_to_colormap(wav, gamma=0.8),
+            title=f'Pinv-Net, {wav:.1f} nm'
+            )
     
 # %%
 # DC-Net
@@ -252,6 +274,10 @@ with torch.no_grad():
             x_dcnet[ii, lambda_start:lambda_end, ...] = dcnet.reconstruct(
                                                 y[lambda_start:lambda_end]
                                                 )            
+            
+            # denormalize
+            x_dcnet[ii, lambda_start:lambda_end, ...] *= dcnet.prep.alpha[...,None]
+            
 del dcnet
 del denoiser
 torch.cuda.empty_cache()
@@ -260,8 +286,15 @@ torch.cuda.empty_cache()
 
 from spyrit.misc.disp import imagesc 
 
-lambda_plot = 500 
+data_ind = 0
+lambda_list = [500, 1500, 2000] 
 
-for ii, _ in enumerate(measurements_slice):
-    imagesc(x_dcnet[ii,lambda_plot,0].cpu(), 
-            title=f'{wavelengths[ii][lambda_plot]} nm')
+wav_list = [wavelengths[data_ind][lamb] for lamb in lambda_list]
+
+for lamb, wav in zip(lambda_list, wav_list):
+    
+    imagesc(x_dcnet[data_ind,lamb,0].rot90(k=2).cpu(),
+            colormap = wav,
+            #colormap = wavelength_to_colormap(wav, gamma=0.8),
+            title=f'DC-Net, {wav:.1f} nm'
+            )
