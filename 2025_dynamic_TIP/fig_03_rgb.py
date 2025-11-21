@@ -17,8 +17,8 @@ import spyrit.core.torch as spytorch
 from spyrit.core.warp import AffineDeformationField
 from spyrit.core.prep import Unsplit
 from spyrit.core.meas import HadamSplit2d, DynamicHadamSplit2d
-from spyrit.misc.disp import torch2numpy, imagesc, blue_box, save_motion_video
-from spyrit.misc.statistics import transform_gray_norm, Cov2Var, transform_norm
+from spyrit.misc.disp import torch2numpy, blue_box, save_motion_video
+from spyrit.misc.statistics import Cov2Var, transform_norm
 from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 import numpy as np
 

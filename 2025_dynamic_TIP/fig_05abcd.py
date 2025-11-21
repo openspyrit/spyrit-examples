@@ -43,7 +43,7 @@ amp_max = (img_shape[0] - meas_shape[0]) // 2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-dtype = torch.float64
+dtype = torch.float32
 simu_interp = 'bicubic'
 mode = 'bilinear'
 

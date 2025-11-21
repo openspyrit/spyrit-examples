@@ -100,7 +100,7 @@ plt.rc(('xtick', 'ytick'), labelsize=fontsize)
 plt.plot(amp_array, color='blue', marker='o')
 plt.ylabel('Magnitude', fontsize=fontsize)
 plt.xlabel('Batch', fontsize=fontsize)
-plt.title('Motion magnitude used for data simulation', fontsize=fontsize)
+plt.title('Motion magnitude used for simulation', fontsize=fontsize)
 plt.show()
 
 
@@ -168,5 +168,3 @@ plt.show()
 
 std_error = Z_score * ssim_std / n_samples ** 0.5
 print("Standard error max : ", std_error.max())
-
-# %%

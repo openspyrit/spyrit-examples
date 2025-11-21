@@ -14,7 +14,7 @@ from spyrit.misc.color import plot_hs
 
 from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
 from spyrit.misc.load_data import read_acquisition, empty_acqui
-from spyrit.misc.disp import blue_box, get_frame, save_motion_video
+from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
 
 
@@ -388,6 +388,21 @@ if save_fig:
     # (f) wf in X ext
     plt.imsave(path_fig / f'fig09_f_wf_in_X_ext_amp{amp_max}_frame{frame_ref}.pdf',
                blue_box(f_wf_Xext_np, amp_max=amp_max))
+
+
+# %% Save deformation fields
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2
+                     )
 
 
 # %%

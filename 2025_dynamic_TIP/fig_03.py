@@ -91,6 +91,8 @@ Ord = torch.from_numpy(Ord_acq)
 
 Cov_acq2 = torch.load(local_folder / f'Cov_{meas_size}x{meas_size}.pt', weights_only=True).to(device)
 
+test_4 = Cov_acq2 / torch.from_numpy(Cov_acq).to(dtype=dtype, device=device)
+
 # %% DEFINE DEFORMATION
 with torch.no_grad():
     a = 0.2  # amplitude

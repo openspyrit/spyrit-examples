@@ -14,13 +14,13 @@ from spyrit.misc.color import plot_hs
 
 from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
 from spyrit.misc.load_data import read_acquisition, empty_acqui
-from spyrit.misc.disp import blue_box, get_frame, save_motion_video
+from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
 
 
 
 # %% DETERMINE HOMOGRAPHY
-save_fig = False
+save_fig = True
 
 homo_folder = Path('extended_FOV2/')
 data_root = Path('../data/data_online/') / homo_folder
@@ -339,7 +339,7 @@ x_rec_video = torch.rot90(x_rec_video, k=2, dims=(-2, -1))
 
 out_dir = results_root / data_folder
 out_dir.mkdir(parents=True, exist_ok=True)
-video_path = out_dir / f'video_rec.avi'
+video_path = out_dir / f'video_rec.mp4'
 
 total_time_acq = acquisition_parameters.total_callback_acquisition_time_s
 fps = int(x_rec_video.shape[time_dim] / total_time_acq)
@@ -389,4 +389,17 @@ if save_fig:
                blue_box(f_wf_Xext_np, amp_max=amp_max))
 
 
+# %% Save deformation fields
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2
+                     )
 # %%
