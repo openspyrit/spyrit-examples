@@ -295,6 +295,6 @@ for lamb, wav in zip(lambda_list, wav_list):
     
     imagesc(x_dcnet[data_ind,lamb,0].rot90(k=2).cpu(),
             colormap = wav,
-            #colormap = wavelength_to_colormap(wav, gamma=0.8),
-            title=f'DC-Net, {wav:.1f} nm'
+            title=f'DC-Net, {wav:.1f} nm',
+            gamma = .8
             )

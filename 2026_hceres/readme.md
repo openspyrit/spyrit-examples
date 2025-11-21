@@ -34,27 +34,24 @@ There are two options:
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-1. Install SPyRiT v3 and a few more packages
+1. Install latest SPyRiT (and a few more packages ?)
     ```shell
-    pip install spyrit==3.0.2
+    pip install pip install git+https://github.com/openspyrit/spyrit.git@master
     pip install girder-client
     pip install scikit-image
     ```
 
-## Download the models and data [Needs update!]
+## Download the models and data [Check if this works]
 
 *Todo: Update `download_data.py`!*  
 
 Run the `download_data.py` script from the `2026_hceres` subfolder
 ```shell
-cd spyrit-examples/2025_spyrit_v3/ 
+cd spyrit-examples/2026_hceres/ 
 python download_data.py
 ```
 
-
-The ImageNet (ILSVRC2012) test and validation sets can be downloaded from [this url](https://image-net.org/challenges/LSVRC/2012/2012-downloads.php). They must saved in `./data/ILSVRC2012/test/all` and `./data/ILSVRC2012/val/all`. 
-
-If the images are already available on your computer, just create a symbolic link
+If measurements are already available on your computer, just create a symbolic link
 
 * Linux:
 
@@ -65,7 +62,7 @@ If the images are already available on your computer, just create a symbolic lin
 * Windows Powershell (run as Administrator):
 
     ```shell
-    New-Item -ItemType SymbolicLink -Name \data\ILSVRC2012\ -Target <imagenet folder>
+    New-Item -ItemType SymbolicLink -Name \data\2025-11-10_test_HCERES\ -Target <measurement folder>
     ```
 The directory structure should be as follows:
 
@@ -86,5 +83,3 @@ The directory structure should be as follows:
 |   |   |---aux_functions.py
 |   |   |---download_data.py
 ```
-
-## How to reproduce the results of the paper?
