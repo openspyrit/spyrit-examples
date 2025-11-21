@@ -43,8 +43,6 @@ There are two options:
 
 ## Download the models and data [Check if this works]
 
-*Todo: Update `download_data.py`!*  
-
 Run the `download_data.py` script from the `2026_hceres` subfolder
 ```shell
 cd spyrit-examples/2026_hceres/ 
