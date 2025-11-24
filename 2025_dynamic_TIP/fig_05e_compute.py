@@ -57,7 +57,6 @@ os.makedirs(path_fig, exist_ok=True)
 path_deform = Path('/home/maitre/Images/images_thèse/2024_article/deformations/')
 
 
-# batch_size = 512
 batch_size = 16
 
 # Dataloader for STL-10 dataset
@@ -83,13 +82,20 @@ Dx_in_X, Dy_in_X = spytorch.neumann_boundary(meas_shape)
 D2_H1_in_X = Dx_in_X.T @ Dx_in_X + Dy_in_X.T @ Dy_in_X
 D2_H1_in_X = D2_H1_in_X.to(dtype=dtype)
 
-## EXP ORDER
-stat_folder_acq = Path('./stats/')
-cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy')
+# %% Get exp order from Tomoradio warehouse
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+local_folder = Path('stats') 
+id_files = [
+    "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
+]
+try:
+    download_girder(url_tomoradio, id_files, local_folder)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
-Cov_acq = np.load(cov_acq_file)
+Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy'))
 Ord_acq = Cov2Var(Cov_acq)
-
 Ord = torch.from_numpy(Ord_acq)
 
 

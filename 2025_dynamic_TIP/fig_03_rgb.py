@@ -163,18 +163,7 @@ with torch.no_grad():
 
 
    
-    # %% PLOT ENTIRE DEFORMATION 
-    # x_vid = x_motion[0, :, :, amp_max:img_size-amp_max, amp_max:img_size-amp_max].moveaxis(1, -1).cpu().numpy()
-
-    # for frame in range(int(meas_size / und ** 0.5)):
-    #     # plt.imshow(x_motion[0, meas_size * frame, 0, amp_max:img_size-amp_max, amp_max:img_size-amp_max].view(meas_shape).cpu().numpy(), cmap="gray")  # in X
-    #     # plt.imshow(x_motion[0, meas_size * frame, :].view(img_shape).cpu().numpy(), cmap="gray")  # in X_ext
-    #     plt.imshow(x_vid[meas_size * frame])  # RGB
-    #     plt.suptitle("frame %d" % (meas_size * frame), fontsize=16)
-    #     # plt.colorbar()
-    #     plt.pause(0.1)
-    #     clear_output(wait=True)
-
+    # %% SAVE DEFORMATION 
     fps = int(x_motion.shape[1] / 10)
     video_path = 'fig_03_rgb_motion_2.mp4'
     save_motion_video(x_motion, video_path, amp_max, fps=fps)
@@ -184,29 +173,21 @@ with torch.no_grad():
 
 
 
-    # %% EXP ORDER
-    # stat_folder_acq = Path('./stats/')
-    # cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy')
-
+    # %% Get exp order from Tomoradio warehouse
     url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
     local_folder = Path('stats') 
     id_files = [
-        "672b8077f03a54733161e970"  # 64x64 Cov_acq.npy
+        "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
     ]
     try:
         download_girder(url_tomoradio, id_files, local_folder)
-
     except Exception as e:
         print("Unable to download from the Tomoradio warehouse")
         print(e)
 
     Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy'))
-
     Ord_acq = Cov2Var(Cov_acq)
-
     Ord = torch.from_numpy(Ord_acq)
-
-    # Cov_acq2 = torch.load(local_folder / f'Cov_{meas_size}x{meas_size}.pt', weights_only=True).to(device)
 
 
     # %% SIMULATE MEASUREMENT

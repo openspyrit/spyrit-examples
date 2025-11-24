@@ -13,7 +13,7 @@ from spyrit.core.meas import HadamSplit2d, DynamicHadamSplit2d
 from spyrit.core.prep import Unsplit
 
 from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
-from spyrit.misc.load_data import read_acquisition
+from spyrit.misc.load_data import read_acquisition, download_girder
 
 
 
@@ -52,13 +52,20 @@ homography_x1 = homography_finder(kp_method, homo_folder=homo_folder, read_homog
 homography_x1 = homography_x1.to(dtype=dtype, device=device)
 
 
-# %% EXP ORDER
-stat_folder_acq = Path('./stats/')
-cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(n_acq, n_acq) + '.npy')
+# %% Get exp order from Tomoradio warehouse
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+local_folder = Path('stats') 
+id_files = [
+    "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
+]
+try:
+    download_girder(url_tomoradio, id_files, local_folder)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
-Cov_acq = np.load(cov_acq_file)
+Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(n_acq, n_acq) + '.npy'))
 Ord_acq = Cov2Var(Cov_acq)
-
 Ord = torch.from_numpy(Ord_acq)
 
 

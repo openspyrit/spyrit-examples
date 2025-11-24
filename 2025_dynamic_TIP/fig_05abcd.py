@@ -24,6 +24,7 @@ from spyrit.core.warp import DeformationField
 from spyrit.misc.disp import torch2numpy, imagesc, blue_box
 from spyrit.misc.statistics import transform_gray_norm, Cov2Var, data_loaders_stl10
 import spyrit.misc.metrics as score
+from spyrit.misc.load_data import download_girder
 
 
 
@@ -75,13 +76,20 @@ x = (x - x.min()) / (x.max() - x.min())
 x_plot = x.view(img_shape).cpu()
 imagesc(x_plot, r"Original image $x$")
 
-## EXP ORDER
-stat_folder_acq = Path('./stats/')
-cov_acq_file = stat_folder_acq / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy')
+# %% Get exp order from Tomoradio warehouse
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+local_folder = Path('stats') 
+id_files = [
+    "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
+]
+try:
+    download_girder(url_tomoradio, id_files, local_folder)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
-Cov_acq = np.load(cov_acq_file)
+Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy'))
 Ord_acq = Cov2Var(Cov_acq)
-
 Ord = torch.from_numpy(Ord_acq)
 
 
