@@ -8,7 +8,6 @@ import torch
 import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import math
 
 from pathlib import Path
@@ -20,7 +19,6 @@ from spyrit.core.meas import HadamSplit2d, DynamicHadamSplit2d
 from spyrit.misc.disp import torch2numpy, blue_box, save_motion_video
 from spyrit.misc.statistics import Cov2Var, transform_norm
 from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
-import numpy as np
 
 
 #%% LOAD IMAGE DATA
@@ -33,9 +31,6 @@ M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
-data_root = '../data/data_online/' #os.getcwd()
-imgs_path = os.path.join(data_root, "spyrit/")
-
 amp_max = (img_shape[0] - meas_shape[0]) // 2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -45,20 +40,31 @@ dtype = torch.float64
 simu_interp = 'bicubic'
 mode = 'bilinear'
 
-# Create a transform for natural images to normalized grayscale image tensors
-# transform = transform_gray_norm(img_size=img_size)
+# Download images from Tomoradio's warehouse if needed
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+data_root = Path('../data/data_online/2025_dynamic')   # local path to data
+imgs_path = data_root / Path("images/")
+id_files = [
+    "69248e3204d23f6e964b16b7"  # brain_surface_colorized.png
+]
+try:
+    download_girder(url_tomoradio, id_files, imgs_path)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
+
+# Create a transform for natural images to normalized image tensors
 transform = transform_norm(img_size=img_size)
 
 batch_size = 1
 
 # Create dataset and loader
-dataset = torchvision.datasets.ImageFolder(root=imgs_path, transform=transform)
-# dataset = torchvision.datasets.ImageFolder(root=imgs_path)
+dataset = torchvision.datasets.ImageFolder(root=data_root, transform=transform)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
 
 # %% Select image
-i = 1  # Image index (modify to change the image)
+i = 0  # Image index (modify to change the image)
 
 img, _ = dataloader.dataset[i]
 x_healthy = img.unsqueeze(0).to(dtype=dtype, device=device)

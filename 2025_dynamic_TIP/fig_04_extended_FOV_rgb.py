@@ -32,33 +32,44 @@ save_fig = True
 
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
+und = 1 # undersampling factor
+M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
 amp_max = (img_shape[0] - meas_shape[0]) // 2
 
-i = 0  # Image index (modify to change the image)
-spyritPath = '../data/data_online/' #os.getcwd()
-imgs_path = os.path.join(spyritPath, "spyrit/")
-
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")  # avoid memory issues
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
 dtype = torch.float64
 simu_interp = 'bicubic'
+mode = 'bilinear'
 
+# Download images from Tomoradio's warehouse if needed
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+data_root = Path('../data/data_online/2025_dynamic')   # local path to data
+imgs_path = data_root / Path("images/")
+id_files = [
+    "69248e3204d23f6e964b16b7"  # brain_surface_colorized.png
+]
+try:
+    download_girder(url_tomoradio, id_files, imgs_path)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
-# Create a transform for natural images to normalized grayscale image tensors
+# Create a transform for natural images to normalized image tensors
 transform = transform_norm(img_size=img_size)
 
-# Create dataset and loader (expects class folder 'images/test/')
-dataset = torchvision.datasets.ImageFolder(root=imgs_path, transform=transform)
-# Reduce batch size to save memory
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=1)  # Changed from 7 to 1
+batch_size = 1
+
+# Create dataset and loader
+dataset = torchvision.datasets.ImageFolder(root=data_root, transform=transform)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
 # %% Select image
-i = 1  # Image index (modify to change the image)
+i = 0  # Image index (modify to change the image)
 
 img, _ = dataloader.dataset[i]
 x_healthy = img.unsqueeze(0).to(dtype=dtype, device=device)
