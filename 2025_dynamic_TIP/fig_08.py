@@ -13,21 +13,20 @@ from spyrit.core.prep import Unsplit
 from spyrit.misc.color import plot_hs
 
 from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
-from spyrit.misc.load_data import read_acquisition, empty_acqui
+from spyrit.misc.load_data import read_acquisition
 from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
 
 
 
 # %% DETERMINE HOMOGRAPHY
-save_fig = True
+save_fig = False
 
-homo_folder = Path('extended_FOV2/')
-data_root = Path('../data/data_online/') / homo_folder
+homo_folder = Path('homography/')
+data_root = Path('../data/data_online/extended_FOV2')
 
 results_root = Path('../../Images/images_thèse/2024_article/exp_results/')
 
-# dtype = torch.float64
 dtype = torch.float32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -51,7 +50,7 @@ homography_x1 = homography_finder(kp_method, homo_folder=homo_folder, read_homog
                                save_homography=save_homography, read_hand_kp=read_hand_kp, snapshot=snapshot,
                                show_calib=True)
 
-homography_x1 = homography_x1.to(dtype=dtype)
+homography_x1 = homography_x1.to(dtype=dtype, device=device)
 
 
 
@@ -82,7 +81,7 @@ c1 = (n - 1) / 2
 c2 = (n - 1) / 2
 zoom_homography = torch.tensor([[zoom_factor, 0, (1 - zoom_factor) * c1],
                                 [0, zoom_factor, (1 - zoom_factor) * c2],
-                                [0, 0, 1]], dtype=dtype)
+                                [0, 0, 1]], dtype=dtype, device=device)
 
 homography = zoom_homography @ homography_x1
 
@@ -157,26 +156,23 @@ if n_wav > 1:
 data_folder_white = 'obj_Empty_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1'
 data_file_prefix_white = 'obj_Empty_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1'
 
-from spyrit.misc.load_data import ExperimentConfig
-config = ExperimentConfig(
-            n_acq=64,
-            n=64,
-            amp_max=0,
-            zoom_factor=1,
-            dtype=homography.dtype
-        )
+_, meas_empty = read_acquisition(data_root, data_folder_white, data_file_prefix_white)
 
-_, w = empty_acqui(data_root, data_folder_white, data_file_prefix_white, homography)
-w_torch = torch.from_numpy(w.copy()).unsqueeze(0).unsqueeze(0)
+# Process measurements
+meas_empty_torch = torch.from_numpy(meas_empty).to(dtype=dtype, device=device)
+y_empty = torch.mean(meas_empty_torch, axis=1).view(1, -1)
+y_empty_diff = prep_op(y_empty)
+
+# Reconstruct SP image
+w = meas_op_stat.fast_pinv(y_empty_diff)
 
 zoom_homography_inv = torch.linalg.inv(zoom_homography)
-w_torch_zoom = recalibrate(w_torch, (n, n), zoom_homography_inv, amp_max=0)
-w = torch2numpy(w_torch_zoom.view(n, n))
+w = recalibrate(w.unsqueeze(0), (n, n), zoom_homography_inv, amp_max=0)
 
 
 
 # %% DEFORMATION FILES
-deform_path = Path('../omigod_res/') / homo_folder
+deform_path = Path('../omigod_res/extended_FOV2')
 
 deform_folder = Path('diag_1_outFOV-3')
 deform_prefix = 'diag_1_outFOV'
@@ -204,7 +200,7 @@ g_frame0 = get_frame(movie, frame_ref)
 
 homography_inv = torch.linalg.inv(homography)
 g_frame0 = torch.from_numpy(g_frame0).unsqueeze(0).unsqueeze(0)
-g_frame0 = g_frame0.to(dtype)
+g_frame0 = g_frame0.to(dtype=dtype, device=device)
 img_cmos_calibrated = recalibrate(g_frame0, (l, l), homography_inv, amp_max=amp_max)
 img_cmos_calibrated_np = np.rot90(torch2numpy(img_cmos_calibrated[0, 0]), 2)
 
@@ -228,8 +224,7 @@ eta_in_X = 1e-1
 y2_exp = y2_exp.to('cpu')  # send to cpu for linalg operations
 
 meas_op = DynamicHadamSplit2d(time_dim=time_dim, h=n, M=M, order=Ord, img_shape=(l, l),
-                              white_acq=torch.rot90(w_torch_zoom, k=2, dims=(-2, -1)),
-                              dtype=dtype)
+                              white_acq=w, dtype=dtype, device=device)
 
 # %% CALC FINITE DIFFERENCE MATRIX
 Dx, Dy = spytorch.neumann_boundary((n, n))
@@ -243,7 +238,7 @@ D2_in_X, D2 = D2_in_X.type(dtype=dtype), D2.type(dtype=dtype)
 
 # %% ######### PATTERN WARPING DYNAMIC MEASUREMENT MATRIX #########
 warping = 'pattern'
-def_field = projector(warping=warping, amp_max=amp_max)
+def_field = projector(warping=warping, amp_max=amp_max).to(device)
 meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 
 H_dyn = meas_op.H_dyn
@@ -268,7 +263,7 @@ f_wh_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 
 
 # %% ######### IMAGE WARPING DYNAMIC MEASUREMENT MATRIX #########
 warping = 'image'
-def_field = projector(warping=warping, amp_max=amp_max)
+def_field = projector(warping=warping, amp_max=amp_max).to(device)
 meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 
 H_dyn = meas_op.H_dyn
@@ -348,6 +343,20 @@ if save_fig:
     save_motion_video(x_rec_video, video_path, amp_max, fps=fps)
 
 
+# %% Save deformation fields
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2)
+
+
 # %% Spectral plots (change f_dyn if needed)
 f_dyn = f_wf_Xext  # change if needed
 
@@ -389,17 +398,4 @@ if save_fig:
                blue_box(f_wf_Xext_np, amp_max=amp_max))
 
 
-# %% Save deformation fields
-if save_fig:
-    path_fig = results_root / data_folder
-    Path(path_fig).mkdir(parents=True, exist_ok=True)
-    video_path = path_fig / 'deformation_quiver.mp4'
-
-    n_frames = 200
-    step = 6  # subsampling for arrows
-    fps = 30
-
-    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
-                     amp_max=amp_max, box_color='blue', box_linewidth=2
-                     )
 # %%
