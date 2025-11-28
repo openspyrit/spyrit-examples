@@ -9,19 +9,13 @@ from typing import OrderedDict
 import torch
 import torch.nn as nn
 import numpy as np
-import matplotlib.pyplot as plt
 
 import spyrit.core.meas as meas
-import spyrit.core.noise as noise
 import spyrit.core.prep as prep
 import spyrit.core.recon as recon
 import spyrit.core.nnet as nnet
 import spyrit.core.train as train
 import spyrit.misc.sampling as samp
-import spyrit.external.drunet as drunet
-
-#import utility_dpgd as dpgd
-
 
 # %%
 # General
@@ -29,7 +23,8 @@ import spyrit.external.drunet as drunet
 # Experimental data
 data_folder = "data/"  # measurements
 model_folder = "model/"  # reconstruction models
-stat_folder = "stat/"  # statistics
+stat_folder = '../../tomoradio-spyrit/_stat/ILSVRC2012_v10102019/'  # statistics
+
 recon_folder = "recon/figure_4/"  # reconstructed images
 
 # Full paths
@@ -247,16 +242,19 @@ denoiser = nn.Sequential(denoiser)
 # argument. It fails if it does not find the '.denoi' key.
 train.load_net(model_folder_full / model_name, denoiser, device, False)
 
-# Load covariance prior
-cov_name = stat_folder_full / "Cov_8_{}x{}.pt".format(img_size, img_size)
+# Load covariance prior (image domain)
+cov_name = stat_folder_full / 'ILSVRC2012_v10102019_resize'/ "Cov_im2_{}x{}.pt".format(img_size, img_size)
 Cov = torch.load(cov_name, weights_only=True).to(device)
-# divide by 4 because the measurement covariance has been computed on images
-# with values in [-1, 1] (total span 2) whereas our image is in [0, 1] (total
-# span 1). The covariance is thus 2^2 = 4 times larger than expacted.
-Cov /= 4
+
+# Covariance in Hadamard domain
+meas_full = meas.HadamSplit2d(img_size, device=device) # full transform
+Cov = meas_full.adjoint_H(Cov.T)            # Cov^T H^T
+Cov = meas_full.adjoint_H(Cov.T).T          # (Cov^T H^T)^T H^T = H Cov H^T
 
 # Init
 dcnet = recon.DCNet(meas_op, prep_op, Cov, denoiser, device=device)
+#dcnet = recon.DCNet(meas_op, prep_op, Cov, device=device)
+
 dcnet.eval()
 
 # Reconstruct
