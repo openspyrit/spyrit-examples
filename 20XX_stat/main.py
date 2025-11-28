@@ -10,7 +10,8 @@ from spyrit.misc.statistics import stat_imagenet
 from pathlib import Path
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#device = 'cpu'
+
+print(device)
         
 #%% Covariance of imageNet images
 data_folder = '../../data/ILSVRC2012_v10102019'
@@ -19,15 +20,15 @@ save_folder = './stat/ILSVRC2012_v10102019'
 for img_size in [32,64,128]:
     print(f'Image size: {img_size}')
     
-    for get_size in ['original', 'resize','ccrop', 'rcrop']:
+    for get_size in ['ccrop', 'rcrop', 'resize']: #, 'original'
         print(f'Transform: {get_size}')
         
         stat_folder = Path(save_folder + '_' + get_size)
         stat_imagenet(stat_root = stat_folder, 
                       data_root = data_folder,
                       img_size = img_size, 
-                      batch_size = 1024, 
+                      batch_size = 4*1024, 
                       get_size = get_size,
-                      normalize = False,
+                      normalize = False,    # image with value in (0,1)
                       device = device,
                       ext = 'pt')
