@@ -27,18 +27,18 @@ wavelengths = ast.literal_eval(json_metadata["wavelengths"])
 
 from spyrit.misc import sampling as samp
 subsampling_factor = 1
-img_size = 64 # TODO: what happens if I put 64 ? originally 128
+img_size = 64
 
 acq_size = img_size // subsampling_factor
-# @Nicolas ya pas un truc hard codé pour le differentiable postproc ici ?
+# Patterns are acquired pos/neg, and the indices are given for pos, neg each time.
+# The order of the (+1,-1) patterns is given by patterns, but the indices are multiplied by two consequently.
 Ord_acq = (-np.array(patterns)[::2] // 2).reshape((acq_size, acq_size))
-#Ord_acq = -np.array(patterns)[::2].reshape((acq_size, acq_size)) 
 
 # Measurement and noise operators
 Ord_rec = torch.ones(img_size, img_size)
-# @Nicolas ya pas un truc hard codé pour le differentiable postproc ici ?
-Ord_rec[:, img_size // 2 :] = 0
-Ord_rec[img_size // 2 :, :] = 0
+# Only useful to subsample from 128 to 64
+# #Ord_rec[:, img_size // 2 :] = 0
+#Ord_rec[img_size // 2 :, :] = 0
 
 # Define the two permutation matrices used to reorder the measurements
 # measurement order -> natural order -> reconstruction order
