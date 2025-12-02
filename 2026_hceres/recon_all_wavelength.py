@@ -49,7 +49,7 @@ suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 n_meas = len(data_title)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+#device = torch.device("cpu")
 print("Using device:", device)
 
 img_size = 128  # image size
@@ -158,7 +158,7 @@ lambda_batch_indices = np.arange(0, 2048, lambda_batch_size, dtype=np.uint64)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         for lambda_start in lambda_batch_indices:
-            lambda_end = lambda_start + lambda_batch_size
+            lambda_end = int(lambda_start + lambda_batch_size)
             
             print(f'Channels: {lambda_start}--{lambda_end}')
             x_pinvnet[ii, lambda_start:lambda_end, ...] = pinvnet.reconstruct(
@@ -200,7 +200,7 @@ lambda_batch_indices = np.arange(0, 2048, lambda_batch_size, dtype=np.uint64)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         for lambda_start in lambda_batch_indices:
-            lambda_end = lambda_start + lambda_batch_size
+            lambda_end = int(lambda_start + lambda_batch_size)
             
             print(f'Channels: {lambda_start}--{lambda_end}')
             x_pinvnet[ii, lambda_start:lambda_end, ...] = pinvnet.reconstruct(
@@ -266,7 +266,7 @@ lambda_batch_indices = np.arange(0, 2048, lambda_batch_size, dtype=np.uint64)
 with torch.no_grad():
     for ii, y in enumerate(measurements_slice):
         for lambda_start in lambda_batch_indices:
-            lambda_end = lambda_start + lambda_batch_size
+            lambda_end = int(lambda_start + lambda_batch_size)
             
             print(f'Channels: {lambda_start}--{lambda_end}')
             x_dcnet[ii, lambda_start:lambda_end, ...] = dcnet.reconstruct(

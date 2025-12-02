@@ -22,8 +22,7 @@ tmp = tmp.replace("np.int32(", "").replace(")", "")
 patterns = ast.literal_eval(tmp)  # the list (of list of) of pattern indices (evaluation because stored as text...)
 wavelengths = ast.literal_eval(json_metadata["wavelengths"])
 
-## Permutation of measurements
-# @Nicolas au secours ^^
+#%% Permutation of measurements
 
 from spyrit.misc import sampling as samp
 subsampling_factor = 1
@@ -36,9 +35,6 @@ Ord_acq = (-np.array(patterns)[::2] // 2).reshape((acq_size, acq_size))
 
 # Measurement and noise operators
 Ord_rec = torch.ones(img_size, img_size)
-# Only useful to subsample from 128 to 64
-# #Ord_rec[:, img_size // 2 :] = 0
-#Ord_rec[img_size // 2 :, :] = 0
 
 # Define the two permutation matrices used to reorder the measurements
 # measurement order -> natural order -> reconstruction order
@@ -57,7 +53,7 @@ plt.axis('off')
 plt.show()
 
 
-## Pre-processing of the measurements
+#%% Pre-processing of the measurements
 
 # Make a wavelength x measurements tensor
 Y = torch.tensor(Ymeas, dtype=torch.float32).T
@@ -82,7 +78,7 @@ plt.ylabel("Wavelength index")
 plt.colorbar()
 plt.show()
 
-## Classic recon
+#%% Classic recon (Jérémy)
 
 # Reconstruction with pseudo-inverse
 from spyrit.core.meas import HadamSplit2d
@@ -141,7 +137,7 @@ for i, px_idx in enumerate(plot_idx):
     plt.ylabel("Intensity")
 plt.show()
 
-## NMF-based reconstruction
+#%% NMF-based reconstruction
 print("------- Starting NMF-based reconstruction --------")
 
 # Init pinv+spa
