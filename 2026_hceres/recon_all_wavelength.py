@@ -40,12 +40,12 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
-data_subfolder = ["2025-11-10_test_HCERES",
-                "2025-11-10_test_HCERES"
+data_subfolder = ["2025-11-10_test_HCERES"#,
+                #"2025-11-10_test_HCERES"
                 ]
 data_title = [#"tomato_slice_2_zoomx2", 
               #"zoom_x12_starsector",
-              "obj_Cat_bicolor_source_white_LED_Walsh_im_64x64_ti_10ms_zoom_x1",
+              #"obj_Cat_bicolor_source_white_LED_Walsh_im_64x64_ti_10ms_zoom_x1",
               "obj_Cat_bicolor_thin_overlap_source_white_LED_Walsh_im_64x64_ti_9ms_zoom_x1"
               ]
 
