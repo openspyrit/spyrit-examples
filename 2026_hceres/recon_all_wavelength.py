@@ -36,12 +36,12 @@ recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
 data_subfolder = ["2025-11-10_test_HCERES",
-                "2025-11-10_test_HCERES"
+                #"2025-11-10_test_HCERES"
                 ]
 data_title = [#"tomato_slice_2_zoomx2", 
               #"zoom_x12_starsector",
               "obj_Cat_bicolor_source_white_LED_Walsh_im_64x64_ti_10ms_zoom_x1",
-              "obj_Cat_bicolor_thin_overlap_source_white_LED_Walsh_im_64x64_ti_9ms_zoom_x1"
+              #"obj_Cat_bicolor_thin_overlap_source_white_LED_Walsh_im_64x64_ti_9ms_zoom_x1"
               ]
 
 savenames = ["tomato", "starsector"]
@@ -150,7 +150,7 @@ reconstruct_size = torch.Size([n_meas]) + (n_lambda, 1, img_size, img_size)
 pinvnet = recon.PinvNet(meas_op, prep_op, device=device)
 
 # Reconstruct
-x_pinvnet = torch.zeros(reconstruct_size, device=device)
+x_pinv = torch.zeros(reconstruct_size, device=device)
 
 lambda_batch_size = 256
 lambda_batch_indices = np.arange(0, 2048, lambda_batch_size, dtype=np.uint64)
@@ -161,9 +161,12 @@ with torch.no_grad():
             lambda_end = int(lambda_start + lambda_batch_size)
             
             print(f'Channels: {lambda_start}--{lambda_end}')
-            x_pinvnet[ii, lambda_start:lambda_end, ...] = pinvnet.reconstruct(
+            x_pinv[ii, lambda_start:lambda_end, ...] = pinvnet.reconstruct(
                                                 y[lambda_start:lambda_end]
                                                 )
+            
+            # denormalize
+            x_pinv[ii, lambda_start:lambda_end, ...] *= pinvnet.prep.alpha[...,None]
 
 #%% Plot Pinv
 from spyrit.misc.disp import imagesc 
@@ -171,8 +174,23 @@ from spyrit.misc.disp import imagesc
 lambda_plot = 500 
 
 for ii, _ in enumerate(measurements_slice):
-    imagesc(x_pinvnet[ii,lambda_plot,0].cpu(), 
+    imagesc(x_pinv[ii,lambda_plot,0].cpu(), 
             title=f'{wavelengths[ii][lambda_plot]} nm')
+    
+    
+data_ind = 0
+lambda_list = [500, 1500, 2000] 
+
+
+wav_list = [wavelengths[data_ind][lamb] for lamb in lambda_list]
+
+for lamb, wav in zip(lambda_list, wav_list):
+    
+    imagesc(x_pinv[data_ind,lamb,0].rot90(k=2).cpu(),
+            colormap = wav,
+            #colormap = wavelength_to_colormap(wav, gamma=0.8),
+            title=f'Pinv-Net, {wav:.1f} nm'
+            )
 
 # %%
 # Pinv-Net
@@ -296,3 +314,27 @@ for lamb, wav in zip(lambda_list, wav_list):
             title=f'DC-Net, {wav:.1f} nm',
             gamma = .8
             )
+    
+#%% Plot a few spectra
+import matplotlib.pyplot as plt
+obj_ind = 0
+x_ind_list = 21, 108
+y_ind_list = 38, 95
+ 
+plt.figure()
+
+for x_ind, y_ind in zip(x_ind_list, y_ind_list):
+    
+    plt.plot(wavelengths[0], 
+             x_pinv[obj_ind,:,0,x_ind,y_ind].cpu(), 
+             label=f'pinv ({x_ind}, {y_ind})')
+    plt.plot(wavelengths[0],
+             x_pinvnet[obj_ind,:,0,x_ind,y_ind].cpu(),  
+             label=f'pinv-Net ({x_ind}, {y_ind})')
+    plt.plot(wavelengths[0],
+             x_dcnet[obj_ind,:,0,x_ind,y_ind].cpu(),  
+             label=f'DC-Net ({x_ind}, {y_ind})')
+    plt.xlabel('wavelength (in nm)')
+    plt.ylabel('intensity')
+
+plt.legend()
