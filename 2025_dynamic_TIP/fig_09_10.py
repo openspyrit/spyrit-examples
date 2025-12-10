@@ -226,7 +226,7 @@ L = l ** 2
 time_dim = 1
 
 eta = 1e-2
-eta_in_X = 1e-1
+eta_in_X = 1e-2
 
 
 # %% 
@@ -253,6 +253,19 @@ meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 H_dyn = meas_op.H_dyn
 H_dyn_in_X = H_dyn.reshape((H_dyn.shape[0], l, l))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], n**2))
 
+#%% Save deformation field as quiver plot video
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2)
+
 # %% send to cpu for linalg operations
 H_dyn, H_dyn_in_X = H_dyn.to('cpu'), H_dyn_in_X.to('cpu') # send to cpu for linalg operations
 
@@ -277,6 +290,20 @@ meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 H_dyn = meas_op.H_dyn
 H_dyn_in_X = H_dyn.reshape((H_dyn.shape[0], l, l))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], n**2))
 
+
+#%% Save deformation field as quiver plot video
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_inv_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2)
+    
 
 # %% send to cpu for linalg operations
 H_dyn, H_dyn_in_X = H_dyn.to('cpu'), H_dyn_in_X.to('cpu') # send to cpu for linalg operations
@@ -334,6 +361,10 @@ ax[1, 2].set_title('(f) wf in X ext', fontsize=fs)
 ax[1, 2].axis('off')
 
 plt.tight_layout()
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    plt.savefig(path_fig / f'overview.png', dpi=300)
 plt.show()
 
 # %% Recover video from reference frame and deformation field
@@ -351,18 +382,6 @@ if save_fig:
     save_motion_video(x_rec_video, video_path, amp_max, fps=fps)
 
 
-# %% Save deformation fields
-if save_fig:
-    path_fig = results_root / data_folder
-    Path(path_fig).mkdir(parents=True, exist_ok=True)
-    video_path = path_fig / 'deformation_quiver.mp4'
-
-    n_frames = 200
-    step = 6  # subsampling for arrows
-    fps = 30
-
-    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
-                     amp_max=amp_max, box_color='blue', box_linewidth=2)
 
 
 # %% Spectral plots (change f_dyn if needed) : Fig 10.b

@@ -14,14 +14,15 @@ from spyrit.core.prep import Unsplit
 
 from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
 from spyrit.misc.load_data import read_acquisition, download_girder
+import matplotlib as mpl
 
 
 
 # %% DETERMINE HOMOGRAPHY
 save_fig = False
 
-homo_folder = Path('extended_FOV2/')
-data_root = Path('../data/data_online/') / homo_folder
+homo_folder = Path('homography/')
+data_root = Path('../data/data_online/extended_FOV2')
 
 results_root = Path('../../Images/images_thèse/2024_article/exp_results/')
 
@@ -322,7 +323,7 @@ plt.show()
 
 
 # %% DEFORMATION FILES
-deform_path = Path('../omigod_res/') / homo_folder
+deform_path = Path('../omigod_res/extended_FOV2')
 
 deform_folder = Path('star_diag')
 deform_prefix = 'star'
@@ -432,13 +433,15 @@ plt.show()
 
 
 # %% compare static and dynamic reconstructions for the ROI
+x_stat_ff_np_wide = np.zeros((n_wav, l, l))
+x_stat_ff_np_wide[:, amp_max : amp_max + n, amp_max : amp_max + n] = x_stat_ff_np
 
 # draw 1st ROI rectangle
-pos_x, pos_y = 29, 32
+pos_x, pos_y = 49, 52
 ROI_HALF = 24
 
-h_img = x_stat_ff_np.shape[1]
-w_img = x_stat_ff_np.shape[2]
+h_img = x_stat_ff_np_wide.shape[1]
+w_img = x_stat_ff_np_wide.shape[2]
     
 x0 = int(max(0, pos_x - ROI_HALF))
 y0 = int(max(0, pos_y - ROI_HALF))
@@ -463,24 +466,31 @@ h0 = b1 - b0
 
 fig, ax = plt.subplots(1, 3, figsize=(15, 5))
 
-ax[0].imshow(x_stat_ff_np.mean(axis=0), cmap='gray', vmin=0, vmax=1)
-rect_stat = Rectangle((x0, y0), width, height, linewidth=2, edgecolor='green', facecolor='none')
+
+ax[0].imshow(x_stat_ff_np_wide.mean(axis=0), cmap='gray', vmin=0, vmax=1)
+rect_stat = Rectangle((x0, y0), width, height, linewidth=3, edgecolor='green', facecolor='none')
 ax[0].add_patch(rect_stat)
+rect_fov = Rectangle((amp_max, amp_max), n, n, linewidth=3, edgecolor='blue', facecolor='none')
+ax[0].add_patch(rect_fov)
 ax[0].set_title(f"Stat rec ff / {t_stat} ms", fontsize=20)
 
 
-ax[1].imshow(f_wf_Xext_np.mean(axis=0), cmap='gray')
+ax[1].imshow(f_wf_Xext_np.mean(axis=0), cmap='gray', vmin=0, vmax=1)
 rect_dyn = Rectangle((a0, b0), w0, h0, linewidth=2, edgecolor='green', facecolor='none')
 ax[1].add_patch(rect_dyn)
+rect_fov = Rectangle((amp_max, amp_max), n, n, linewidth=2, edgecolor='blue', facecolor='none')
+ax[1].add_patch(rect_fov)
 ax[1].set_title(f"Dyn rec ff / {t_dyn} ms", fontsize=20)
 
-mean_spec_stat = x_stat_ff_np[:, y0 : y0 + height, x0 : x0 + width].mean(axis=(1, 2))
+mean_spec_stat = x_stat_ff_np_wide[:, y0 : y0 + height, x0 : x0 + width].mean(axis=(1, 2))
 mean_spec_dyn = f_wf_Xext_np[:, b0 : b0 + h0, a0 : a0 + w0].mean(axis=(1, 2))
-ax[2].plot(wav, mean_spec_stat, label='Static', color='orange')
-ax[2].plot(wav, mean_spec_dyn, label='Dynamic', color='red')
+
+ax[2].plot(wav, mean_spec_stat, label='Static', color='orange', linestyle=(0, (1, 3)), lw=3)
+
+ax[2].plot(wav, mean_spec_dyn, label='Dynamic', color='red', linestyle=(0, (1, 2)), lw=3)
+
 ax[2].set_title("ROI spectrums", fontsize=20)
 ax[2].set_xlabel("Wavelength (nm)", fontsize=fs)
-# ax[2].set_ylabel("Intensity", fontsize=fs)
 plt.legend()
 plt.show()
 
@@ -557,4 +567,42 @@ mse_ref = np.mean(mean_spec_stat ** 2)
 rel_mse_roi = mse_roi / mse_ref
 print(f'Relative RMSE between static and dynamic ROI spectrums: {rel_mse_roi:.4%}')
 
-# %%
+# %% check on single pixels
+
+x_stat_ff_np_wide = np.zeros((n_wav, l, l))
+x_stat_ff_np_wide[:, amp_max : amp_max + n, amp_max : amp_max + n] = x_stat_ff_np
+
+# points on the static
+p1_x, p1_y = 73, 40
+
+# points on the dynamic
+p2_x, p2_y = 55, 40
+
+
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+
+ax[0].imshow(x_stat_ff_np_wide.mean(axis=0), cmap='gray', vmin=0, vmax=1)
+ax[0].plot(p1_x, p1_y, marker='o', markersize=3, color='orange')
+rect_fov = Rectangle((amp_max, amp_max), n, n, linewidth=3, edgecolor='blue', facecolor='none')
+ax[0].add_patch(rect_fov)
+ax[0].set_title(f"Stat rec ff / {t_stat} ms", fontsize=20)
+
+
+ax[1].imshow(f_wf_Xext_np.mean(axis=0), cmap='gray', vmin=0, vmax=1)
+ax[1].plot(p2_x, p2_y, marker='o', markersize=3, color='red')
+rect_fov = Rectangle((amp_max, amp_max), n, n, linewidth=2, edgecolor='blue', facecolor='none')
+ax[1].add_patch(rect_fov)
+ax[1].set_title(f"Dyn rec ff / {t_dyn} ms", fontsize=20)
+
+spec_stat = x_stat_ff_np_wide[:, p1_y, p1_x]
+spec_dyn = f_wf_Xext_np[:, p2_y, p2_x]
+
+ax[2].plot(wav, spec_stat, label='Static', color='orange', linestyle=(0, (1, 3)), lw=3)
+
+ax[2].plot(wav, spec_dyn, label='Dynamic', color='red', linestyle=(0, (1, 2)), lw=3)
+
+ax[2].set_title("Spectrums", fontsize=20)
+ax[2].set_xlabel("Wavelength (nm)", fontsize=fs)
+plt.legend()
+plt.show()

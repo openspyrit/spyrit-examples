@@ -83,9 +83,82 @@ Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.n
 Ord_acq = Cov2Var(Cov_acq)
 Ord = torch.from_numpy(Ord_acq)
 
-Cov_acq2 = torch.load(local_folder / f'Cov_{meas_size}x{meas_size}.pt', weights_only=True).to(device)
 
-test_4 = Cov_acq2 / torch.from_numpy(Cov_acq).to(dtype=dtype, device=device)
+#%% test cov matrix
+Cov_acq_pt = torch.load(local_folder / f'Cov_{meas_size}x{meas_size}.pt', weights_only=True).to(device)
+Cov_acq_pt = torch2numpy(Cov_acq_pt)
+
+# %% rapport des deux covariances
+ratio_cov = Cov_acq_pt / Cov_acq
+
+print("Min ratio cov pt/np:", np.min(ratio_cov))
+print("Max ratio cov pt/np:", np.max(ratio_cov))
+print("Mean ratio cov pt/np:", np.mean(ratio_cov))
+print("Norm ratio cov pt/np:", np.linalg.norm(ratio_cov))
+
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+im0 = ax[0].imshow(Cov_acq, cmap='gray')
+ax[0].set_title('Cov_acq np', fontsize=16)
+fig.colorbar(im0, ax=ax[0], fraction=0.046, pad=0.04)
+
+im1 = ax[1].imshow(Cov_acq_pt, cmap='gray')
+ax[1].set_title('Cov_acq pt', fontsize=16)
+fig.colorbar(im1, ax=ax[1], fraction=0.046, pad=0.04)
+
+im2 = ax[2].imshow(ratio_cov, cmap='gray')
+ax[2].set_title('ratio pt / np (= 4 ?)', fontsize=16)
+fig.colorbar(im2, ax=ax[2], fraction=0.046, pad=0.04)
+
+plt.show()
+
+# %% diag test
+diag_cov_pt = np.diag(Cov_acq_pt).reshape((meas_size, meas_size))
+diag_cov_np = np.diag(Cov_acq).reshape((meas_size, meas_size))
+
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+im0 = ax[0].imshow(diag_cov_np, cmap='gray')
+ax[0].set_title('diag Cov_acq np', fontsize=16)
+fig.colorbar(im0, ax=ax[0], fraction=0.046, pad=0.04)
+
+im1 = ax[1].imshow(diag_cov_pt, cmap='gray')
+ax[1].set_title('diag Cov_acq pt', fontsize=16)
+fig.colorbar(im1, ax=ax[1], fraction=0.046, pad=0.04)
+
+im2 = ax[2].imshow(diag_cov_pt / diag_cov_np, cmap='gray')
+ax[2].set_title('ratio diag pt / np', fontsize=16)
+fig.colorbar(im2, ax=ax[2], fraction=0.046, pad=0.04)
+
+plt.show()
+
+# %%
+Ord_np = torch.from_numpy(Cov2Var(Cov_acq))
+Ord_pt = torch.from_numpy(Cov2Var(Cov_acq_pt))
+
+# %% 
+from spyrit.core.torch import sort_by_significance
+
+mask_basis = torch.zeros(64 * 64)
+mask_basis[:32*32] = torch.arange(1, 32*32 + 1)
+
+mask_var_pt = sort_by_significance(mask_basis, Ord_pt, axis="cols")
+mask_var_pt = mask_var_pt.reshape(64, 64)
+
+mask_var_np = sort_by_significance(mask_basis, Ord_np, axis="cols")
+mask_var_np = mask_var_np.reshape(64, 64)
+
+# %% plot mask var
+fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+im = ax[0].imshow(mask_var_np, vmin=0, vmax=1)
+ax[0].set_title("Mask Ord np", fontsize=20)
+fig.colorbar(im, ax=ax[0], fraction=0.046, pad=0.04)
+
+im = ax[1].imshow(mask_var_pt, vmin=0, vmax=1)
+ax[1].set_title("Mask Ord pt", fontsize=20)
+fig.colorbar(im, ax=ax[1], fraction=0.046, pad=0.04)
+
+plt.show()
+
+
 
 # %% DEFINE DEFORMATION
 with torch.no_grad():

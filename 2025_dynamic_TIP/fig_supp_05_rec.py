@@ -20,7 +20,7 @@ from spyrit.core.meas import DynamicHadamSplit2d
 from spyrit.core.noise import Poisson
 from spyrit.core.warp import DeformationField
 
-from spyrit.misc.disp import torch2numpy, imagesc, blue_box
+from spyrit.misc.disp import torch2numpy, imagesc, blue_box, save_field_video
 from spyrit.misc.statistics import transform_gray_norm, Cov2Var, data_loaders_stl10
 import spyrit.misc.metrics as score
 from spyrit.misc.load_data import download_girder
@@ -99,7 +99,8 @@ Ord = torch.from_numpy(Ord_acq)
 
 deform_idxs = [72, 56, 250]  # min, med, max amplitude indices
 
-save_fig = True
+save_fig = False
+save_deform = False
 results_root = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/reco')
 
 rec_array = np.zeros((len(deform_idxs), 4, img_size, img_size), dtype=np.float32)
@@ -136,9 +137,23 @@ with torch.no_grad():
             torch.cuda.empty_cache()
 
         time_dim = 1
-        x_motion = def_field(x, 0, 2 * M, mode=simu_interp)
+        x_motion = def_field_inv(x, 0, 2 * M, mode=simu_interp)
         x_motion = x_motion.moveaxis(time_dim, 1)
         print("x_motion.shape:", x_motion.shape)
+
+
+        # Save deformation field as quiver plot video
+        if save_deform:
+            path_fig = path_deform
+            Path(path_fig).mkdir(parents=True, exist_ok=True)
+            video_path = path_fig / Path('deformation_index_%d_quiver.mp4' % i_deform)
+
+            n_frames = 200
+            step = 6  # subsampling for arrows
+            fps = 30
+
+            save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                            amp_max=amp_max, box_color='blue', box_linewidth=2)
 
 
         # SIMULATE MEASUREMENT
@@ -177,7 +192,7 @@ with torch.no_grad():
 
         
         # Reconstruction with pattern warping (in X or in X_{ext})
-        meas_op.build_dynamic_forward(def_field_inv, warping='pattern', mode=mode)
+        meas_op.build_dynamic_forward(def_field, warping='pattern', mode=mode)
         H_dyn_diff = meas_op.H_dyn.to(device='cpu')
             
         ## in X_ext
@@ -200,7 +215,7 @@ with torch.no_grad():
 
 
         # Reconstruction with image warping (in X or in X_{ext})
-        meas_op.build_dynamic_forward(def_field, warping='image', mode=mode)
+        meas_op.build_dynamic_forward(def_field_inv, warping='image', mode=mode)
         H_dyn_diff = meas_op.H_dyn.to(device='cpu')
             
         ## in X_ext

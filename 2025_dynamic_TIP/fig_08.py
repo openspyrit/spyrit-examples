@@ -20,7 +20,7 @@ from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_
 
 
 # %% DETERMINE HOMOGRAPHY
-save_fig = False
+save_fig = True
 
 homo_folder = Path('homography/')
 data_root = Path('../data/data_online/extended_FOV2')
@@ -250,6 +250,20 @@ meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 
 H_dyn = meas_op.H_dyn
 H_dyn_in_X = H_dyn.reshape((H_dyn.shape[0], l, l))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], n**2))
+
+#%% Save deformation field as quiver plot video
+if save_fig:
+    path_fig = results_root / data_folder
+    Path(path_fig).mkdir(parents=True, exist_ok=True)
+    video_path = path_fig / 'deformation_quiver.mp4'
+
+    n_frames = 200
+    step = 6  # subsampling for arrows
+    fps = 30
+
+    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
+                     amp_max=amp_max, box_color='blue', box_linewidth=2)
+    
 
 # %% send to cpu for linalg operations
 H_dyn, H_dyn_in_X = H_dyn.to('cpu'), H_dyn_in_X.to('cpu') # send to cpu for linalg operations

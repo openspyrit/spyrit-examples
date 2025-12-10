@@ -107,8 +107,12 @@ print("Median amplitude (closest) -> index:", idx_med, "value:", amp_array[idx_m
 
 
 # %% plot scores % motion amplitude
-save_fig = False
+save_fig = True
+error_bars = False
+
 path_fig = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/')
+if error_bars:
+    path_fig = path_fig / Path('error_bars/')
 Path(path_fig).mkdir(parents=True, exist_ok=True)
 
 n_interpolation = 3
@@ -148,7 +152,7 @@ linestyles = ['dashed', 'dotted']
 for alpha_ind, alpha in enumerate(alpha_list):
 
     fontsize = 46
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(15, 15))
     plt.rc('legend', fontsize=18)
     plt.rc(('xtick', 'ytick'), labelsize=fontsize)
 
@@ -169,14 +173,15 @@ for alpha_ind, alpha in enumerate(alpha_list):
                 mean_sorted_bins = mean_sorted.reshape((n_bins, -1)).mean(axis=1)
                 std_sorted_bins = ((std_sorted ** 2).reshape((n_bins, -1)).mean(axis=1)) ** 0.5
 
-                plt.errorbar(motion_std_bin_array, mean_sorted_bins, yerr=std_sorted_bins, marker=marker, markersize=20,
-                            linestyle=linestyle, linewidth=4, color=color,
-                            label=warped_str + ' / ' + in_X_str, capsize=6, alpha=0.95)
- 
-                # plt.plot(motion_std_bin_array, mean_sorted_bins, marker=marker, markersize=20,
-                        # linestyle=linestyle, linewidth=4,
-                        # color=color, label=warped_str + ' / ' + in_X_str)
-                # plt.fill_between(motion_std_bin_array, mean_sorted_bins + std_sorted_bins , mean_sorted_bins - std_sorted_bins, color=color, alpha=0.1)
+                if error_bars:
+                    plt.errorbar(motion_std_bin_array, mean_sorted_bins, yerr=std_sorted_bins, marker=marker, markersize=20,
+                                linestyle=linestyle, linewidth=4, color=color,
+                                label=warped_str + ' / ' + in_X_str, capsize=6, alpha=0.95)
+                else:
+                    plt.plot(motion_std_bin_array, mean_sorted_bins, marker=marker, markersize=20,
+                        linestyle=linestyle, linewidth=4,
+                        color=color, label=warped_str + ' / ' + in_X_str)
+                    # plt.fill_between(motion_std_bin_array, mean_sorted_bins + std_sorted_bins , mean_sorted_bins - std_sorted_bins, color=color, alpha=0.1)
 
             else:
                 plt.plot(ms_sorted, mean_sorted, marker=marker, markersize=20,
@@ -187,7 +192,7 @@ for alpha_ind, alpha in enumerate(alpha_list):
     plt.ylabel('PSNR', fontsize=fontsize)
     plt.legend(ncol=2, loc='lower left', fontsize=fontsize)
     # plt.title(r'$\alpha$ = %d' % alpha, fontsize=fontsize)
-
+    plt.tight_layout()
     if save_fig:
         plt.savefig(path_fig / Path('PSNR_vs_motion_std_alpha_%d.pdf' % alpha), dpi=100)
 
@@ -197,7 +202,7 @@ for alpha_ind, alpha in enumerate(alpha_list):
 for alpha_ind, alpha in enumerate(alpha_list):
 
     fontsize = 46
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(15, 15))
     plt.rc('legend', fontsize=18)
     plt.rc(('xtick', 'ytick'), labelsize=fontsize)
 
@@ -218,9 +223,16 @@ for alpha_ind, alpha in enumerate(alpha_list):
                 mean_sorted_bins = mean_sorted.reshape((n_bins, -1)).mean(axis=1)
                 std_sorted_bins = ((std_sorted ** 2).reshape((n_bins, -1)).mean(axis=1)) ** 0.5
 
-                plt.errorbar(motion_std_bin_array, mean_sorted_bins, yerr=std_sorted_bins, marker=marker, markersize=20,
-                            linestyle=linestyle, linewidth=4, color=color,
-                            label=warped_str + ' / ' + in_X_str, capsize=6, alpha=0.95)
+                if error_bars:
+                    plt.errorbar(motion_std_bin_array, mean_sorted_bins, yerr=std_sorted_bins, marker=marker, markersize=20,
+                                linestyle=linestyle, linewidth=4, color=color,
+                                label=warped_str + ' / ' + in_X_str, capsize=6, alpha=0.95)
+                else:
+                    plt.plot(motion_std_bin_array, mean_sorted_bins, marker=marker, markersize=20,
+                            linestyle=linestyle, linewidth=4,
+                            color=color, label=warped_str + ' / ' + in_X_str)
+                    # plt.fill_between(motion_std_bin_array, mean_sorted_bins + std_sorted_bins , mean_sorted_bins - std_sorted_bins, color=color, alpha=0.1)
+
             else:
                 plt.plot(ms_sorted, mean_sorted, marker=marker, markersize=20,
                         linestyle=linestyle, linewidth=4,
