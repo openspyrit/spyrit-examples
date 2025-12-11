@@ -1,6 +1,6 @@
 #%% [markdown]
 """
-This script is used to reproduce the results given in Fig. 5a, 5b, 5c and 5d.
+This script is used to reproduce the results given in Fig. 5 for the motion strength study.
 It compares reconstruction methods using pattern warping (wh) and image warping (wf), 
 and the influence of the extended FOV, for a given random elastic deformation field,
 on a single image from the STL-10 dataset.
@@ -28,6 +28,9 @@ from spyrit.misc.load_data import download_girder
 
 
 #%% LOAD IMAGE DATA
+save_fig = False
+save_deform = False
+
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 und = 1 # undersampling factor
@@ -99,8 +102,6 @@ Ord = torch.from_numpy(Ord_acq)
 
 deform_idxs = [72, 56, 250]  # min, med, max amplitude indices
 
-save_fig = False
-save_deform = False
 results_root = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/reco')
 
 rec_array = np.zeros((len(deform_idxs), 4, img_size, img_size), dtype=np.float32)
@@ -116,6 +117,7 @@ with torch.no_grad():
     deform_batch_size = 50
 
     for i_deform in deform_idxs:
+        # vocabulary was changed, here the saved 'direct' field is v_k; and the 'inverse' field is u_k
         index_deform = i_deform % deform_batch_size
         beg_deform_batch, end_deform_batch = (i_deform // deform_batch_size) * deform_batch_size, (i_deform // deform_batch_size + 1) * deform_batch_size
         amp_array_dist = np.load(path_deform / Path('amplitudes_index_%d_%d.npy' % (beg_deform_batch, end_deform_batch)))

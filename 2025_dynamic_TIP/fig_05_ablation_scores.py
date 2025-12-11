@@ -1,7 +1,7 @@
 # %% [markdown]
 """
 This script is used to reproduce the results given in Fig. 5e.
-It visualizes the results obtained with fig_05e_compute.py over the test set of STL-10. 
+It visualizes the results obtained with fig_05_STL10_computations.py over the test set of STL-10. 
 These results have been pre-computed and stored in the 'raw_fig_05' folder.
 """
 

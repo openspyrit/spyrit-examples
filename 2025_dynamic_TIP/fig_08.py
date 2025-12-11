@@ -90,6 +90,9 @@ strategy = 'slice'  # 'slice' or 'bin'
 
 meas2_torch = torch.from_numpy(meas).to(dtype=dtype, device=device)
 
+y1_pan = meas2_torch.mean(dim=1).view(1, -1)
+
+
 if strategy == 'bin':
     # Bin spectral channels, with each bin covering consecutive slices
     bin_size = meas2_torch.shape[1] // n_wav
@@ -143,17 +146,20 @@ Ord = torch.from_numpy(Ord_acq)
 # %% PREP OP
 prep_op = Unsplit()
 y2_exp = prep_op(y1_exp)
+y2_pan = prep_op(y1_pan)
 
 
 # %% STATIC RECO
 meas_op_stat = HadamSplit2d(M=M, h=n, order=Ord, dtype=dtype, device=device) 
 
-f_stat = meas_op_stat.fast_pinv(y2_exp)
+f_stat = meas_op_stat.fast_pinv(y2_pan)
+
+f_stat_hs = meas_op_stat.fast_pinv(y2_exp)
 
 
 # %% Plot STATIC RECO (spectral)
 if n_wav > 1:
-    f_stat_np = torch2numpy(f_stat.moveaxis(0, -1))
+    f_stat_np = torch2numpy(f_stat_hs.moveaxis(0, -1))
     f_stat_np = np.rot90(f_stat_np, 2)
 
     plot_hs(strategy, f_stat_np, wav, suptitle="Static Reconstruction - Spectral Bands")
@@ -229,6 +235,7 @@ eta_in_X = 1e-1
 
 # %%
 y2_exp = y2_exp.to('cpu')  # send to cpu for linalg operations
+y2_pan = y2_pan.to('cpu')  # send to cpu for linalg operations
 
 meas_op = DynamicHadamSplit2d(time_dim=time_dim, h=n, M=M, order=Ord, img_shape=(l, l),
                               white_acq=w, dtype=dtype, device=device)
@@ -277,8 +284,8 @@ print(f'H_dyn_in_X spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0
 norm_in_X = s[0]
 
 # %% RECO WITH LAPACK (LU factorization)
-f_wh_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_exp.T)
-f_wh_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_exp.T)
+f_wh_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_pan.T)
+f_wh_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_pan.T)
 
 
 
@@ -304,8 +311,11 @@ norm_in_X = s[0]
 
 
 # %% RECO WITH LAPACK (LU factorization)
-f_wf_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_exp.T)
-f_wf_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_exp.T)
+f_wf_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_pan.T)
+f_wf_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_pan.T)
+
+f_wf_Xext_hs = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_exp.T)
+
 
 
 # %% Fig. 08
@@ -379,7 +389,7 @@ if save_fig:
 
 
 # %% Spectral plots (change f_dyn if needed)
-f_dyn = f_wf_Xext  # change if needed
+f_dyn = f_wf_Xext_hs  # change if needed
 
 if n_wav > 1:
     f_dyn_np = np.rot90(torch2numpy(f_dyn.reshape((l, l, n_wav))), 2)

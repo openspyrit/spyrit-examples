@@ -8,32 +8,28 @@ import torch
 import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import math
 
 from pathlib import Path
-from IPython.display import clear_output
 
 import spyrit.core.torch as spytorch
 from spyrit.core.warp import AffineDeformationField
 from spyrit.core.prep import Unsplit
 from spyrit.core.meas import HadamSplit2d, DynamicHadamSplit2d
-from spyrit.misc.disp import torch2numpy, imagesc, blue_box
-from spyrit.misc.statistics import transform_gray_norm, Cov2Var
-from spyrit.misc.load_data import download_girder
-
+from spyrit.misc.disp import torch2numpy, blue_box, save_motion_video
+from spyrit.misc.statistics import Cov2Var, transform_norm
+from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
+save_fig = True
+
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 und = 1 # undersampling factor
 M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
-
-data_root = '../data/data_online/' #os.getcwd()
-imgs_path = os.path.join(data_root, "spyrit/")
 
 amp_max = (img_shape[0] - meas_shape[0]) // 2
 
@@ -44,13 +40,26 @@ dtype = torch.float64
 simu_interp = 'bicubic'
 mode = 'bilinear'
 
-# Create a transform for natural images to normalized grayscale image tensors
-transform = transform_gray_norm(img_size=img_size)
+# Download images from Tomoradio's warehouse if needed
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+data_root = Path('../data/data_online/2025_dynamic')   # local path to data
+imgs_path = data_root / Path("images/")
+id_files = [
+    "69248e3204d23f6e964b16b7"  # brain_surface_colorized.png
+]
+try:
+    download_girder(url_tomoradio, id_files, imgs_path)
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
-batch_size = 16
+# Create a transform for natural images to normalized image tensors
+transform = transform_norm(img_size=img_size)
+
+batch_size = 1
 
 # Create dataset and loader
-dataset = torchvision.datasets.ImageFolder(root=imgs_path, transform=transform)
+dataset = torchvision.datasets.ImageFolder(root=data_root, transform=transform)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
 
@@ -58,104 +67,71 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 i = 0  # Image index (modify to change the image)
 
 img, _ = dataloader.dataset[i]
-x = img.unsqueeze(0).to(dtype=dtype, device=device)
+x_healthy = img.unsqueeze(0).to(dtype=dtype, device=device)
 
-print(f"Shape of input images: {x.shape}")
+print(f"Shape of input images: {x_healthy.shape}")
 
-x = (x - x.min()) / (x.max() - x.min())
+x_healthy = (x_healthy - x_healthy.min()) / (x_healthy.max() - x_healthy.min())
 
-x_plot = x.view(img_shape).cpu()
-imagesc(x_plot, r"Original image $x$")
+x_plot = x_healthy.moveaxis(1, -1).squeeze().cpu().numpy()
 
-## EXP ORDER
-url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-local_folder = Path('stats') 
-id_files = [
-    "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
+plt.imshow(x_plot)
+if x_healthy.shape[1] == 1:
+    plt.colorbar(fraction=0.046, pad=0.04)
+plt.show()
+
+
+# %% Add some tumors
+n_wav = 3  # RGB
+# x = x_healthy.repeat(1, n_wav, 1, 1).clone()
+x = x_healthy.clone()
+
+tumor_params = [
+    {'center': (50, 50), 'sigma_x': 8, 'sigma_y': 8, 'amplitude': 1.3, 'channels': [0], 'angle': 0},  # Red
+    
+    {'center': (70, 60), 'sigma_x': 5, 'sigma_y': 10, 'amplitude': 0.5, 'channels': [1], 'angle': 30},  # Green
+    
+    {'center': (17, 70), 'sigma_x': 6, 'sigma_y': 6, 'amplitude': 0.7, 'channels': [2], 'angle': 0},  # Blue
+
+    {'center': (65, 25), 'sigma_x': 10, 'sigma_y': 7, 'amplitude': 1, 'channels': [0], 'angle': 45},
+    {'center': (65, 25), 'sigma_x': 10, 'sigma_y': 7, 'amplitude': 0.5, 'channels': [2], 'angle': 45}, 
+
+    {'center': (25, 20), 'sigma_x': 12, 'sigma_y': 8, 'amplitude': 0.9, 'channels': [1], 'angle': 0},  
+    {'center': (25, 20), 'sigma_x': 12, 'sigma_y': 8, 'amplitude': 0.6, 'channels': [0], 'angle': 0}, 
 ]
-try:
-    download_girder(url_tomoradio, id_files, local_folder)
-except Exception as e:
-    print("Unable to download from the Tomoradio warehouse")
-    print(e)
 
-Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy'))
-Ord_acq = Cov2Var(Cov_acq)
-Ord = torch.from_numpy(Ord_acq)
+tumors, x = generate_synthetic_tumors(x, tumor_params)
 
-
-#%% test cov matrix
-Cov_acq_pt = torch.load(local_folder / f'Cov_{meas_size}x{meas_size}.pt', weights_only=True).to(device)
-Cov_acq_pt = torch2numpy(Cov_acq_pt)
-
-# %% rapport des deux covariances
-ratio_cov = Cov_acq_pt / Cov_acq
-
-print("Min ratio cov pt/np:", np.min(ratio_cov))
-print("Max ratio cov pt/np:", np.max(ratio_cov))
-print("Mean ratio cov pt/np:", np.mean(ratio_cov))
-print("Norm ratio cov pt/np:", np.linalg.norm(ratio_cov))
-
-fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-im0 = ax[0].imshow(Cov_acq, cmap='gray')
-ax[0].set_title('Cov_acq np', fontsize=16)
-fig.colorbar(im0, ax=ax[0], fraction=0.046, pad=0.04)
-
-im1 = ax[1].imshow(Cov_acq_pt, cmap='gray')
-ax[1].set_title('Cov_acq pt', fontsize=16)
-fig.colorbar(im1, ax=ax[1], fraction=0.046, pad=0.04)
-
-im2 = ax[2].imshow(ratio_cov, cmap='gray')
-ax[2].set_title('ratio pt / np (= 4 ?)', fontsize=16)
-fig.colorbar(im2, ax=ax[2], fraction=0.046, pad=0.04)
-
+tumors_plot = tumors.moveaxis(1, -1).squeeze().cpu().numpy()
+plt.imshow(tumors_plot)
+plt.title(r"Synthetic tumors (RGB)", fontsize=16)
 plt.show()
 
-# %% diag test
-diag_cov_pt = np.diag(Cov_acq_pt).reshape((meas_size, meas_size))
-diag_cov_np = np.diag(Cov_acq).reshape((meas_size, meas_size))
 
-fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-im0 = ax[0].imshow(diag_cov_np, cmap='gray')
-ax[0].set_title('diag Cov_acq np', fontsize=16)
-fig.colorbar(im0, ax=ax[0], fraction=0.046, pad=0.04)
-
-im1 = ax[1].imshow(diag_cov_pt, cmap='gray')
-ax[1].set_title('diag Cov_acq pt', fontsize=16)
-fig.colorbar(im1, ax=ax[1], fraction=0.046, pad=0.04)
-
-im2 = ax[2].imshow(diag_cov_pt / diag_cov_np, cmap='gray')
-ax[2].set_title('ratio diag pt / np', fontsize=16)
-fig.colorbar(im2, ax=ax[2], fraction=0.046, pad=0.04)
-
+#%%
+x_plot = x.moveaxis(1, -1).squeeze().cpu().numpy()
+plt.imshow(x_plot)
+plt.title(r"Original RGB image with synthetic tumors $x$", fontsize=16)
 plt.show()
 
-# %%
-Ord_np = torch.from_numpy(Cov2Var(Cov_acq))
-Ord_pt = torch.from_numpy(Cov2Var(Cov_acq_pt))
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
 
-# %% 
-from spyrit.core.torch import sort_by_significance
-
-mask_basis = torch.zeros(64 * 64)
-mask_basis[:32*32] = torch.arange(1, 32*32 + 1)
-
-mask_var_pt = sort_by_significance(mask_basis, Ord_pt, axis="cols")
-mask_var_pt = mask_var_pt.reshape(64, 64)
-
-mask_var_np = sort_by_significance(mask_basis, Ord_np, axis="cols")
-mask_var_np = mask_var_np.reshape(64, 64)
-
-# %% plot mask var
-fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-im = ax[0].imshow(mask_var_np, vmin=0, vmax=1)
-ax[0].set_title("Mask Ord np", fontsize=20)
+im = ax[0].imshow(tumors_plot[:, :, 0], cmap='gray')
+ax[0].set_title('Red channel', fontsize=16)
+ax[0].axis('off')
 fig.colorbar(im, ax=ax[0], fraction=0.046, pad=0.04)
 
-im = ax[1].imshow(mask_var_pt, vmin=0, vmax=1)
-ax[1].set_title("Mask Ord pt", fontsize=20)
+im = ax[1].imshow(tumors_plot[:, :, 1], cmap='gray')
+ax[1].set_title('Green channel', fontsize=16)
+ax[1].axis('off')
 fig.colorbar(im, ax=ax[1], fraction=0.046, pad=0.04)
 
+im = ax[2].imshow(tumors_plot[:, :, 2], cmap='gray')
+ax[2].set_title('Blue channel with tumor', fontsize=16)
+ax[2].axis('off')
+fig.colorbar(im, ax=ax[2], fraction=0.046, pad=0.04)
+
+plt.tight_layout()
 plt.show()
 
 
@@ -193,16 +169,31 @@ with torch.no_grad():
 
 
    
-    # %% PLOT ENTIRE DEFORMATION 
-    for frame in range(int(meas_size / und ** 0.5)):
-        plt.close()
-        plt.imshow(x_motion[0, meas_size * frame, 0, amp_max:img_size-amp_max, amp_max:img_size-amp_max].view(meas_shape).cpu().numpy(), cmap="gray")  # in X
-        # plt.imshow(x_motion[0, meas_size * frame, :].view(img_shape).cpu().numpy(), cmap="gray")  # in X_ext
-        plt.suptitle("frame %d" % (meas_size * frame), fontsize=16)
-        plt.colorbar()
-        plt.pause(0.01)
-        clear_output(wait=True)
+    # %% SAVE DEFORMATION 
+    fps = int(x_motion.shape[1] / 10)
+    video_path = 'fig_03_rgb_motion_2.mp4'
+    save_motion_video(x_motion, video_path, amp_max, fps=fps)
 
+    # video_path = 'fig_03_cmos_motion.mp4'
+    # save_motion_video(x_motion.mean(dim=2, keepdim=True), video_path, amp_max, fps=fps)
+
+
+
+    # %% Get exp order from Tomoradio warehouse
+    url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+    local_folder = Path('stats') 
+    id_files = [
+        "6924762104d23f6e964b1441"  # 64x64 Cov_acq.npy
+    ]
+    try:
+        download_girder(url_tomoradio, id_files, local_folder)
+    except Exception as e:
+        print("Unable to download from the Tomoradio warehouse")
+        print(e)
+
+    Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.npy'))
+    Ord_acq = Cov2Var(Cov_acq)
+    Ord = torch.from_numpy(Ord_acq)
 
 
     # %% SIMULATE MEASUREMENT
@@ -230,9 +221,9 @@ with torch.no_grad():
 
 
     # %% DYNAMIC MATRIX CONSTRUCTION
-    meas_op.build_H_dyn(def_field)
+    meas_op.build_dynamic_forward(def_field)
     
-    H_dyn_diff = meas_op.H_dyn_diff
+    H_dyn_diff = meas_op.H_dyn
 
 
     # %% send to cpu for efficient linalg
@@ -255,24 +246,23 @@ with torch.no_grad():
     # %% RECO
     eta = 1e-3
 
-    x_rec = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta * sigma_max ** 2 * D2, H_dyn_diff.T @ y2.reshape(-1))
+    x_rec = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta * sigma_max ** 2 * D2, (H_dyn_diff.T @ y2.moveaxis(1, -1)))
 
     # %% Plot reference, static and dynamic reconstructions side-by-side
-
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    x_ref_blue = blue_box(torch2numpy(x_plot), amp_max)
+    x_ref_blue = blue_box(x_plot, amp_max)
     ax[0].imshow(x_ref_blue)
     ax[0].set_title('Reference image', fontsize=16)
     ax[0].axis('off')
 
-    x_stat_wide = torch.zeros(img_shape, dtype=dtype, device=device)
-    x_stat_wide[amp_max:-amp_max, amp_max:-amp_max] = x_stat.view(meas_shape)
+    x_stat_wide = torch.zeros((img_size, img_size, n_wav), dtype=dtype, device=device)
+    x_stat_wide[amp_max:-amp_max, amp_max:-amp_max] = x_stat.squeeze().moveaxis(0, -1)
     x_stat_wide_blue =  blue_box(torch2numpy(x_stat_wide), amp_max)
     ax[1].imshow(x_stat_wide_blue)
     ax[1].set_title('Static reconstruction', fontsize=16)
     ax[1].axis('off')
 
-    x_rec_plot = x_rec.view(img_shape)
+    x_rec_plot = x_rec.squeeze().reshape((img_size, img_size, n_wav))
     x_rec_blue = blue_box(torch2numpy(x_rec_plot), amp_max)
     ax[2].imshow(x_rec_blue)
     ax[2].set_title('Dynamic reconstruction', fontsize=16)
@@ -281,5 +271,24 @@ with torch.no_grad():
     plt.tight_layout()
     plt.show()
 
+
+    # %%
+    x_cmos = x_plot.mean(axis=2)
+    x_cmos_blue = blue_box(x_cmos, amp_max)
+    plt.imshow(x_cmos_blue)
+    plt.title(r"Simulated CMOS image", fontsize=16)
+    plt.show()
+
+
+    # %% save results as pdfs
+    if save_fig:
+        results_root = Path('/home/maitre/Images/images_thèse/2024_article/ablation_study/visual/rgb_scene/exp_0')
+        results_root.mkdir(parents=True, exist_ok=True)
+
+        plt.imsave(results_root / Path('reference_box.pdf'), x_ref_blue.clip(0, 255))
+        plt.imsave(results_root / Path('reference_cmos.pdf'), x_cmos_blue.clip(0, 255))
+        plt.imsave(results_root / Path('reco_static.pdf'), x_stat_wide_blue.clip(0, 255))
+        plt.imsave(results_root / Path('reco_wf_eta_1e-3.pdf'), x_rec_blue.clip(0, 255))
+        plt.imsave(results_root / Path('tumors.pdf'), tumors_plot.clip(0, 1))
 
 # %%

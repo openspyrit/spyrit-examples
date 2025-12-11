@@ -1,6 +1,6 @@
 """
 Script used to generate and precompute deformation fields used in the experiments of 
-Fig. 5e in [ref]. This script is long to run (several hours) and should be run in parallel. 
+Fig. 5. This script is long to run (several hours) and should be run in parallel. 
 Results are provided at https://tomoradio-warehouse.creatis.insa-lyon.fr/#collection/66796d3cbaa5a90007058946/folder/6908b71804d23f6e964b142e
 """
 

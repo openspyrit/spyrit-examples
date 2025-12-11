@@ -100,6 +100,7 @@ Ord = torch.from_numpy(Ord_acq)
 
 with torch.no_grad():
     # load direct deform and inverse deform that were used in the paper's experiments
+    # vocabulary was changed, here the saved 'direct' field is v_k; and the 'inverse' field is u_k
     path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
 
     scale_factor = (torch.tensor(img_shape) - 1).to(device=device)

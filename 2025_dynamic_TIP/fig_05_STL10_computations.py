@@ -1,6 +1,6 @@
 #%% [markdown]
 """
-This script is used to reproduce the results given in Fig. 5e.
+This script is used to reproduce the results given in Fig. 5.
 It compares reconstruction methods using pattern warping (wh) and image warping (wf), 
 and the influence of the extended FOV, for a given random elastic deformation field,
 on a the whole test set of STL-10.

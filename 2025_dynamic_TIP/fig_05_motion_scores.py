@@ -1,7 +1,7 @@
 # %% [markdown]
 """
-This script is used to reproduce the results given in Fig. 5e.
-It visualizes the results obtained with fig_05e_compute.py over the test set of STL-10. 
+This script is used to reproduce the results given in Fig. 5 on the motion strength study.
+It visualizes the results obtained with fig_05_STL10_computations.py over the test set of STL-10. 
 These results have been pre-computed and stored in the 'raw_fig_05' folder.
 """
 
@@ -107,7 +107,7 @@ print("Median amplitude (closest) -> index:", idx_med, "value:", amp_array[idx_m
 
 
 # %% plot scores % motion amplitude
-save_fig = True
+save_fig = False
 error_bars = False
 
 path_fig = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/')
