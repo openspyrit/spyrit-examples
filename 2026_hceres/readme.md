@@ -22,24 +22,33 @@ There are two options:
     ```
 ## Installation
 
-1. Create a conda environment
+1. Create a conda environment with Python 3.13
     ```shell
-    conda create --name hceres
+    conda create --name hceres python=3.13
     conda activate hceres
     ```
 
-1. Install pytorch. E.g.,
+1. Install latest SPyRiT and a few more packages
     ```shell
-    pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126
-    ```
-    Visit https://pytorch.org/get-started/locally/ if you need a different installation.
+    pip install git+https://github.com/openspyrit/spyrit.git@master
+    pip install spyder-kernels==2.2.* # optional
+    pip install tensorly
+    
+1. Install SPAS (spas_v2_spyrit_v3 branch on 9 Dec 26)
+    ```shell
+    git clone git@github.com:openspyrit/spas.git
+    cd spas
+    git checkout spas_v2_spyrit_v3
+    pip install -r requirements.txt
+    pip install -e .
 
-1. Install latest SPyRiT (and a few more packages ?)
-    ```shell
-    pip install pip install git+https://github.com/openspyrit/spyrit.git@master
-    pip install girder-client
-    pip install scikit-image
+    # addtional spas dependence
+    pip install git+https://github.com/MSLNZ/msl-equipment.git@v0.2.0
+    pip install PyQt5
+    pip install opencv-python
     ```
+    
+For location of the DLLs, refer to the SPAS installation procedure
 
 ## Download the models and data [Check if this works]
 

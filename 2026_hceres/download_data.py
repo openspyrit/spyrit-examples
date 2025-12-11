@@ -75,10 +75,7 @@ except Exception as e:
 stat_subfolder = Path("stat")
 # these are the same matrices, in numpy or pytorch format
 stat_files = [
-    # "66c8602db891f94a08ad81ae",  # 64x64 np
-    "672b8077f03a54733161e970",  # 64x64 pt
-    # "66c8602bb891f94a08ad81ab",  # 128x128 np
-    "672b80acf03a54733161e973",  # 128x128 pt
+    "692965fb4c0b0d3d4bc700ae",  # 128x128 pt, resize
 ]
 try:
     download_girder(url_tomoradio, stat_files, stat_subfolder)

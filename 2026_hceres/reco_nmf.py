@@ -62,7 +62,7 @@ Y = Y / tl.max(Y)
 #plt.colorbar()
 #plt.show()
 
-## Classic recon
+#%% Classic recon (Jérémy)
 
 # Reconstruction with pseudo-inverse
 acq_size = img_size
@@ -117,7 +117,7 @@ plt.axis('off')
 
 plt.show()
 
-## NMF-based reconstruction
+#%% NMF-based reconstruction
 print("------- Starting NMF-based reconstruction --------")
 
 # Running the NMF-based unmixing on the reconstructed hypercube
