@@ -93,6 +93,20 @@ Ord_acq = Cov2Var(Cov_acq)
 Ord = torch.from_numpy(Ord_acq)
 
 
+# %% Get a precomputed elastic deformation from Tomoradio warehouse
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
+id_files = [
+    "693ae1b94c0b0d3d4bc700c3",  # def_field_index_219_comp_10.npz
+    "693ae1b04c0b0d3d4bc700b7"   # amplitudes_index_200_250.npy
+]
+try:
+    download_girder(url_tomoradio, id_files, path_deform)
+
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
+
 
 # %% DEFINE DEFORMATION
 ## We provide the random elastic deformations fields used in the paper's experiments. 
@@ -101,13 +115,11 @@ Ord = torch.from_numpy(Ord_acq)
 with torch.no_grad():
     # load direct deform and inverse deform that were used in the paper's experiments
     # vocabulary was changed, here the saved 'direct' field is v_k; and the 'inverse' field is u_k
-    path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
 
     scale_factor = (torch.tensor(img_shape) - 1).to(device=device)
     comp_factor = 10
     deform_batch_size = 50
 
-    # i_deform = i  # deform index, magnitude of 212
     i_deform = 219  # deform index,  magnitude of 487
 
     index_deform = i_deform % deform_batch_size

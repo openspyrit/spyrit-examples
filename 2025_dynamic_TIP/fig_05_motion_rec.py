@@ -94,6 +94,23 @@ Cov_acq = np.load(local_folder / ('Cov_{}x{}'.format(meas_size, meas_size) + '.n
 Ord_acq = Cov2Var(Cov_acq)
 Ord = torch.from_numpy(Ord_acq)
 
+# %% Get three precomputed elastic deformations from Tomoradio warehouse
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
+id_files = [
+    "693ae1b64c0b0d3d4bc700c0",  # def_field_index_72_comp_10.npz
+    "693ae1b34c0b0d3d4bc700bd",  # def_field_index_56_comp_10.npz
+    "693ae1be4c0b0d3d4bc700c6",  # def_field_index_250_comp_10.npz
+    "693ae1b04c0b0d3d4bc700b4",   # amplitudes_index_50_100.npy
+    "693ae1b04c0b0d3d4bc700ba"   # amplitudes_index_250_300.npy
+]
+try:
+    download_girder(url_tomoradio, id_files, path_deform)
+
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
+
 
 
 # %% DEFINE DEFORMATION
