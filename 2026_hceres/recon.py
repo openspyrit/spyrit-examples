@@ -41,10 +41,9 @@ recon_folder_full = Path.cwd() / Path(recon_folder)
 recon_folder_full.mkdir(parents=True, exist_ok=True)
 
 # choose by name which experimental data to use
-data_subfolder = "2025-11-10_test_HCERES"
-data_title = "obj_Cat_bicolor_source_white_LED_Walsh_im_64x64_ti_10ms_zoom_x1"
+data_subfolder = "2025-12-05_test_demo"
+data_title = "obj_cat_bicolor_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1"
 
-savenames = ["tomato", "starsector"]
 suffix = {"data": "_spectraldata.npz", "metadata": "_metadata.json"}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -101,12 +100,13 @@ lambda_list = [500, 1500, 2000]
 wav_list = [wavelengths[lamb] for lamb in lambda_list]
 n_lambda = len(lambda_list)
 
-exp_sum  = exp_data[:,400:600].sum(axis=1)
-exp_data = exp_data[:,lambda_list]
+l1,l2 = 450,650
+exp_sum  = exp_data[:, l1:l2].sum(axis=1)
+exp_data = exp_data[:, lambda_list]
 
 # concatenate sum of all wavelengths
 exp_data = np.concatenate((exp_data, exp_sum[:,None]), axis=1)
-wav_list = wav_list + ['sum']
+wav_list = wav_list + [f'pinv \n[{wavelengths[l1]:.1f}--{wavelengths[l2]:.1f}] nm']
 
 # %%
 # Reorder measurements to match with the reconstruction order
@@ -201,7 +201,7 @@ fig.suptitle('Pinv-Net')
 
 for ii, wav in enumerate(wav_list):
     
-    imagesc(x_pinvnet[ii,0].rot90(k=2).cpu(),
+    imagesc(x_pinvnet[ii,0].rot90(k=2).cpu() if ii<n_lambda else x_pinv[ii,0].rot90(k=2).cpu(),
             colormap = wav if ii<n_lambda else None,
             #colormap = wavelength_to_colormap(wav, gamma=0.8),
             cbar_pos = 'bottom',
@@ -265,7 +265,7 @@ fig.suptitle('DC-Net')
 
 for ii, wav in enumerate(wav_list):
     
-    imagesc(x_dcnet[ii,0].rot90(k=2).cpu(),
+    imagesc(x_dcnet[ii,0].rot90(k=2).cpu() if ii<n_lambda else x_pinv[ii,0].rot90(k=2).cpu(),
             colormap = wav if ii<n_lambda else None,
             #colormap = wavelength_to_colormap(wav, gamma=0.8),
             cbar_pos = 'bottom',
