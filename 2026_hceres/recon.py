@@ -140,6 +140,8 @@ x_pinv = meas_op.fast_pinv(m)
 #%% Plot pseudo-inverse
 from spyrit.misc.disp import imagesc 
 import matplotlib.pyplot as plt
+plt.ion()
+
 
 fig, axs = plt.subplots(1,4)
 fig.suptitle('Pseudo-inverse (least squares)')
