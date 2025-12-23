@@ -24,7 +24,7 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 #%% LOAD IMAGE DATA
 save_fig = True
 
-img_size = 88  # full image side's size in pixels
+img_size = 64  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 und = 1 # undersampling factor
 M = meas_size ** 2 // und  # number of (pos,neg) measurements

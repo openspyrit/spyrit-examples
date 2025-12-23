@@ -20,7 +20,7 @@ from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_
 
 
 # %% DETERMINE HOMOGRAPHY
-save_fig = True
+save_fig = False
 
 homo_folder = Path('homography/')
 data_root = Path('../data/data_online/extended_FOV2')
@@ -327,6 +327,13 @@ f_cmos_ref = np.rot90(torch2numpy(img_cmos_calibrated.squeeze()), 2)
 f_wh_Xext_np = np.rot90(torch2numpy(f_wh_Xext.mean(axis=1)).reshape((l, l)), 2)
 f_wf_Xext_np = np.rot90(torch2numpy(f_wf_Xext.mean(axis=1)).reshape((l, l)), 2)
 
+
+# vmin, vmax = f_wf_Xext_np.min(), f_wf_Xext_np.max()
+# f_wide_stat = np.clip(f_wide_stat, vmin, vmax)
+# f_wh_X_np = np.clip(f_wh_X_np, vmin, vmax)
+# f_wf_X_np = np.clip(f_wf_X_np, vmin, vmax)
+# f_wh_Xext_np = np.clip(f_wh_Xext_np, vmin, vmax)
+# f_wf_Xext_np = np.clip(f_wf_Xext_np, vmin, vmax)
 
 fs = 30
 

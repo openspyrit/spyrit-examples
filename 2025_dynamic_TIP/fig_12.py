@@ -18,7 +18,6 @@ from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_
 
 
 
-
 # %% DETERMINE HOMOGRAPHY
 save_fig = True
 
@@ -61,8 +60,8 @@ n_acq = 64
 N = n ** 2
 M = N
 
-data_folder = Path('obj_motion_Diag-UL-BR_starSector_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_2ms_zoom_x2')
-data_file_prefix = 'obj_motion_Diag-UL-BR_starSector_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_2ms_zoom_x2'
+data_folder = Path('obj_motion_Diag-UL-BR_starSector_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1.5ms_zoom_x1')
+data_file_prefix = 'obj_motion_Diag-UL-BR_starSector_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1.5ms_zoom_x1'
 
 metadata, meas = read_acquisition(data_root, data_folder, data_file_prefix)
 
@@ -143,17 +142,6 @@ meas_op_stat = HadamSplit2d(M=M, h=n, order=Ord, dtype=dtype, device=device)
 
 f_stat = meas_op_stat.fast_pinv(y2_pan)
 
-f_stat_hs = meas_op_stat.fast_pinv(y2_exp)
-
-
-# %% Plot STATIC RECO (spectral): Fig 10.a
-if n_wav > 1:
-    f_stat_np = torch2numpy(f_stat_hs.moveaxis(0, -1))
-    f_stat_np = np.rot90(f_stat_np, 2)
-
-    plot_hs(strategy, f_stat_np, wav, suptitle=f"fig_10_a_{wav.astype(np.int16)}", save_fig=save_fig, 
-            results_root=results_root, data_folder=data_folder, colorbar_format='%.1f')
-
 
 #%% load empty acquisition for dynamic flat-field correction
 data_folder_white = 'obj_Empty_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1'
@@ -177,14 +165,12 @@ w = recalibrate(w.unsqueeze(0), (n, n), zoom_homography_inv, amp_max=0)
 # %% DEFORMATION FILES
 deform_path = Path('../omigod_res/extended_FOV2')
 
-deform_folder = Path('star_diag_x2')
+deform_folder = Path('star_diag')
 deform_prefix = 'star'
 
 
-
-
 # %% ESTIM MOTION FROM CMOS CAMERA
-amp_max = 28  #20
+amp_max = 20
 l = n + 2 * amp_max
 translation = (0, 0)
 frame_ref = 0 #17 #570 #278 #28   # frame ref in CMOS referential
@@ -220,18 +206,12 @@ L = l ** 2
 
 time_dim = 1
 
-eta = 5e-2
-eta_in_X = 5e-2
+eta = 1e-2
 
 
 # %% 
-y2_exp = y2_exp.to('cpu')  # send to cpu for linalg operations
 y2_pan = y2_pan.to('cpu')  # send to cpu for linalg operations
 
-meas_op = DynamicHadamSplit2d(time_dim=time_dim, h=n, M=M, order=Ord, img_shape=(l, l),
-                              white_acq=w, dtype=dtype, device=device)
-
-# %% CALC FINITE DIFFERENCE MATRIX
 Dx, Dy = spytorch.neumann_boundary((n, n))
 D2_in_X = Dx.T @ Dx + Dy.T @ Dy
 
@@ -241,16 +221,11 @@ D2 = Dx.T @ Dx + Dy.T @ Dy
 D2_in_X, D2 = D2_in_X.type(dtype=dtype), D2.type(dtype=dtype)
 
 
-# %% ######### PATTERN WARPING DYNAMIC MEASUREMENT MATRIX #########
-warping = 'pattern'
-def_field = projector(warping=warping, amp_max=amp_max).to(device)
-meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
-
-H_dyn = meas_op.H_dyn
-H_dyn_in_X = H_dyn.reshape((H_dyn.shape[0], l, l))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], n**2))
-
 #%% Save deformation field as quiver plot video
 if save_fig:
+    warping = 'pattern'
+    def_field = projector(warping=warping, amp_max=amp_max).to(device)
+
     path_fig = results_root / data_folder
     Path(path_fig).mkdir(parents=True, exist_ok=True)
     video_path = path_fig / 'deformation_quiver.mp4'
@@ -262,102 +237,80 @@ if save_fig:
     save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
                      amp_max=amp_max, box_color='blue', box_linewidth=2)
 
-# %% send to cpu for linalg operations
-H_dyn, H_dyn_in_X = H_dyn.to('cpu'), H_dyn_in_X.to('cpu') # send to cpu for linalg operations
+# %% get deformation field
+warping = 'image'
+def_field = projector(warping=warping, amp_max=amp_max).to(device)
 
-s = torch.linalg.svdvals(H_dyn)
-print(f'H_dyn spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0]/s[-1]:.2e})')
-norm = s[0]
 
-s = torch.linalg.svdvals(H_dyn_in_X)
-print(f'H_dyn_in_X spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0]/s[-1]:.2e})')
-norm_in_X = s[0]
-
-# %% RECO WITH LAPACK (LU factorization)
-f_wh_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_pan.T)
-f_wh_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_pan.T)
+# %% Without dynamic flat field correction
+meas_op_no_gain = DynamicHadamSplit2d(time_dim=time_dim, h=n, M=M, order=Ord, img_shape=(l, l),
+                              white_acq=None, dtype=dtype, device=device)
 
 
 # %% ######### IMAGE WARPING DYNAMIC MEASUREMENT MATRIX #########
-warping = 'image'
-def_field = projector(warping=warping, amp_max=amp_max).to(device)
-meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
+meas_op_no_gain.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
 
-H_dyn = meas_op.H_dyn
-H_dyn_in_X = H_dyn.reshape((H_dyn.shape[0], l, l))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], n**2))
-
-
-#%% Save deformation field as quiver plot video
-if save_fig:
-    path_fig = results_root / data_folder
-    Path(path_fig).mkdir(parents=True, exist_ok=True)
-    video_path = path_fig / 'deformation_inv_quiver.mp4'
-
-    n_frames = 200
-    step = 6  # subsampling for arrows
-    fps = 30
-
-    save_field_video(def_field, video_path, n_frames=n_frames, step=step, fps=fps, figsize=(6, 6), dpi=200, scale=1, fs=16,
-                     amp_max=amp_max, box_color='blue', box_linewidth=2)
-    
+H_dyn = meas_op_no_gain.H_dyn
 
 # %% send to cpu for linalg operations
-H_dyn, H_dyn_in_X = H_dyn.to('cpu'), H_dyn_in_X.to('cpu') # send to cpu for linalg operations
+H_dyn = H_dyn.to('cpu')
 
 s = torch.linalg.svdvals(H_dyn)
 print(f'H_dyn spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0]/s[-1]:.2e})')
 norm = s[0]
 
-s = torch.linalg.svdvals(H_dyn_in_X)
-print(f'H_dyn_in_X spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0]/s[-1]:.2e})')
-norm_in_X = s[0]
+# RECO WITH LAPACK (LU factorization)
+f_wf_Xext_no_gain = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_pan.T)
 
 
-# %% RECO WITH LAPACK (LU factorization)
+# %% With dynamic flat field correction
+meas_op = DynamicHadamSplit2d(time_dim=time_dim, h=n, M=M, order=Ord, img_shape=(l, l),
+                              white_acq=w, dtype=dtype, device=device)
+
+
+# %% ######### IMAGE WARPING DYNAMIC MEASUREMENT MATRIX #########
+meas_op.build_dynamic_forward(def_field, warping=warping, mode=forme_interp)
+
+H_dyn = meas_op.H_dyn
+
+# %% send to cpu for linalg operations
+H_dyn = H_dyn.to('cpu')
+
+s = torch.linalg.svdvals(H_dyn)
+print(f'H_dyn spectrum is [{s[-1]:.2f}, {s[0]:.2f}] (condition number: {s[0]/s[-1]:.2e})')
+norm = s[0]
+
+# RECO WITH LAPACK (LU factorization)
 f_wf_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_pan.T)
-f_wf_X = torch.linalg.solve(H_dyn_in_X.T @ H_dyn_in_X + eta_in_X * norm_in_X ** 2 * D2_in_X, H_dyn_in_X.T @ y2_pan.T)
-
-f_wf_Xext_hs = torch.linalg.solve(H_dyn.T @ H_dyn + eta * norm ** 2 * D2, H_dyn.T @ y2_exp.T)
 
 
-
-# %% Fig. 09
-f_wide_stat = np.pad(np.rot90(f_stat.mean(axis=0).cpu().numpy(), 2), ((amp_max, amp_max), (amp_max, amp_max)))
-f_wh_X_np = np.pad(np.rot90(torch2numpy(f_wh_X.mean(axis=1)).reshape((n, n)), 2), ((amp_max, amp_max), (amp_max, amp_max)))
-f_wf_X_np = np.pad(np.rot90(torch2numpy(f_wf_X.mean(axis=1)).reshape((n, n)), 2), ((amp_max, amp_max), (amp_max, amp_max)))
+# %% Fig. 12
+f_white_np = np.zeros((l, l))
 
 f_cmos_ref = np.rot90(torch2numpy(img_cmos_calibrated.squeeze()), 2)
-f_wh_Xext_np = np.rot90(torch2numpy(f_wh_Xext.mean(axis=1)).reshape((l, l)), 2)
+f_white_np[amp_max:n+amp_max, amp_max:n+amp_max] = np.rot90(torch2numpy(w.squeeze()), 2)
+f_wf_Xext_np_no_gain = np.rot90(torch2numpy(f_wf_Xext_no_gain.mean(axis=1)).reshape((l, l)), 2)
 f_wf_Xext_np = np.rot90(torch2numpy(f_wf_Xext.mean(axis=1)).reshape((l, l)), 2)
-
 
 fs = 30
 
-fig, ax = plt.subplots(2, 3,  figsize=(15, 10))
+fig, ax = plt.subplots(1, 4,  figsize=(20, 10))
 
-ax[0, 0].imshow(blue_box(f_wide_stat, amp_max=amp_max), cmap='gray')
-ax[0, 0].set_title('(a) Static', fontsize=fs)
-ax[0, 0].axis('off')
+ax[0].imshow(f_cmos_ref, cmap='gray')
+ax[0].set_title('(a) CMOS', fontsize=fs)
+ax[0].axis('off')
 
-ax[0, 1].imshow(blue_box(f_wh_X_np, amp_max=amp_max))
-ax[0, 1].set_title('(b) wh in X', fontsize=fs)
-ax[0, 1].axis('off')
+ax[1].imshow(f_white_np, cmap="gray")
+ax[1].set_title('(b) g_0', fontsize=fs)
+ax[1].axis('off')
 
-ax[0, 2].imshow(blue_box(f_wf_X_np, amp_max=amp_max))
-ax[0, 2].set_title('(c) wf in X', fontsize=fs)
-ax[0, 2].axis('off')
+ax[2].imshow(f_wf_Xext_np_no_gain, cmap="gray")
+ax[2].set_title('(d) g = 1', fontsize=fs)
+ax[2].axis('off')
 
-ax[1, 0].imshow(blue_box(f_cmos_ref, amp_max=amp_max), cmap='gray')
-ax[1, 0].set_title('(d) CMOS', fontsize=fs)
-ax[1, 0].axis('off')
-
-ax[1, 1].imshow(blue_box(f_wh_Xext_np, amp_max=amp_max))
-ax[1, 1].set_title('(e) wh in X ext', fontsize=fs)
-ax[1, 1].axis('off')
-
-im = ax[1, 2].imshow(blue_box(f_wf_Xext_np, amp_max=amp_max))
-ax[1, 2].set_title('(f) wf in X ext', fontsize=fs)
-ax[1, 2].axis('off')
+ax[3].imshow(f_wf_Xext_np, cmap="gray")
+ax[3].set_title('(f) g = g_0', fontsize=fs)
+ax[3].axis('off')
 
 plt.tight_layout()
 if save_fig:
@@ -382,46 +335,27 @@ if save_fig:
 
 
 
-
-# %% Spectral plots (change f_dyn if needed) : Fig 10.b
-f_dyn = f_wf_Xext_hs  # change if needed
-
-if n_wav > 1:
-    f_dyn_np = np.rot90(torch2numpy(f_dyn.reshape((l, l, n_wav))), 2)
-
-    plot_hs(strategy, f_dyn_np, wav, suptitle=f"fig_10_b_{wav.astype(np.int16)}", save_fig=save_fig, 
-            results_root=results_root, data_folder=data_folder, colorbar_format='%.1f')
-
-
-
 # %% save as pdfs.
 if save_fig:
     path_fig = results_root / data_folder
     Path(path_fig).mkdir(parents=True, exist_ok=True)
 
-    # (a) Static reconstruction (wide)
-    plt.imsave(path_fig / f'fig09_a_static_amp{amp_max}_frame{frame_ref}.pdf', 
-               blue_box(f_wide_stat, amp_max=amp_max))
+    # (a) CMOS
+    plt.imsave(path_fig / f'fig12_a_cmos_amp{amp_max}_frame{frame_ref}.pdf', 
+               f_cmos_ref, cmap='gray')
 
-    # (b) wh in X
-    plt.imsave(path_fig / f'fig09_b_wh_in_X_amp{amp_max}_frame{frame_ref}.pdf',
-               blue_box(f_wh_X_np, amp_max=amp_max))
+    # (b) g0
+    plt.imsave(path_fig / f'fig12_b_g0_amp{amp_max}_frame{frame_ref}.pdf',
+               f_white_np, cmap='gray')
 
-    # (c) wf in X
-    plt.imsave(path_fig / f'fig09_c_wf_in_X_amp{amp_max}_frame{frame_ref}.pdf',
-               blue_box(f_wf_X_np, amp_max=amp_max))
+    # (c) wf g=1
+    plt.imsave(path_fig / f'fig12_c_wf_g=1_amp{amp_max}_frame{frame_ref}.pdf',
+               f_wf_Xext_np_no_gain, cmap='gray')
 
-    # (d) CMOS reference
-    plt.imsave(path_fig / f'fig09_d_cmos_amp{amp_max}_frame{frame_ref}.pdf', 
-               blue_box(f_cmos_ref, amp_max=amp_max), cmap='gray')
+    # (d) wf g=g0
+    plt.imsave(path_fig / f'fig12_d_wf_g=g0_amp{amp_max}_frame{frame_ref}.pdf', 
+               f_wf_Xext_np, cmap='gray')
 
-    # (e) wh in X ext
-    plt.imsave(path_fig / f'fig09_e_wh_in_X_ext_amp{amp_max}_frame{frame_ref}.pdf',
-               blue_box(f_wh_Xext_np, amp_max=amp_max))
-
-    # (f) wf in X ext
-    plt.imsave(path_fig / f'fig09_f_wf_in_X_ext_amp{amp_max}_frame{frame_ref}.pdf',
-               blue_box(f_wf_Xext_np, amp_max=amp_max))
 
 
 
