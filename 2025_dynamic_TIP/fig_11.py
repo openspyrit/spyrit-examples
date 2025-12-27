@@ -18,14 +18,14 @@ from spyrit.misc.load_data import read_acquisition, download_girder
 from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
 
-
 # %% DETERMINE HOMOGRAPHY
-save_fig = False
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
-homo_folder = Path('homography/')
-data_root = Path('../data/data_online/2025-12-05_motion_color')
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root"))
+data_root = Path(paths_params.get("data_root")) / Path('2025-12-05_motion_color')
 
-results_root = Path('../../Images/images_thèse/2024_article/exp_results/')
+homo_folder = Path('homography/')  # folder where the homography files are saved/loaded
 
 dtype = torch.float32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,9 +38,7 @@ data_file_prefix = 'obj_cat_bicolor_no_motion_source_white_LED_Walsh_im_64x64_ti
 
 read_homography = True
 save_homography = False
-
-snapshot = True  # with new acquisitions
-
+snapshot = True  
 kp_method = "sift"
 read_hand_kp = False
 
