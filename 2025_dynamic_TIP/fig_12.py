@@ -17,18 +17,32 @@ from spyrit.misc.load_data import read_acquisition, download_girder
 from spyrit.misc.disp import get_frame, save_motion_video, save_field_video
 
 
-# %% DETERMINE HOMOGRAPHY
+# %% Set params and download data if needed
 paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root"))
-data_root = Path(paths_params.get("data_root")) / Path('2025-12-05_motion_color')
+data_root = Path(paths_params.get("data_root")) / Path('extended_FOV2')
 
 homo_folder = Path('homography/')  # folder where the homography files are saved/loaded
 
 dtype = torch.float32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+id_files = [
+    "669105d37c2d35c7ba3b422b",  # obj_motion_Diag-UL-BR_starSector_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1.5ms_zoom_x1
+    "669109977c2d35c7ba3b429f",  # obj_no_motion_cat_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1
+    "669100c07c2d35c7ba3b41ce"  # obj_Empty_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1
+]
+try:
+    download_girder(url_pilot, id_files, data_root, gc_type="folder")
+except Exception as e:
+    print("Unable to download from the Pilot warehouse")
+    print(e)
+
+
+# %% DETERMINE HOMOGRAPHY
 n = 64
 n_acq = 64
 data_folder = Path('obj_no_motion_cat_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1')
@@ -88,28 +102,6 @@ meas2_torch = torch.from_numpy(meas).to(dtype=dtype, device=device)
 
 y1_pan = meas2_torch.mean(dim=1).view(1, -1)
 
-if strategy == 'bin':
-    # Bin spectral channels, with each bin covering consecutive slices
-    bin_size = meas2_torch.shape[1] // n_wav
-    y1_exp = torch.stack([
-        meas2_torch[:, i * bin_size : (i + 1) * bin_size].mean(dim=1)
-        for i in range(n_wav)
-    ], dim=1).moveaxis(-1, 0)
-
-    wav = torch.stack([
-        wavelengths[i * bin_size : (i + 1) * bin_size].mean()
-        for i in range(n_wav)
-    ], dim=0).numpy()
-
-elif strategy == 'slice':
-    # Select specific slices for each spectral channel
-    indices = [127, 639, 940, 1407]  # example indices for 4 channels
-    y1_exp = meas2_torch[:, indices].moveaxis(-1, 0)
-    wav = wavelengths[indices].numpy()
-
-else:
-    raise ValueError("Invalid strategy. Choose 'bin' or 'slice'.")
-
 
 # %% Get exp order from Tomoradio warehouse
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
@@ -130,7 +122,6 @@ Ord = torch.from_numpy(Ord_acq)
 
 # %% PREP OP
 prep_op = Unsplit()
-y2_exp = prep_op(y1_exp)
 y2_pan = prep_op(y1_pan)
 
 

@@ -18,19 +18,32 @@ from spyrit.misc.load_data import read_acquisition, download_girder
 from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
 
-# %% DETERMINE HOMOGRAPHY
+# %% Set params and download data if needed
 paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root"))
-data_root = Path(paths_params.get("data_root")) / Path('2025-12-05_motion_color')
+data_root = Path(paths_params.get("data_root")) / Path('extended_FOV2')
 
 homo_folder = Path('homography/')  # folder where the homography files are saved/loaded
 dtype = torch.float32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-n = 64
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+id_files = [
+    "6690f8ef7c2d35c7ba3b40e2",  # obj_motion_Diag-UL-BR_DoF-811_pinhole_outFOV-3_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_2ms_zoom_x1
+    "669109977c2d35c7ba3b429f",  # obj_no_motion_cat_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1
+    "669100c07c2d35c7ba3b41ce"  # obj_Empty_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1
+]
+try:
+    download_girder(url_pilot, id_files, data_root, gc_type="folder")
+except Exception as e:
+    print("Unable to download from the Pilot warehouse")
+    print(e)
 
+
+# %% DETERMINE HOMOGRAPHY
+n = 64
 n_acq = 64
 data_folder = Path('obj_no_motion_cat_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1')
 data_file_prefix = 'obj_no_motion_cat_DoF-811_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_1ms_zoom_x1'
