@@ -107,12 +107,13 @@ print("Median amplitude (closest) -> index:", idx_med, "value:", amp_array[idx_m
 
 
 # %% plot scores % motion amplitude
-save_fig = False
-error_bars = False
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
-path_fig = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/')
-if error_bars:
-    path_fig = path_fig / Path('error_bars/')
+error_bars = False
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_3/motion')
+
+path_fig = results_root / Path('error_bars/') if error_bars else results_root
 Path(path_fig).mkdir(parents=True, exist_ok=True)
 
 n_interpolation = 3

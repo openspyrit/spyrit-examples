@@ -11,6 +11,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import json
 
 from pathlib import Path
 from IPython.display import clear_output
@@ -36,7 +37,11 @@ M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
-data_root = '../data/data_online/' 
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+
+save_fig = paths_params.get("save_fig")
+data_root = Path(paths_params.get("data_root"))
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_3/ablation')
 imgs_path = os.path.join(data_root, "stl-10_binary/")
 
 amp_max = (img_shape[0] - meas_shape[0]) // 2
@@ -141,7 +146,6 @@ with torch.no_grad():
     del def_field_torch, def_field_torch_inv, def_field_compressed
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-        print(torch.cuda.memory_summary(device=device, abbreviated=True))
 
     time_dim = 1
     x_motion = def_field(x, 0, 2 * M, mode=simu_interp)
@@ -197,48 +201,48 @@ with torch.no_grad():
 
     
     # %% Reconstruction with pattern warping (in X or in X_{ext})
-    meas_op.build_H_dyn(def_field_inv, warping='pattern', mode=mode)
-    H_dyn_diff = meas_op.H_dyn_diff.to(device='cpu')
+    meas_op.build_dynamic_forward(def_field_inv, warping='pattern', mode=mode)
+    H_dyn = meas_op.H_dyn.to(device='cpu')
         
     ## in X_ext
-    sing_vals = torch.linalg.svdvals(H_dyn_diff)
-    print('Spectre de H_dyn_diff = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
+    sing_vals = torch.linalg.svdvals(H_dyn)
+    print('Spectre de H_dyn = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
     sigma_max = sing_vals[0]
 
-    x_wh_in_Xext = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta_in_Xext * sigma_max ** 2 * D2_in_Xext, H_dyn_diff.T @ m2.reshape(-1))
+    x_wh_in_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta_in_Xext * sigma_max ** 2 * D2_in_Xext, H_dyn.T @ m2.reshape(-1))
 
     
     ## in X
-    H_dyn_diff = H_dyn_diff.reshape((H_dyn_diff.shape[0], img_size, img_size))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn_diff.shape[0], meas_size**2))
+    H_dyn = H_dyn.reshape((H_dyn.shape[0], img_size, img_size))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], meas_size**2))
     
-    sing_vals = torch.linalg.svdvals(H_dyn_diff)
-    print('Spectre de H_dyn_diff = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
+    sing_vals = torch.linalg.svdvals(H_dyn)
+    print('Spectre de H_dyn = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
     sigma_max = sing_vals[0]
 
-    x_wh_in_X = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta_in_X * sigma_max ** 2 * D2_in_X, H_dyn_diff.T @ m2.reshape(-1))
+    x_wh_in_X = torch.linalg.solve(H_dyn.T @ H_dyn + eta_in_X * sigma_max ** 2 * D2_in_X, H_dyn.T @ m2.reshape(-1))
 
 
 
     # %% Reconstruction with image warping (in X or in X_{ext})
-    meas_op.build_H_dyn(def_field, warping='image', mode=mode)
-    H_dyn_diff = meas_op.H_dyn_diff.to(device='cpu')
+    meas_op.build_dynamic_forward(def_field, warping='image', mode=mode)
+    H_dyn = meas_op.H_dyn.to(device='cpu')
         
     ## in X_ext
-    sing_vals = torch.linalg.svdvals(H_dyn_diff)
-    print('Spectre de H_dyn_diff = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
+    sing_vals = torch.linalg.svdvals(H_dyn)
+    print('Spectre de H_dyn = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
     sigma_max = sing_vals[0]
 
-    x_wf_in_Xext = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta_in_Xext * sigma_max ** 2 * D2_in_Xext, H_dyn_diff.T @ m2.reshape(-1))
+    x_wf_in_Xext = torch.linalg.solve(H_dyn.T @ H_dyn + eta_in_Xext * sigma_max ** 2 * D2_in_Xext, H_dyn.T @ m2.reshape(-1))
 
     
     ## in X
-    H_dyn_diff = H_dyn_diff.reshape((H_dyn_diff.shape[0], img_size, img_size))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn_diff.shape[0], meas_size**2))
+    H_dyn = H_dyn.reshape((H_dyn.shape[0], img_size, img_size))[:, amp_max:-amp_max, amp_max:-amp_max].reshape((H_dyn.shape[0], meas_size**2))
     
-    sing_vals = torch.linalg.svdvals(H_dyn_diff)
-    print('Spectre de H_dyn_diff = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
+    sing_vals = torch.linalg.svdvals(H_dyn)
+    print('Spectre de H_dyn = [%.2f, %.2f]' % (sing_vals[-1], sing_vals[0]))
     sigma_max = sing_vals[0]
 
-    x_wf_in_X = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta_in_X * sigma_max ** 2 * D2_in_X, H_dyn_diff.T @ m2.reshape(-1))
+    x_wf_in_X = torch.linalg.solve(H_dyn.T @ H_dyn + eta_in_X * sigma_max ** 2 * D2_in_X, H_dyn.T @ m2.reshape(-1))
 
 
     #%% METRICS in X
@@ -285,6 +289,18 @@ with torch.no_grad():
     ax[1, 1].axis('off')
 
     plt.tight_layout()
+    if save_fig:
+        results_root.mkdir(parents=True, exist_ok=True)
+        plt.savefig(results_root / Path('overview.png'), dpi=300)
     plt.show()
+
+    # %%
+    if save_fig:
+        results_root.mkdir(parents=True, exist_ok=True)
+
+        plt.imsave(results_root / Path('reco_wh_in_X.png'), x_wh_in_X_wide.cpu().numpy(), cmap='gray')
+        plt.imsave(results_root / Path('reco_wf_in_X.png'), x_wf_in_X_wide.cpu().numpy(), cmap='gray')
+        plt.imsave(results_root / Path('reco_wh_in_Xext.png'), blue_box(x_wh_in_Xext.view(img_shape).cpu().numpy(), amp_max))
+        plt.imsave(results_root / Path('reco_wf_in_Xext.png'), blue_box(x_wf_in_Xext.view(img_shape).cpu().numpy(), amp_max))
 
 # %%

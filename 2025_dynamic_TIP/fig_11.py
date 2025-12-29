@@ -22,7 +22,7 @@ from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_
 paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
 save_fig = paths_params.get("save_fig")
-results_root = Path(paths_params.get("results_root"))
+results_root = Path(paths_params.get("results_root")) / Path('expe')
 data_root = Path(paths_params.get("data_root")) / Path('2025-12-05_motion_color')
 
 homo_folder = Path('homography/')  # folder where the homography files are saved/loaded

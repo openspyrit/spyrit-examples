@@ -25,6 +25,9 @@ meas_shape = (meas_size, meas_size)
 n_deform = 500  # number of deformations used for data simulation
 batch_size = 16  # each batch was subjected to one deformation
 
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_3/ablation')
 
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 local_folder = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('raw_fig_05')  # replace with your path
@@ -133,6 +136,9 @@ for is_in_X, linestyle, marker in zip(is_in_X_list, linestyles, markers):
 plt.xlabel(r'Max intensity $\alpha$', fontsize=fontsize)
 plt.ylabel('PSNR', fontsize=fontsize)
 plt.legend(ncol=2, loc='lower right', fontsize=fontsize)
+if save_fig:
+    results_root.mkdir(parents=True, exist_ok=True)
+    plt.savefig(results_root / Path('fig_05_ablation_PSNR.png'), bbox_inches='tight')
 plt.show()
 
 std_error = Z_score * psnr_std / n_samples ** 0.5
@@ -164,7 +170,12 @@ for is_in_X, linestyle, marker in zip(is_in_X_list, linestyles, markers):
 plt.xlabel(r'Max intensity $\alpha$', fontsize=fontsize)
 plt.ylabel('SSIM', fontsize=fontsize)
 plt.legend(ncol=2, loc='lower right', fontsize=fontsize)
+if save_fig:
+    results_root.mkdir(parents=True, exist_ok=True)
+    plt.savefig(results_root / Path('fig_05_ablation_SSIM.png'), bbox_inches='tight')
 plt.show()
 
 std_error = Z_score * ssim_std / n_samples ** 0.5
 print("Standard error max : ", std_error.max())
+
+# %%

@@ -31,6 +31,12 @@ import spyrit.misc.metrics as score
 
 
 #%% LOAD IMAGE DATA
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_0')
+data_root = Path(paths_params.get("data_root"))
+
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 
@@ -38,23 +44,20 @@ time_dim = 1
 M = meas_size ** 2
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
-data_root = '../data/data_online/' #os.getcwd()
 imgs_path = os.path.join(data_root, "spyrit/")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-# dtype = torch.float64
 dtype = torch.float32
 simu_interp = 'bicubic'
 matrix_order = 'bilinear'
 
 amp_max = (img_size - meas_size) // 2
 
-results_root = Path('/home/maitre/Images/images_thèse/2024_article/ablation_study/noise/image_bank/')
 path_fig = results_root / Path('fig_05') 
 os.makedirs(path_fig, exist_ok=True)
-path_deform = Path('/home/maitre/Images/images_thèse/2024_article/deformations/')
+path_deform = results_root / Path('deformations')
 
 
 batch_size = 16

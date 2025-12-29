@@ -11,6 +11,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import json
 
 from pathlib import Path
 
@@ -28,8 +29,13 @@ from spyrit.misc.load_data import download_girder
 
 
 #%% LOAD IMAGE DATA
-save_fig = False
-save_deform = True
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_3/motion')
+data_root = Path(paths_params.get("data_root"))
+
+save_deform = False
 
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
@@ -118,8 +124,6 @@ except Exception as e:
 ## The inverse deformation field was computed using scipy's griddata function (forward mapping).
 
 deform_idxs = [72, 56, 250]  # min, med, max amplitude indices
-
-results_root = Path('../../Images/images_thèse/2024_article/ablation_study/noise/image_bank/score_vs_motion/reco')
 
 rec_array = np.zeros((len(deform_idxs), 4, img_size, img_size), dtype=np.float32)
 psnr_array = np.zeros((len(deform_idxs), 4), dtype=np.float32)

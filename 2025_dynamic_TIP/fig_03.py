@@ -9,6 +9,7 @@ import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import json
 
 from pathlib import Path
 
@@ -22,9 +23,13 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
-save_fig = True
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
-img_size = 64  # full image side's size in pixels
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_0')
+data_root = Path(paths_params.get("data_root"))
+
+img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
 und = 1 # undersampling factor
 M = meas_size ** 2 // und  # number of (pos,neg) measurements
@@ -42,7 +47,7 @@ mode = 'bilinear'
 
 # Download images from Tomoradio's warehouse if needed
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-data_root = Path('../data/data_online/2025_dynamic')   # local path to data
+data_root = data_root / Path('2025_dynamic')   # local path to data
 imgs_path = data_root / Path("images/")
 id_files = [
     "69248e3204d23f6e964b16b7"  # brain_surface_colorized.png
@@ -249,40 +254,37 @@ with torch.no_grad():
     x_rec = torch.linalg.solve(H_dyn_diff.T @ H_dyn_diff + eta * sigma_max ** 2 * D2, (H_dyn_diff.T @ y2.moveaxis(1, -1)))
 
     # %% Plot reference, static and dynamic reconstructions side-by-side
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    fig, ax = plt.subplots(1, 4, figsize=(20, 5))
     x_ref_blue = blue_box(x_plot, amp_max)
     ax[0].imshow(x_ref_blue)
     ax[0].set_title('Reference image', fontsize=16)
     ax[0].axis('off')
 
-    x_stat_wide = torch.zeros((img_size, img_size, n_wav), dtype=dtype, device=device)
-    x_stat_wide[amp_max:-amp_max, amp_max:-amp_max] = x_stat.squeeze().moveaxis(0, -1)
-    x_stat_wide_blue =  blue_box(torch2numpy(x_stat_wide), amp_max)
-    ax[1].imshow(x_stat_wide_blue)
-    ax[1].set_title('Static reconstruction', fontsize=16)
+    x_cmos = x_plot.mean(axis=2)
+    x_cmos_blue = blue_box(x_cmos, amp_max)
+    ax[1].imshow(x_cmos_blue)
+    ax[1].set_title("Simulated CMOS image", fontsize=16)
     ax[1].axis('off')
+
+    x_stat_wide = torch.zeros((img_size, img_size, n_wav), dtype=dtype, device=device)
+    x_stat_wide[amp_max:meas_size+amp_max, amp_max:meas_size+amp_max] = x_stat.squeeze().moveaxis(0, -1)
+    x_stat_wide_blue =  blue_box(torch2numpy(x_stat_wide), amp_max)
+    ax[2].imshow(x_stat_wide_blue)
+    ax[2].set_title('Static reconstruction', fontsize=16)
+    ax[2].axis('off')
 
     x_rec_plot = x_rec.squeeze().reshape((img_size, img_size, n_wav))
     x_rec_blue = blue_box(torch2numpy(x_rec_plot), amp_max)
-    ax[2].imshow(x_rec_blue)
-    ax[2].set_title('Dynamic reconstruction', fontsize=16)
-    ax[2].axis('off')
+    ax[3].imshow(x_rec_blue)
+    ax[3].set_title('Dynamic reconstruction', fontsize=16)
+    ax[3].axis('off')
 
     plt.tight_layout()
     plt.show()
 
 
-    # %%
-    x_cmos = x_plot.mean(axis=2)
-    x_cmos_blue = blue_box(x_cmos, amp_max)
-    plt.imshow(x_cmos_blue)
-    plt.title(r"Simulated CMOS image", fontsize=16)
-    plt.show()
-
-
     # %% save results as pdfs
     if save_fig:
-        results_root = Path('/home/maitre/Images/images_thèse/2024_article/ablation_study/visual/rgb_scene/exp_0')
         results_root.mkdir(parents=True, exist_ok=True)
 
         plt.imsave(results_root / Path('reference_box.pdf'), x_ref_blue.clip(0, 255))

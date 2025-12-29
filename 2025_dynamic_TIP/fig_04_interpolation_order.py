@@ -9,7 +9,7 @@ import torch
 import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import json
 import math
 
 from pathlib import Path
@@ -27,7 +27,11 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
-save_fig = True
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_1')
+data_root = Path(paths_params.get("data_root"))
 
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
@@ -69,7 +73,7 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
 
 # %% Select image
-i = 1  # Image index (modify to change the image)
+i = 0  # Image index (modify to change the image)
 
 img, _ = dataloader.dataset[i]
 x_healthy = img.unsqueeze(0).to(dtype=dtype, device=device)
@@ -106,13 +110,6 @@ tumor_params = [
 
 tumors, x = generate_synthetic_tumors(x, tumor_params)
 
-tumors_plot = tumors.moveaxis(1, -1).squeeze().cpu().numpy()
-plt.imshow(tumors_plot)
-plt.title(r"Synthetic tumors (RGB)", fontsize=16)
-plt.show()
-
-
-#%%
 x_plot = x.moveaxis(1, -1).squeeze().cpu().numpy()
 plt.imshow(x_plot)
 plt.title(r"Original RGB image with synthetic tumors $x$", fontsize=16)
@@ -282,7 +279,6 @@ plt.tight_layout()
 plt.show()
 
 if save_fig:
-    results_root = Path('/home/maitre/Images/images_thèse/2024_article/ablation_study/visual/rgb_scene/exp_1')
     results_root.mkdir(parents=True, exist_ok=True)
 
     plt.imsave(results_root / Path('wh_o0.pdf'), blue_box(x_rec_array[0, 7, :, :], amp_max).clip(0, 255))

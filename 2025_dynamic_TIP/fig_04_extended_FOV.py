@@ -9,7 +9,7 @@ import torch
 import torchvision
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import json
 import math
 from tqdm import tqdm
 
@@ -28,7 +28,11 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
-save_fig = True
+paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+
+save_fig = paths_params.get("save_fig")
+results_root = Path(paths_params.get("results_root")) / Path('simu/exp_2')
+data_root = Path(paths_params.get("data_root"))
 
 img_size = 88  # full image side's size in pixels
 meas_size = 64  # measurement pattern side's size in pixels (Hadamard matrix)
@@ -39,7 +43,8 @@ meas_shape = (meas_size, meas_size)
 
 amp_max = (img_shape[0] - meas_shape[0]) // 2
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")  # use cpu to avoid cuda OOM
 print("Using device:", device)
 
 dtype = torch.float64
@@ -106,13 +111,6 @@ tumor_params = [
 
 tumors, x = generate_synthetic_tumors(x, tumor_params)
 
-tumors_plot = tumors.moveaxis(1, -1).squeeze().cpu().numpy()
-plt.imshow(tumors_plot)
-plt.title(r"Synthetic tumors (RGB)", fontsize=16)
-plt.show()
-
-
-#%%
 x_plot = x.moveaxis(1, -1).squeeze().cpu().numpy()
 plt.imshow(x_plot)
 plt.title(r"Original RGB image with synthetic tumors $x$", fontsize=16)
@@ -278,7 +276,6 @@ plt.tight_layout()
 plt.show()
 
 if save_fig:
-    results_root = Path('/home/maitre/Images/images_thèse/2024_article/ablation_study/visual/rgb_scene/exp_2')
     results_root.mkdir(parents=True, exist_ok=True)
 
     plt.imsave(results_root / Path('wh_Xext.pdf'), blue_box(x_rec_array[0, 1, 6, :, :], amp_max).clip(0, 255))

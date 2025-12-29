@@ -21,7 +21,7 @@ from spyrit.misc.disp import get_frame, save_motion_video, save_field_video
 paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
 
 save_fig = paths_params.get("save_fig")
-results_root = Path(paths_params.get("results_root"))
+results_root = Path(paths_params.get("results_root")) / Path('expe')
 data_root = Path(paths_params.get("data_root")) / Path('extended_FOV2')
 
 homo_folder = Path('homography/')  # folder where the homography files are saved/loaded
