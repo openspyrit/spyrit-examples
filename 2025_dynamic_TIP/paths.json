@@ -1,5 +1,5 @@
 {
-    "save_fig": true,
+    "save_fig": false,
     "results_root": "../../Images/images_thèse/2024_article/",
     "data_root": "../data/data_online"
 }

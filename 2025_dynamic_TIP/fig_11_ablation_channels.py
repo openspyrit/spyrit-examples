@@ -45,7 +45,6 @@ except Exception as e:
 
 # %% DETERMINE HOMOGRAPHY
 n = 64
-
 n_acq = 64
 data_folder = Path('obj_cat_bicolor_no_motion_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1')
 data_file_prefix = 'obj_cat_bicolor_no_motion_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1'
