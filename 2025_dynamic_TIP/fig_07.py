@@ -196,12 +196,19 @@ w = recalibrate(w.unsqueeze(0), (n, n), zoom_homography_inv, amp_max=0)
 
 
 # %% DEFORMATION FILES
-deform_path = Path('../omigod_res/extended_FOV2')
+deform_root = Path('../omigod_res/extended_FOV2')
 
-deform_folder = Path('diag_1_outFOV')
+deform_folder = data_folder
 deform_prefix = 'diag_1_outFOV'
 
-
+id_files = [
+    "6951b0154c0b0d3d4bc70107",  # obj_motion_Diag-UL-BR_DoF-811_pinhole_outFOV_source_white_LED_f80mm-P2_Walsh_im_64x64_ti_2ms_zoom_x1 deformations fields
+]
+try:
+    download_girder(url_tomoradio, id_files, deform_root, gc_type="folder")
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
 # %% ESTIM MOTION FROM CMOS CAMERA
 amp_max = 28  #20
@@ -211,7 +218,7 @@ frame_ref = 0 #17 #570 #278 #28   # frame ref in CMOS referential
 n_ppg = 16  # TODO: download updated data
 # n_ppg = cam_parameters.gate_period
 
-projector = MotionFieldProjector(deform_path / deform_folder, deform_prefix, n, M, n_ppg, T, 
+projector = MotionFieldProjector(deform_root / deform_folder, deform_prefix, n, M, n_ppg, T, 
                         frame_ref=frame_ref, homography=homography, translation=translation,
                         dtype=dtype, device=torch.device('cpu'))
 

@@ -187,12 +187,19 @@ w = recalibrate(w.unsqueeze(0), (n, n), zoom_homography_inv, amp_max=0)
 # w = None  # for now no flat-field correction, we forgot to do it unfortunately
 
 # %% DEFORMATION FILES
-deform_path = Path('../omigod_res/color_cat')
+deform_root = Path('../omigod_res/color_cat')
 
-deform_folder = Path('rot_x1')
+deform_folder = data_folder
 deform_prefix = 'rot'
 
-
+id_files = [
+    "695e67904c0b0d3d4bc70120",  # obj_cat_bicolor_motion_rot_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1 deformations fields
+]
+try:
+    download_girder(url_tomoradio, id_files, deform_root, gc_type="folder")
+except Exception as e:
+    print("Unable to download from the Tomoradio warehouse")
+    print(e)
 
 # %% ESTIM MOTION FROM CMOS CAMERA
 amp_max = 10
@@ -202,7 +209,7 @@ frame_ref = 0 # frame ref in CMOS referential
 n_ppg = 16
 # n_ppg = cam_parameters.gate_period
 
-projector = MotionFieldProjector(deform_path / deform_folder, deform_prefix, n, M, n_ppg, T, 
+projector = MotionFieldProjector(deform_root / deform_folder, deform_prefix, n, M, n_ppg, T, 
                         frame_ref=frame_ref, homography=homography, translation=translation,
                         dtype=dtype, device=torch.device('cpu'))
 
