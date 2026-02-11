@@ -34,12 +34,12 @@ We recommend using a virtual (e.g., conda) environment.
 conda create --name new-env
 conda activate new-env
 ```
-Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.
+Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.3
 ```shell
 conda install pip
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install spyrit==3.0
-pip install ipykernel
+pip install spyrit
+pip install jupyterlab
 pip install scikit-image
 pip install h5py
 pip install opencv-python
@@ -76,6 +76,14 @@ pip install opencv-python
         |   |   |---train.py
 
 # At this this point you ready to go!
+
+Launch JupyterLab with
+
+```shell
+jupyter lab
+```
+
+
 Try to complete `main.ipynb` or run `main_with_answers.ipynb`
 
 
