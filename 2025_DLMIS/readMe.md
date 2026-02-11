@@ -72,12 +72,12 @@ conda activate new-env
     cd spyrit-examples/2025_DLMIS/    
     ```
 
-3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2023_DLMIS/data.zip) and extract its content
+3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/data.zip) and extract its conten
 
     * Windows PowerShell
 
     ```powershell
-    wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2023_DLMIS/data.zip -outfile data.zip
+    wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/data.zip -outfile data.zip
     tar xvf data.zip 
     ```
 
