@@ -34,16 +34,32 @@ We recommend using a virtual (e.g., conda) environment.
 conda create --name new-env
 conda activate new-env
 ```
-Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.3
-```shell
-conda install pip
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install spyrit
-pip install jupyterlab
-pip install scikit-image
-pip install h5py
-pip install opencv-python
-```
+
+1. Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.3
+
+    * No CUDA
+    ```shell
+    conda install pip
+    pip install spyrit
+    ```
+
+    * For CUDA, install pytorch first (check Pytorch's [website](https://pytorch.org/) for the latest installation instructions)
+
+    ```shell
+    conda install pip
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
+    pip install spyrit
+    ```
+
+2. Install a few additional packages
+
+    ```shell
+    pip install jupyterlab
+    pip install scikit-image
+    pip install h5py
+    pip install opencv-python
+    ```
+
 
 ### Get the scripts and data
 1. Get source code from GitHub
