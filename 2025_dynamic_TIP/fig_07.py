@@ -13,7 +13,7 @@ from spyrit.core.meas import HadamSplit2d, DynamicHadamSplit2d
 from spyrit.core.prep import Unsplit
 from spyrit.misc.color import plot_hs
 
-from spyrit.core.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
+from spyrit.misc.dual_arm import ComputeHomography, recalibrate, MotionFieldProjector
 from spyrit.misc.load_data import read_acquisition, download_girder
 from spyrit.misc.disp import blue_box, get_frame, save_motion_video, save_field_video
 
