@@ -9,9 +9,7 @@ import numpy as np
 #from PIL import Image
 import sys
 sys.path.append('./fonction')
-#from load_data import Select_data
-#from matrix_tools import bining_colonne, bining_line
-from load_data import load_pattern_pos_neg, load_data_pos_neg
+from fonction.load_data import load_pattern_pos_neg, load_data_pos_neg
 from pathlib import Path
 
 

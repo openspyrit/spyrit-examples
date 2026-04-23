@@ -159,7 +159,7 @@ def load_pattern(Dir, Run, c_bin, r_start=1000, r_end=1048):
         
         print(Path_files+list_files[i]) 
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
         pat[i,:] = np.sum(tmp[r_start:r_end,:],0)
 
     pat = bining_colonne(pat, c_bin)
@@ -184,8 +184,8 @@ def load_data_pos_neg(Dir, Run, l_start, l_end, l_bin, lambda_bin):
     for i in range(0,2*Nh,2):      
         print(Path_files+list_files[i])
         print(Path_files+list_files[i+1])       
-        Data_pos[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
-        Data_neg[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        Data_pos[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
+        Data_neg[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
     
     # Crop raw data
     # We only have 2048 lines on the imaging camera we remove 56 lines 
@@ -225,7 +225,7 @@ def load_data(Dir, Run, l_start, l_end, l_bin, lambda_bin):
     
     for i in range(0,Nh):      
         print(Path_files+list_files[i])     
-        Data[:,i] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
+        Data[:,i] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
     
     # Crop raw data
     # We only have 2048 lines on the imaging camera we remove 56 lines 
