@@ -235,7 +235,7 @@
 #     print('-- Preprocessed measurements saved')
 
 # -*- coding: utf-8 -*-
-
+#%% Set up
 import sys
 from pathlib import Path
 import numpy as np
@@ -261,7 +261,6 @@ def plot_imshow(ax, data, title):
 
 
 # path to data: where to find raw data and where to save prep  
-
 data_folder = './data/2023_03_07_mRFP_DsRed_can_vs_had/'
 raw_dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/'
 
