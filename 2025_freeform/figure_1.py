@@ -46,7 +46,7 @@ mask_resized = mask.resize((img.shape[0],img.shape[1]), Image.NEAREST)
 mask_resized = np.array(mask_resized)[:,:,0]
 
 # no noise
-img_0 = img.deepcopy
+img_0 = img.copy()
 img_0[mask_resized==0] = img.min()
 imsave(pattern_folder/(image_filename[:-4]+'_roi.png'), img_0, cmap='gray')
 

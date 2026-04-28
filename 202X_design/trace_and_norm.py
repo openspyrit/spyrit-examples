@@ -85,7 +85,7 @@ _ , s, _= sp.linalg.svd(S)
 s_b = np.insert(np.ones(N-1)*(z/2)**.5, 0, z)
 
 print("S-matrix, singular values (numerical):\n", s)
-print("S-matrix, singular values (analytical):\n", s)
+print("S-matrix, singular values (analytical):\n", s_b)
 
 
 S_inv_norm_F = np.sum(1/s**2)
@@ -100,17 +100,6 @@ Q0 = (N/S_inv_norm_F)**.5
 print("S-matrix inverse, Q0", Q0)
 
 S_inv_norm_F_N_b = 4/N
-
-
-#%%
-
-
-SS2 = 4/(N+1)**2 * ((N+1)*np.eye(N) - 1)
-
-print(SS2)
-
-err = np.linalg.norm(SS1-SS2)
-print(f'error: {err}')
 
 #%%
 import numpy as np

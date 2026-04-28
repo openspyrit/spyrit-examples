@@ -32,10 +32,7 @@ There are two options:
     conda activate freeform
     ```
 
-1. Install PyTorch. Our scripts were tested with torch 2.8.0 and cuda 12.6.
-    ``` shell
-    pip ...
-    ```
+1. (optional) Install PyTorch with specific options, if necessary. Our scripts were tested with torch 2.10 and cuda 13.0
 
 1. Install spyrit. Our scripts were tested with spyrit 3.0.2.
 
@@ -53,7 +50,7 @@ There are two options:
 
 1. And a few more packages
     ``` shell
-    pip install conda-forge::girder-client # for downloading expe data
+    pip install girder-client # for downloading expe data
     pip install spyder-kernels
     ```
     
@@ -63,7 +60,7 @@ There are two options to download the raw measurements from our warehouse
 1. Run `download_data.py` (preferred option)
 
     ```shell
-    cd spyrit-examples/2025_spyrit_v3/ 
+    cd spyrit-examples/2025_freeform/ 
     python download_data.py
     ```
 2. Otherwise, use this [direct link](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/68d5069cc68404167c562973) and use the web interface.

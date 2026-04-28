@@ -37,7 +37,8 @@ plt.rcParams['text.usetex'] = True
 import json
 import ast
 
-data_folder =  Path(r".\data\2025-09-25_freeform_publication") 
+#data_folder =  Path(r".\data\2025-09-25_freeform_publication") 
+data_folder = Path("data") / "2025-09-25_freeform_publication"
 
 
 if mask_type == 'skew':
