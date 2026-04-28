@@ -34,16 +34,32 @@ We recommend using a virtual (e.g., conda) environment.
 conda create --name new-env
 conda activate new-env
 ```
-Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.3
-```shell
-conda install pip
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install spyrit
-pip install jupyterlab
-pip install scikit-image
-pip install h5py
-pip install opencv-python
-```
+
+1. Our notebook relies on the [SPyRiT](https://github.com/openspyrit/spyrit) package that can be installed via `pip`.  The notebook was tested with version 3.0.3
+
+    * No CUDA
+    ```shell
+    conda install pip
+    pip install spyrit
+    ```
+
+    * For CUDA, install pytorch first (check Pytorch's [website](https://pytorch.org/) for the latest installation instructions)
+
+    ```shell
+    conda install pip
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
+    pip install spyrit
+    ```
+
+2. Install a few additional packages
+
+    ```shell
+    pip install jupyterlab
+    pip install scikit-image
+    pip install h5py
+    pip install opencv-python
+    ```
+
 
 ### Get the scripts and data
 1. Get source code from GitHub
@@ -56,12 +72,12 @@ pip install opencv-python
     cd spyrit-examples/2025_DLMIS/    
     ```
 
-3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2023_DLMIS/data.zip) and extract its content
+3. Download the image database at this [url](https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/data.zip) and extract its conten
 
     * Windows PowerShell
 
     ```powershell
-    wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2023_DLMIS/data.zip -outfile data.zip
+    wget https://www.creatis.insa-lyon.fr/~ducros/spyritexamples/2025_DLMIS/data.zip -outfile data.zip
     tar xvf data.zip 
     ```
 
