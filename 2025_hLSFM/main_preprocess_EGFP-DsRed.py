@@ -1,69 +1,83 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun  8 14:22:16 2023
 
-@author: ducros
-"""
-#%%
-import numpy as np
-from PIL import Image
+#%% Setup
 import sys
-sys.path.append('./fonction')
-from fonction.load_data import Select_data, load_pattern_pos_neg, load_data_pos_neg
 from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
 
+sys.path.append('./fonction')
+
+from fonction.load_data import load_pattern_pos_neg, load_data_pos_neg
+from spyrit.misc.disp import add_colorbar
+
+
+def save_arrays(base_path, arrays: dict):
+    for name, arr in arrays.items():
+        np.save(base_path / name, arr)
+
+
+def plot_imshow(ax, data, title):
+    ax.set_title(title)
+    im = ax.imshow(data, cmap='gray')
+    add_colorbar(im, 'bottom')
+    ax.get_xaxis().set_visible(False)
+
+
+# where data is / should go
+data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
+other_data_folder = './data/2023_02_28_mRFP_DsRed_3D/' #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+raw_dir = other_data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
+
+
+
+prepped_matrices = 'Reconstruction/Mat_rc/'
+prepped_data = 'Preprocess'
+save_tag = True
 
 
 #%% Acquisition patterns
-import matplotlib.pyplot as plt
-from spyrit.misc.disp import add_colorbar
+Run = 'RUN0002'
 
-data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
-Dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
-Run = 'RUN0002' 
-save_folder = Dir
+H_pos, H_neg = load_pattern_pos_neg(raw_dir, Run, 4)
 
-# Binning is chosen such that:
-# 56 - 2104 = 2048 rows, hence 512 rows after x4 binning
-# 20 = 128 spectral channels 
-H_pos, H_neg = load_pattern_pos_neg(Dir,Run,4)
+# H_pos = np.flip(H_pos,1).copy() # copy() required to remove negatives strides
+# H_neg = np.flip(H_neg,1).copy() # copy() required to remove negatives strides
 
-H_pos = np.flip(H_pos,1).copy() # copy() required to remove negatives strides
-H_neg = np.flip(H_neg,1).copy() # copy() required to remove negatives strides
+H_pos = H_pos.copy() # copy() required to remove negatives strides
+H_neg = H_neg.copy() # copy() required to remove negatives strides
+
+
 norm = H_pos[0,16:500].mean()
 H_pos /= norm
 H_neg /= norm
+print(f'Hadamard pattern normalization factor: {norm}')
 
+# plot
+fig, axs = plt.subplots(3, 1)
+plot_imshow(axs[0], H_pos, 'Positive measurement patterns')
+plot_imshow(axs[1], H_neg, 'Negative measurement patterns')
+plot_imshow(axs[2], H_pos + H_neg, 'Sum')
 
-f, axs = plt.subplots(3, 1)
-axs[0].set_title('Positive measurement patterns')
-im = axs[0].imshow(H_pos, cmap='gray') 
-add_colorbar(im, 'bottom')
-axs[0].get_xaxis().set_visible(False)
+Nl, Nh = H_pos.shape
 
-axs[1].set_title('Negative measurement patterns')
-im = axs[1].imshow(H_neg, cmap='gray') 
-add_colorbar(im, 'bottom')
-axs[1].get_xaxis().set_visible(False)
+# save
+if save_tag:
+    save_path = Path(data_folder + prepped_matrices)
+    save_path.mkdir(parents=True, exist_ok=True)
+    save_arrays(save_path, {
+        f'motifs_Hadamard_{Nl}_{Nh}_pos.npy': H_pos,
+        f'motifs_Hadamard_{Nl}_{Nh}_neg.npy': H_neg,
+        f'motifs_Hadamard_{Nl}_{Nh}.npy': H_pos - H_neg,
+    })
 
-axs[2].set_title('Sum')
-im = axs[2].imshow(H_pos + H_neg, cmap='gray') 
-add_colorbar(im, 'bottom')
-axs[2].get_xaxis().set_visible(False)
+    plt.savefig(save_path / f'motifs_Hadamard_{Nl}_{Nh}.png',
+                bbox_inches='tight', dpi=600)
+    
 
-# Save
-# Nl, Nh, Nc = stack_pos.shape
-# Ns = int(Run[-1])-1
-# filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-# np.save(Path(data_folder+save_folder) / filename, stack_pos)
-# filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-# np.save(Path(data_folder+save_folder) / filename, stack_neg)
+#%% Raw data  eGFP + DsRed sample \
+raw_dir = data_folder + 'Raw_data_chSPSIM_and_SPIM/'
 
-#%% eGFP + DsRed sample /!\ DATA NOT IN THE WAREHOUSE (hard drive only)
-pilot_data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/'
-raw_data_folder = './data/2023_03_13_2023_03_14_eGFP_DsRed_3D/Raw_data_chSPSIM_and_SPIM/'
-save_folder = 'Preprocess'
-save_path = Path(pilot_data_folder) / save_folder
+save_path = Path(data_folder) / prepped_data
 save_path.mkdir(parents=True, exist_ok=True)
 
 T_list = range(1,27)    # slice indices
@@ -84,12 +98,10 @@ for t in T_list:
     # 56 - 2104 = 2048 rows, hence 512 rows after x4 binning
     # 20 = 128 spectral channels 
     
-    Dir = raw_data_folder + 'data_' + date + '/'
+    Dir = raw_dir + 'data_' + date + '/'
     stack_pos, stack_neg = load_data_pos_neg(Dir,Run,56,2104,4,20)
     
     # Save
-
-
     Nl, Nh, Nc = stack_pos.shape
     filename = f'T{t}_{Run}_{date}_Had_{Nl}_{Nh}_{Nc}_pos.npy'
     np.save(save_path / filename, stack_pos)
@@ -99,19 +111,3 @@ for t in T_list:
     
     print('-- Preprocessed measurements saved')
     
-#%% Check the prep data (pos neg should math with seb's prep)
-#Run = 'RUN0004' 
-#Ns = int(Run[-1])-1
-#save_folder = '/Preprocess/'
-#Nl, Nh, Nc = 512, 128, 128
-
-#filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}.npy'
-#prep = np.load(Path(data_folder+save_folder) / filename)
-
-#filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_pos.npy'
-#prep_pos = np.load(Path(data_folder+save_folder) / filename)
-
-#filename = f'T{Ns}_{Run}_2023_03_13_Had_{Nl}_{Nh}_{Nc}_neg.npy'
-#prep_neg =  np.load(Path(data_folder+save_folder) / filename)
-
-#print(f'error: {np.linalg.norm(prep_pos-prep_neg-prep)/np.linalg.norm(prep)}')
