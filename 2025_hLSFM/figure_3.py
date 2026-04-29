@@ -35,8 +35,6 @@ Nl, Nh, Nc = 512, 64, 1280  # shape of preprocessed data
 c_step = 5
 #lambda_central_list = np.arange(510, 598, 12, dtype=int)  # Central channel in nanometer
 lambda_central_list = 510, 551, 594  # Central channel in nanometer
-
-
 lambda_all = np.linspace(500, 608, Nc)
 
 #%% Init physics operators for Hadamard patterns | Alternative
