@@ -110,13 +110,14 @@ The directory structure should be
 ### Figure 4: EGFP-DsRed sample
 
 > All the results are saved in `.\data\2023_03_13_2023_03_14_eGFP_DsRed_3D\`. They can also be found on our warehouse (see [here](https://pilot-warehouse.creatis.insa-lyon.fr/#collection/63caa9497bef31845d991351/folder/6708d7990e9f151150f3c100)). 
+Note - PILOT EGFP-DsRed preprocessed data T10_RUN0005 seems to be corrupted, however preprocessing the raw data corresponding to this slice generates the correct file.
 
 1. Run `main_preprocess_EGFP-DsRed.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
 1. To reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`:
     1. Using SPYRiT v2.4: Run`main_recon_net_EGFP-DsRed_14_all_slices.py` 
     1. Using SPYRiT v3.1: Run `main_v3_recon_net_EGFP-DsRed_14_all_slices.ipynb`
 1. Run (the first sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 21 accordingly. 
-1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.
+1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing. Note the script must be re run for each reconstruction method, modifing line 59 accordingly. 
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.
 1. Run `main_visual_EGFP-DsRed_14.py` to visualise the filter maps and quantitative maps in color. The resulting visualisations will be saved in the subfolder `.\Visualisation_shift\`.
@@ -130,7 +131,7 @@ The directory structure should be
     1. Using SPYRiT v2.4: Run`main_recon_net_mRFP-DsRed_14_all_slices.py` 
     1. Using SPYRiT v3.1: Run `main_v3_recon_net_mRFP-DsRed_14_all_slices.ipynb`
 1. Run (the last sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 79 accordingly. 
-1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.
+1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.  Note the script must be re run for each reconstruction method, modifing line 47 accordingly. 
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.
 1. Run `main_unmix_filter_mRFP-DsRed.py` to visualise the filter maps and quantitative maps in color. The resulting visualisations will be saved in the subfolder `.\Visualisation_shift\`.
@@ -149,7 +150,6 @@ The directory structure should be
     
     * the preprocessed measurements are loaded from `data\2023_02_28_mRFP_DsRed_3D\Preprocess`
     * The hypercubes are saved to `data\2023_02_28_mRFP_DsRed_3D\Reconstruction\hypercube`
-1. PILOT EGFP-DsRed preprocessed data T10_RUN0005 seems to be corrupted, however preprocessing the raw data corresponding to this slice generates the correct file.
 1. The script  `main_stat.py` shows examples to compute mean and covariance matrices "in 2D". To compute mean and covariance "in 1D", as required by the Tikhonov step of the reconstruction, see `stat_1.py` in `spyrit.misc.statistics`.
 1. Training:
    * See `train.sh` for a typical shell script.
