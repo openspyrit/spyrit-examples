@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from matrix_tools import bining_colonne, bining_line
-
+from spyrit.misc.disp import add_colorbar
 
 def Files_names(Path,name_type):
     files = glob.glob(Path+name_type)
@@ -34,6 +34,18 @@ def Select_data(Dir,Run):
 def change_set_acqui(*args):
     n = len(set_acqui.value)
     run.options = [x[0][n:] for x in os.walk(set_acqui.value)][1:]
+
+
+def save_arrays(base_path, arrays: dict):
+    for name, arr in arrays.items():
+        np.save(base_path / name, arr)
+
+
+def plot_imshow(ax, data, title):
+    ax.set_title(title)
+    im = ax.imshow(data, cmap='gray')
+    add_colorbar(im, 'bottom')
+    ax.get_xaxis().set_visible(False)
 
 
 
