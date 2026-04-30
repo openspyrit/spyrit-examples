@@ -27,9 +27,6 @@ H_pos, H_neg = load_pattern_pos_neg(raw_dir, Run, 4)
 H_pos = np.flip(H_pos,1).copy() # copy() required to remove negatives strides
 H_neg = np.flip(H_neg,1).copy() # copy() required to remove negatives strides
 
-# H_pos = H_pos.copy() # copy() required to remove negatives strides
-# H_neg = H_neg.copy() # copy() required to remove negatives strides
-
 # normalise pattern data
 norm = H_pos[0,16:500].mean()
 H_pos /= norm

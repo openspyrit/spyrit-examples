@@ -115,7 +115,7 @@ The directory structure should be
 1. To reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`:
     1. Using SPYRiT v2.4: Run`main_recon_net_EGFP-DsRed_14_all_slices.py` 
     1. Using SPYRiT v3.1: Run `main_v3_recon_net_EGFP-DsRed_14_all_slices.ipynb`
-1. Run (the first sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`.
+1. Run (the first sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 21 accordingly. 
 1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.
@@ -129,7 +129,7 @@ The directory structure should be
 1. To reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`:
     1. Using SPYRiT v2.4: Run`main_recon_net_mRFP-DsRed_14_all_slices.py` 
     1. Using SPYRiT v3.1: Run `main_v3_recon_net_mRFP-DsRed_14_all_slices.ipynb`
-1. Run (the last sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`.
+1. Run (the last sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 79 accordingly. 
 1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
     * The quantitative abundance maps obtained by spectral unmixing will be saved in the subfolder `.\Unmixing_shift\`.

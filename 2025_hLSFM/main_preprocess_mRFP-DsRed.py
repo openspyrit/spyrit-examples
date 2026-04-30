@@ -13,31 +13,21 @@ import matplotlib.pyplot as plt
 
 sys.path.append('./fonction')
 
-from fonction.load_data import load_pattern_pos_neg, load_data_pos_neg
-from spyrit.misc.disp import add_colorbar
-
-# maybe put in fonction l
-def save_arrays(base_path, arrays: dict):
-    for name, arr in arrays.items():
-        np.save(base_path / name, arr)
+from fonction.load_data import load_pattern_pos_neg, load_data_pos_neg, save_arrays, plot_imshow
 
 
-def plot_imshow(ax, data, title):
-    ax.set_title(title)
-    im = ax.imshow(data, cmap='gray')
-    add_colorbar(im)
-    ax.get_xaxis().set_visible(False)
 
-
-#%% Acquisition patterns
+#%% prep acquisition patterns
 save_tag = True
 
-data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
+data_folder = './data/2023_02_28_mRFP_DsRed_3D/' # data folder for mRFP-DsRed example (downloaded from PILOT)
 raw_data = data_folder + 'Raw_data_chSPSIM_and_SPIM/data_2023_02_28/'
-Run = 'RUN0002'
+Run = 'RUN0002' # location of raw pattern measurements  (downloaded from PILOT)
 
-prepped_matrices = 'Reconstruction/Mat_rc/'
-prepped_data = 'Preprocess'
+
+
+prepped_matrices = 'Reconstruction/Mat_rc/' # where prepped matrices will be saved to
+prepped_data = 'Preprocess'                 # where prepped data will be saved to
 
 matrices_path = Path(data_folder) / prepped_matrices
 matrices_path.mkdir(parents=True, exist_ok=True)
@@ -48,8 +38,8 @@ data_path.mkdir(parents=True, exist_ok=True)
 H_pos, H_neg = load_pattern_pos_neg(raw_data, Run, 4)
 
 norm = H_pos[0,16:500].mean()
-# H_pos = np.flip(H_pos,1).copy()
-# H_neg = np.flip(H_neg,1).copy()
+H_pos = np.flip(H_pos,1).copy()
+H_neg = np.flip(H_neg,1).copy()
 H_pos /= norm
 H_neg /= norm
 
@@ -72,9 +62,7 @@ if save_tag:
                 bbox_inches='tight', dpi=600)
 
 
-# =======================
-# Check the patterns (using other data??) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ??
-# =======================
+# Check the patterns (silly)
 egfp_matrices = 'data/2023_03_13_2023_03_14_eGFP_DsRed_3D/Reconstruction/Mat_rc'
 filename = f'motifs_Hadamard_{Nl}_{Nh}.npy'
 H_2 = np.load(Path(egfp_matrices)/ filename) 
@@ -115,17 +103,16 @@ for t in T_list:
     print('-- Preprocessed measurements saved')
 
 
-# =======================
-# Check preprocessed data
-# =======================
 
-data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
-Run = 'RUN0006'
-Nl, Nh, Nc = 512, 128, 128
+# Check preprocessed data - needs to be downloaded from pilot (Preprocess folder of mRFP-DsRed data folder)
+
+# data_folder = './data/2023_02_28_mRFP_DsRed_3D/'
+# Run = 'RUN0006'
+# Nl, Nh, Nc = 512, 128, 128
 
 
-prep = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}.npy')
-prep_pos = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}_pos.npy')
-prep_neg = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}_neg.npy')
+# prep = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}.npy')
+# prep_pos = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}_pos.npy')
+# prep_neg = np.load(data_path / f'{Run}_Had_{Nl}_{Nh}_{Nc}_neg.npy')
 
-print(f'error: {np.linalg.norm(prep_pos - prep_neg - prep)/np.linalg.norm(prep)}')
+# print(f'error: {np.linalg.norm(prep_pos - prep_neg - prep)/np.linalg.norm(prep)}')
