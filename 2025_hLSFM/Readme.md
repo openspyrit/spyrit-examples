@@ -27,7 +27,7 @@ We provide the code to reproduce the results reported in
     ```
     Visit https://pytorch.org/get-started/locally/ if you need a different installation.
 
-1. Install SPyRiT tested using **v3.1** and a few more packages:
+1. Install SPyRiT tested using **v3.1.1** and a few more packages:
 
     ```shell
     pip install spyrit
