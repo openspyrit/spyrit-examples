@@ -105,7 +105,7 @@ The directory structure should be
 1. Run `main_preprocess_Fellgett.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
 1. To reconstruct hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\` and generate Fig. 3 of the paper:
     1. Using SPYRiT v2.4: Run `figure_3.py` 
-    1. Using SPYRiT v3.1: Run `main_v3_figure_3.ipynb` 
+    1. Using SPYRiT v3.1.1: Run `main_v3_figure_3.ipynb` 
 
 ### Figure 4: EGFP-DsRed sample
 
@@ -115,7 +115,7 @@ Note - PILOT EGFP-DsRed preprocessed data T10_RUN0005 seems to be corrupted, how
 1. Run `main_preprocess_EGFP-DsRed.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
 1. To reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`:
     1. Using SPYRiT v2.4: Run`main_recon_net_EGFP-DsRed_14_all_slices.py` 
-    1. Using SPYRiT v3.1: Run `main_v3_recon_net_EGFP-DsRed_14_all_slices.ipynb`
+    1. Using SPYRiT v3.1.1: Run `main_v3_recon_net_EGFP-DsRed_14_all_slices.ipynb`
 1. Run (the first sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 21 accordingly. 
 1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing. Note the script must be re run for each reconstruction method, modifing line 59 accordingly. 
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
@@ -129,7 +129,7 @@ Note - PILOT EGFP-DsRed preprocessed data T10_RUN0005 seems to be corrupted, how
 1. Run `main_preprocess_mRFP-DsRed.py` to generate the preprocessed measurements that will be saved in the subfolder `.\Preprocess\`
 1. To reconstruct the hypercubes that will be saved in the subfolder `.\Reconstruction\hypercube\`:
     1. Using SPYRiT v2.4: Run`main_recon_net_mRFP-DsRed_14_all_slices.py` 
-    1. Using SPYRiT v3.1: Run `main_v3_recon_net_mRFP-DsRed_14_all_slices.ipynb`
+    1. Using SPYRiT v3.1.1: Run `main_v3_recon_net_mRFP-DsRed_14_all_slices.ipynb`
 1. Run (the last sections of) `main_spectal_registration.py` to compensate for a spectral shift. The resulting hypercubes will be saved in the subfolder `.\Reconstruction\hypercube\*_shift\`. Note the script must be re run for each reconstruction method, modifing line 79 accordingly. 
 1. Run `main_unmix_filter_EGFP-DsRed_14.py` to estimate the map of the different components (i.e., DsRed, EGFP, and autofluorescence) in the sample by both spectral filtering and spectral unmixing.  Note the script must be re run for each reconstruction method, modifing line 47 accordingly. 
     * The maps obtained by spectral filtering will be saved in the subfolder `.\Filtering_shift\`.
@@ -146,7 +146,7 @@ Note - PILOT EGFP-DsRed preprocessed data T10_RUN0005 seems to be corrupted, how
     * the reconstructed hypercubes in `./Reconstruction/hypercube/tikhonet50_div1.5/RUN*/`. 
 1. To reconstruct all slices of hypercubes acquired using canonical and hadamard patterns:
     1. Using SPYRiT v2.4: Run `main_recon_Fellgett.py`
-    1. Using SPYRiT v3.1: Run `main_v3_recon_Fellgett.ipynb`
+    1. Using SPYRiT v3.1.1: Run `main_v3_recon_Fellgett.ipynb`
     
     * the preprocessed measurements are loaded from `data\2023_02_28_mRFP_DsRed_3D\Preprocess`
     * The hypercubes are saved to `data\2023_02_28_mRFP_DsRed_3D\Reconstruction\hypercube`
