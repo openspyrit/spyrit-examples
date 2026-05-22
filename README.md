@@ -7,9 +7,9 @@ Some of research contributions based on the SPyRiT package:
 
 ### 2025
 
-* [Hyperspectral LSFM](./2025_hLSFM/) (2025)
+* [Hyperspectral LSFM](./2025_hLSFM/) (Optics Express, 2025)
 
-> S Crombez, C Ray, C Exbrayat-Héritier, F Ruggiero, NDucros, "Hyperspectral LSFM with DMD-only Shaping and Neural Network Reconstruction," (2025). [main PDF](https://hal.science/hal-04824372/document), [supplementary PDF](https://hal.science/hal-04824372/preview/hspim_nature_supp.pdf).
+> S Crombez, C Ray, C Exbrayat-Héritier, F Ruggiero, NDucros, "Hyperspectral LSFM with DMD-only Shaping and Neural Network Reconstruction," Optics Express, Vol. 33, Issue 25, pp. 52339-52355 (2025). [main PDF](https://doi.org/10.1364/OE.570091). [supplementary PDF](https://doi.org/10.6084/m9.figshare.30179443).
 
 * [SPyRiT 3.0](./2025_spyrit_v3/) (Optics Express, 2025)
 
@@ -44,6 +44,12 @@ Some of research contributions based on the SPyRiT package:
 ##  List of educational materials
 
 Some of educational material based on the SPYRIT toolbox
+
+### 2026
+
+* [DL-based reconstruction of ONE-PIX measurements](./2026_onepix/)
+
+ONE-PIX is an educational toolkit for hypersectral imaging. [More info](https://www.photonics-open-projects.com/?page_id=2#page-content). 
 
 ### 2025
 
