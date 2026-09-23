@@ -30,8 +30,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_smoothing_spline
 from PIL import Image
-import os
-os.chdir("d:/hspc/scripts")
 
 from spyrit.misc.disp import imagesc, add_colorbar
 from spyrit.misc.sampling import reindex
@@ -50,14 +48,14 @@ ti = 2      # base integration time (ms) -- FH2/MH2 are mask-independent
 h = 128     # image size hxh
 norm = 32768 * ti  # time budget in ms, kept constant across every ROI
                    # size so their SNR/MSNR are directly comparable
-fig_folder = Path('../result/freeform/figures_S11-S17')
+fig_folder = Path('figures/figures_S11-S17')
 fig_folder.mkdir(parents=True, exist_ok=True)
 save_tag = True
 plot_tag = False
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-data_folder = Path(r"../data/2026-09-11_freeform_publication")
+data_folder = Path(r"data/2026-09-11_freeform_publication")
 
 # FH2 (Walsh) and every black reference are only acquired once, under the
 # 'cat' object name, and reused for every ROI size N below.
@@ -195,7 +193,7 @@ objects_cfg = [dict(label=f'ROI_N_{N}', N=N,
 # This is a diagnostic-only, ROI-independent measurement (mu_dark is not
 # actually subtracted below -- see the commented-out line), so it is
 # loaded once and shared by all ROI iterations.
-dark_folder = Path(r"../data/2025-09-11_freeform_SNR")
+dark_folder = Path(r"data/2025-09-11_freeform_SNR")
 dark_title = [r'obj_black_source_No source_raster_cat_4096_im_128x128_ti_8ms_zoom_x1']
 
 data_dark, _, _ = load_spihim(dark_folder, dark_title)

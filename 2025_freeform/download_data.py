@@ -1,25 +1,29 @@
-# %%
-# IMPORTS
+# This file is used to download all data used in the paper. 
+# It uses the girder_client library to connect to the Girder API and get the 
+# data from the specified folders stored in the Pilot warehouse.
 
+# %%
 from pathlib import Path
-from spyrit.misc.load_data import download_girder
+import girder_client
 
-# %%
 # download data from the Pilot warehouse
 url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
 data_subfolder = Path("data")
-data_files = [
-    "61b07f593f7ce79f5e565c5f",  # tomato x2 spectraldata.npz
-    "61b07f583f7ce79f5e565c5c",  # tomato x2 metadata.json
-    "61b0924e3f7ce79f5e565c93",  # tomato x12 spectraldata.npz
-    "61b0924d3f7ce79f5e565c90",  # tomato x12 metadata.json
-    "616fff65478214d8c8a30e45",  # starsector x12 spectraldata.npz
-    "616fff64478214d8c8a30e42",  # starsector x12 metadata.json
-    "6172a77e478214d8c8a30ff7",  # usaf x12 spectraldata.npz
-    "6172a77d478214d8c8a30ff4",  # usaf x12 metadata.json
+
+gc = girder_client.GirderClient(apiUrl=url_pilot)
+
+# Girder folder ID
+folder_list = [
+    "6aa3a5dbf5d51d66558ed13b",  # 2026-09-11_freeform_publication
+    "68d5069cc68404167c562973",  # 2025-09-25_freeform_publication
+    "68c2c688c68404167c562799",  # 2025-09-11_freeform_SNR
 ]
-try:
-    download_girder(url_pilot, data_files, data_subfolder)
-except Exception as e:
-    print("Unable to download data from the Pilot warehouse")
-    print(e)
+
+for folder_id in folder_list:
+    # 1. Fetch the folder metadata to get its name
+    folder_info = gc.get(f"folder/{folder_id}")
+    folder_name = folder_info["name"]
+    destination_path = data_subfolder / folder_name
+
+    # 2. Download the folder recursively
+    gc.downloadFolderRecursive(folder_id, destination_path)

@@ -48,7 +48,7 @@ def discover_masks_cfg(cat_result_folder):
 
 
 # Values computed and saved by freefom_figures_S11-S17.py
-cat_result_folder = Path('../result/freeform/figures_S11-S17')
+cat_result_folder = Path('figures/figures_S11-S17')
 
 fig_folder = cat_result_folder
 save_tag = True
@@ -236,141 +236,142 @@ for cfg in masks_cfg:
         mse_theory[4, ll] = mse_smatrix(N, N, _fbar(4, ll), sigma_dark[4, ll], tot, gamma)     # S1
     mse_theory_all[label] = dict(N=N, mse=mse_theory)
 
-    if USE_TI_DEPENDENT_SIGMA_DARK:
-        #%% Plot: 2 subplots, one per lambda_central (581nm, 726nm).
-        # Within each, both channel counts (31ch, 5ch) are shown -- as 2
-        # curves/points per method that land almost on top of each other,
-        # since sigma_dark barely depends on nc (only on lambda_central,
-        # see module docstring). Colour = method, line style / marker
-        # symbol = channel count.
-        fig, axs = plt.subplots(1, 2, figsize=(15, 7), sharey=True)
+    # if USE_TI_DEPENDENT_SIGMA_DARK:
 
-        for sp, (ll_wide, ll_narrow) in enumerate(lambda_groups):
-            ax = axs[sp]
-            ax.axhline(y=0, color='k', linestyle='-')
+    #     # #%% Plot: 2 subplots, one per lambda_central (581nm, 726nm).
+    #     # # Within each, both channel counts (31ch, 5ch) are shown -- as 2
+    #     # # curves/points per method that land almost on top of each other,
+    #     # # since sigma_dark barely depends on nc (only on lambda_central,
+    #     # # see module docstring). Colour = method, line style / marker
+    #     # # symbol = channel count.
+    #     # fig, axs = plt.subplots(1, 2, figsize=(15, 7), sharey=True)
 
-            for nc_i, ll in enumerate((ll_wide, ll_narrow)):
+    #     # for sp, (ll_wide, ll_narrow) in enumerate(lambda_groups):
+    #     #     ax = axs[sp]
+    #     #     ax.axhline(y=0, color='k', linestyle='-')
 
-                sigma_fh2 = sigma_dark[0, ll]
-                sigma_rs  = sigma_dark[1, ll]
-                sigma_mh2 = sigma_dark[2, ll]
-                sigma_h1  = sigma_dark[3, ll]
-                sigma_s1  = sigma_dark[4, ll]
+    #     #     for nc_i, ll in enumerate((ll_wide, ll_narrow)):
 
-                mse_fh2 = mse_hadam_diff(P, P, f_mean, sigma_fh2, tot, gamma)
-                mse_rs  = mse_raster(N, f_mean, sigma_rs, tot, gamma)
-                mse_mh2 = mse_hadam_diff(N, P, f_mean, sigma_mh2, tot, gamma)
-                mse_h1  = mse_hadam_diff(N, N, f_mean, sigma_h1, tot, gamma)
-                mse_s1  = mse_smatrix(N, N, f_mean, sigma_s1, tot, gamma)
+    #     #         sigma_fh2 = sigma_dark[0, ll]
+    #     #         sigma_rs  = sigma_dark[1, ll]
+    #     #         sigma_mh2 = sigma_dark[2, ll]
+    #     #         sigma_h1  = sigma_dark[3, ll]
+    #     #         sigma_s1  = sigma_dark[4, ll]
 
-                boost_fh2 = 10*np.log10(mse_s1 / mse_fh2)
-                boost_rs  = 10*np.log10(mse_s1 / mse_rs)
-                boost_mh2 = 10*np.log10(mse_s1 / mse_mh2)
-                boost_h1  = 10*np.log10(mse_s1 / mse_h1)
+    #     #         mse_fh2 = mse_hadam_diff(P, P, f_mean, sigma_fh2, tot, gamma)
+    #     #         mse_rs  = mse_raster(N, f_mean, sigma_rs, tot, gamma)
+    #     #         mse_mh2 = mse_hadam_diff(N, P, f_mean, sigma_mh2, tot, gamma)
+    #     #         mse_h1  = mse_hadam_diff(N, N, f_mean, sigma_h1, tot, gamma)
+    #     #         mse_s1  = mse_smatrix(N, N, f_mean, sigma_s1, tot, gamma)
 
-                sigmas = [sigma_fh2, sigma_rs, sigma_mh2, sigma_h1]
-                boosts = [boost_fh2, boost_rs, boost_mh2, boost_h1]
+    #     #         boost_fh2 = 10*np.log10(mse_s1 / mse_fh2)
+    #     #         boost_rs  = 10*np.log10(mse_s1 / mse_rs)
+    #     #         boost_mh2 = 10*np.log10(mse_s1 / mse_mh2)
+    #     #         boost_h1  = 10*np.log10(mse_s1 / mse_h1)
 
-                for m in range(4):
-                    x_curve = f_mean / (sigmas[m]**2 / gamma**2 / tot)
-                    ax.semilogx(x_curve, boosts[m], color=colors[m],
-                                linestyle=nc_styles[nc_i], linewidth=lw)
-                    ax.semilogx(fbar_ref[m, ll], gain[m, ll], nc_symbols[nc_i],
-                                color=colors[m], markersize=8, markeredgecolor='k')
+    #     #         sigmas = [sigma_fh2, sigma_rs, sigma_mh2, sigma_h1]
+    #     #         boosts = [boost_fh2, boost_rs, boost_mh2, boost_h1]
 
-            # Dimensionless thresholds (2, N-4): valid for every curve, since
-            # x is defined the same way (f_mean/fref) for all of them
-            # regardless of which sigma_dark went into that particular curve.
-            ax.axvline(x=2, color='k', linestyle='--', linewidth=lw)
-            ax.axvline(x=N-4, color=colors[1], linestyle='--', linewidth=lw)
-            ax.axvspan(1e-2, 2, alpha=.15, color='grey')
-            ax.axvspan(N-4, 1e5, alpha=.15, color=colors[1])
+    #     #         for m in range(4):
+    #     #             x_curve = f_mean / (sigmas[m]**2 / gamma**2 / tot)
+    #     #             ax.semilogx(x_curve, boosts[m], color=colors[m],
+    #     #                         linestyle=nc_styles[nc_i], linewidth=lw)
+    #     #             ax.semilogx(fbar_ref[m, ll], gain[m, ll], nc_symbols[nc_i],
+    #     #                         color=colors[m], markersize=8, markeredgecolor='k')
 
-            ax.set_title(lambda_labels[sp], fontsize=fs)
-            ax.set_xlabel(r'Normalized mean count $\bar{f} / f_{\rm ref}$', fontsize=fs-4)
-            ax.grid(True)
-            ax.set_xlim([1e-2, 1e5])
+    #     #     # Dimensionless thresholds (2, N-4): valid for every curve, since
+    #     #     # x is defined the same way (f_mean/fref) for all of them
+    #     #     # regardless of which sigma_dark went into that particular curve.
+    #     #     ax.axvline(x=2, color='k', linestyle='--', linewidth=lw)
+    #     #     ax.axvline(x=N-4, color=colors[1], linestyle='--', linewidth=lw)
+    #     #     ax.axvspan(1e-2, 2, alpha=.15, color='grey')
+    #     #     ax.axvspan(N-4, 1e5, alpha=.15, color=colors[1])
 
-        axs[0].set_ylabel('MSE gain w.r.t. S1 (in dB)', fontsize=fs)
+    #     #     ax.set_title(lambda_labels[sp], fontsize=fs)
+    #     #     ax.set_xlabel(r'Normalized mean count $\bar{f} / f_{\rm ref}$', fontsize=fs-4)
+    #     #     ax.grid(True)
+    #     #     ax.set_xlim([1e-2, 1e5])
 
-        # Two-part legend: method (color) and channel count (line style / symbol)
-        method_handles = [plt.Line2D([0], [0], color=colors[m], linewidth=lw,
-                                      label=method_labels[m]) for m in range(4)]
-        nc_handles = [plt.Line2D([0], [0], color='k', linestyle=nc_styles[i],
-                                  marker=nc_symbols[i], markerfacecolor='w',
-                                  label=nc_labels[i]) for i in range(2)]
-        legend1 = axs[0].legend(handles=method_handles, loc='lower right', fontsize=fs-6,
-                                 title='Scan mode')
-        axs[0].add_artist(legend1)
-        axs[0].legend(handles=nc_handles, loc='upper left', fontsize=fs-6, title='Channels')
+    #     # axs[0].set_ylabel('MSE gain w.r.t. S1 (in dB)', fontsize=fs)
 
-        # No tex_escape needed: 'Freeform region: N = <N>' has no
-        # LaTeX-special characters, so it renders fine even with
-        # text.usetex (turned on below).
-        fig.suptitle(f'Freeform region: N = {N}', fontsize=fs)
-        plt.tight_layout()
+    #     # # Two-part legend: method (color) and channel count (line style / symbol)
+    #     # method_handles = [plt.Line2D([0], [0], color=colors[m], linewidth=lw,
+    #     #                               label=method_labels[m]) for m in range(4)]
+    #     # nc_handles = [plt.Line2D([0], [0], color='k', linestyle=nc_styles[i],
+    #     #                           marker=nc_symbols[i], markerfacecolor='w',
+    #     #                           label=nc_labels[i]) for i in range(2)]
+    #     # legend1 = axs[0].legend(handles=method_handles, loc='lower right', fontsize=fs-6,
+    #     #                          title='Scan mode')
+    #     # axs[0].add_artist(legend1)
+    #     # axs[0].legend(handles=nc_handles, loc='upper left', fontsize=fs-6, title='Channels')
 
-        if save_tag:
-            plt.rcParams['text.usetex'] = True
-            fig.savefig(fig_folder/(f'figure_S18_{label}.'+ext), transparent=True, dpi=300)
+    #     # # No tex_escape needed: 'Freeform region: N = <N>' has no
+    #     # # LaTeX-special characters, so it renders fine even with
+    #     # # text.usetex (turned on below).
+    #     # fig.suptitle(f'Freeform region: N = {N}', fontsize=fs)
+    #     # plt.tight_layout()
 
-    else:
-        #%% Plot: legacy behaviour -- a single, ti/lambda-independent
-        # sigma_const for every curve (one set of curves, computed once),
-        # single figure overlaying all 4 bands as 4 marker symbols per
-        # method. Markers still use each method's real measured
-        # sigma_dark (fbar_ref, computed above), so with sigma_const
-        # picked far from a given band's real sigma_dark, markers and
-        # curves visibly disagree -- this is the pre-fix behaviour.
-        tot_legacy = 1.0
-        fref_legacy = sigma_const**2 / gamma**2 / tot_legacy
-        f_mean_ref_legacy = f_mean / fref_legacy
+    #     # if save_tag:
+    #     #     plt.rcParams['text.usetex'] = True
+    #     #     fig.savefig(fig_folder/(f'figure_S18_{label}.'+ext), transparent=True, dpi=300)
+    # else:
+    #     #%% Plot: legacy behaviour -- a single, ti/lambda-independent
+    #     # sigma_const for every curve (one set of curves, computed once),
+    #     # single figure overlaying all 4 bands as 4 marker symbols per
+    #     # method. Markers still use each method's real measured
+    #     # sigma_dark (fbar_ref, computed above), so with sigma_const
+    #     # picked far from a given band's real sigma_dark, markers and
+    #     # curves visibly disagree -- this is the pre-fix behaviour.
 
-        mse_fh2 = mse_hadam_diff(P, P, f_mean, sigma_const, tot_legacy, gamma)
-        mse_rs  = mse_raster(N, f_mean, sigma_const, tot_legacy, gamma)
-        mse_mh2 = mse_hadam_diff(N, P, f_mean, sigma_const, tot_legacy, gamma)
-        mse_h1  = mse_hadam_diff(N, N, f_mean, sigma_const, tot_legacy, gamma)
-        mse_s1  = mse_smatrix(N, N, f_mean, sigma_const, tot_legacy, gamma)
+tot_legacy = 1.0
+fref_legacy = sigma_const**2 / gamma**2 / tot_legacy
+f_mean_ref_legacy = f_mean / fref_legacy
 
-        boost_fh2 = 10*np.log10(mse_s1 / mse_fh2)
-        boost_rs  = 10*np.log10(mse_s1 / mse_rs)
-        boost_mh2 = 10*np.log10(mse_s1 / mse_mh2)
-        boost_h1  = 10*np.log10(mse_s1 / mse_h1)
+mse_fh2 = mse_hadam_diff(P, P, f_mean, sigma_const, tot_legacy, gamma)
+mse_rs  = mse_raster(N, f_mean, sigma_const, tot_legacy, gamma)
+mse_mh2 = mse_hadam_diff(N, P, f_mean, sigma_const, tot_legacy, gamma)
+mse_h1  = mse_hadam_diff(N, N, f_mean, sigma_const, tot_legacy, gamma)
+mse_s1  = mse_smatrix(N, N, f_mean, sigma_const, tot_legacy, gamma)
 
-        symbol = 'ovd^'
+boost_fh2 = 10*np.log10(mse_s1 / mse_fh2)
+boost_rs  = 10*np.log10(mse_s1 / mse_rs)
+boost_mh2 = 10*np.log10(mse_s1 / mse_mh2)
+boost_h1  = 10*np.log10(mse_s1 / mse_h1)
 
-        plt.figure()
-        plt.axhline(y=0, color='k', linestyle='-')
-        plt.semilogx(f_mean_ref_legacy, boost_fh2, label='FH2', linewidth=lw)
-        plt.semilogx(f_mean_ref_legacy, boost_rs,  label='RS',  linewidth=lw)
-        plt.semilogx(f_mean_ref_legacy, boost_mh2, label='MH2', linewidth=lw)
-        plt.semilogx(f_mean_ref_legacy, boost_h1,  label='H1',  linewidth=lw)
+symbol = 'ovd^'
 
-        for i in range(gain.shape[1]):
-            plt.semilogx(fbar_ref[0, i], gain[0, i], symbol[i], color=colors[0])
-            plt.semilogx(fbar_ref[1, i], gain[1, i], symbol[i], color=colors[1])
-            plt.semilogx(fbar_ref[2, i], gain[2, i], symbol[i], color=colors[2])
-            plt.semilogx(fbar_ref[3, i], gain[3, i], symbol[i], color=colors[3])
+plt.figure()
+plt.axhline(y=0, color='k', linestyle='-')
+plt.semilogx(f_mean_ref_legacy, boost_fh2, label='FH2', linewidth=lw)
+plt.semilogx(f_mean_ref_legacy, boost_rs,  label='RS',  linewidth=lw)
+plt.semilogx(f_mean_ref_legacy, boost_mh2, label='MH2', linewidth=lw)
+plt.semilogx(f_mean_ref_legacy, boost_h1,  label='H1',  linewidth=lw)
 
-        # No tex_escape needed: 'Freeform region: N = <N>' has no
-        # LaTeX-special characters, so it renders fine even with
-        # text.usetex (turned on below).
-        plt.title(f'Freeform region: N = {N}', fontsize=fs)
-        plt.xlabel(r'Normalized mean count $\bar{f} / f_{\rm ref}$', fontsize=fs)
-        plt.ylabel('MSE gain w.r.t. S1 (in dB)', fontsize=fs)
-        plt.legend(loc='lower right', fontsize=fs-2)
-        plt.grid(True)
+for i in range(gain.shape[1]):
+    plt.semilogx(fbar_ref[0, i], gain[0, i], symbol[i], color=colors[0])
+    plt.semilogx(fbar_ref[1, i], gain[1, i], symbol[i], color=colors[1])
+    plt.semilogx(fbar_ref[2, i], gain[2, i], symbol[i], color=colors[2])
+    plt.semilogx(fbar_ref[3, i], gain[3, i], symbol[i], color=colors[3])
 
-        plt.axvline(x=2, color='k', linestyle='--', linewidth=lw)
-        plt.axvline(x=N-4, color=colors[1], linestyle='--', linewidth=lw)
-        plt.xlim([1e-2, 1e5])
-        plt.axvspan(1e-2, 2, alpha=.15, color='grey')
-        plt.axvspan(N-4, 1e5, alpha=.15, color=colors[1])
-        plt.tight_layout()
+# No tex_escape needed: 'Freeform region: N = <N>' has no
+# LaTeX-special characters, so it renders fine even with
+# text.usetex (turned on below).
+plt.title(f'Freeform region: N = {N}', fontsize=fs)
+plt.xlabel(r'Normalized mean count $\bar{f} / f_{\rm ref}$', fontsize=fs)
+plt.ylabel('MSE gain w.r.t. S1 (in dB)', fontsize=fs)
+plt.legend(loc='lower right', fontsize=fs-2)
+plt.grid(True)
 
-        if save_tag:
-            plt.rcParams['text.usetex'] = True
-            plt.savefig(fig_folder/(f'figure_S18_{label}.'+ext), transparent=True, dpi=300)
+plt.axvline(x=2, color='k', linestyle='--', linewidth=lw)
+plt.axvline(x=N-4, color=colors[1], linestyle='--', linewidth=lw)
+plt.xlim([1e-2, 1e5])
+plt.axvspan(1e-2, 2, alpha=.15, color='grey')
+plt.axvspan(N-4, 1e5, alpha=.15, color=colors[1])
+plt.tight_layout()
+
+if save_tag:
+    plt.rcParams['text.usetex'] = True
+    plt.savefig(fig_folder/(f'figure_S18_{label}.'+ext), transparent=True, dpi=300)
 
 #%% Display the ROI figures
 plt.show()
@@ -676,8 +677,8 @@ for band_i, file_tag in [(0, '581nm_31ch'), (1, '581nm_5ch'),
         # Marker shape follows the band (wavelength x channel count) --
         # see band_markers above.
         ax.plot(N_list, gain_exp, marker=band_markers[band_i], linestyle='none',
-                 color=colors_all[m], markersize=8, markeredgecolor='k')
-        ax.plot(N_th_full, gain_th_full, linestyle='-', color=colors_all[m], linewidth=lw)
+                 color=colors[m-1], markersize=8, markeredgecolor='k')
+        ax.plot(N_th_full, gain_th_full, linestyle='-', color=colors[m-1], linewidth=lw)
 
     ax.axhline(y=0, color='k', linestyle='-')
     ax.set_xlabel('N (pixel number in the freeform region)', fontsize=fs-4)
@@ -687,7 +688,7 @@ for band_i, file_tag in [(0, '581nm_31ch'), (1, '581nm_5ch'),
     ax.get_xaxis().set_major_formatter(mticker.ScalarFormatter())
     ax.grid(True)
 
-    method_handles = [plt.Line2D([0], [0], color=colors_all[m], linewidth=lw,
+    method_handles = [plt.Line2D([0], [0], color=colors[m-1], linewidth=lw,
                                   label=method_labels_all[m]) for m in [1, 2, 3, 4]]
     ax.legend(handles=method_handles, loc='lower left', fontsize=fs-6)
 
@@ -734,8 +735,8 @@ for sp, (band_i, file_tag) in enumerate([(0, '581nm_31ch'), (1, '581nm_5ch'),
         # Marker shape follows the band (wavelength x channel count) --
         # see band_markers above.
         ax.plot(N_list, gain_exp, marker=band_markers[band_i], linestyle='none',
-                 color=colors_all[m], markersize=8, markeredgecolor='k')
-        ax.plot(N_th_full, gain_th_full, linestyle='-', color=colors_all[m], linewidth=lw)
+                 color=colors[m-1], markersize=8, markeredgecolor='k')
+        ax.plot(N_th_full, gain_th_full, linestyle='-', color=colors[m-1], linewidth=lw)
 
     ax.axhline(y=0, color='k', linestyle='-')
     ax.set_xscale('log', base=2)
@@ -750,7 +751,7 @@ for sp, (band_i, file_tag) in enumerate([(0, '581nm_31ch'), (1, '581nm_5ch'),
         ax.set_xlabel('N (pixel number in the freeform region)', fontsize=fs-4)
 
 # One shared legend for the whole figure instead of one per subplot.
-method_handles = [plt.Line2D([0], [0], color=colors_all[m], linewidth=lw,
+method_handles = [plt.Line2D([0], [0], color=colors[m-1], linewidth=lw,
                               label=method_labels_all[m]) for m in [1, 2, 3, 4]]
 axs[0].legend(handles=method_handles, loc='lower left', fontsize=fs-6)
 

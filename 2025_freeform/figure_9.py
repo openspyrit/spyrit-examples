@@ -100,10 +100,10 @@ data = np.array([[ 50.57,   5.96,  18.58,   8.2 ,   2.33,  10.93,   1.99,   2.02
 msnr = 20*np.log10(data[:,ind_fbar]/data[:,ind_std])
 
 # boost from MSNR
-gain = data[:4,ind_msnr] - data[4,ind_msnr]
+#gain = data[:4,ind_msnr] - data[4,ind_msnr]
 
 # boost from STD
-#gain = 20*np.log10(data[4,ind_std]/data[:4,ind_std])
+gain = 20*np.log10(data[4,ind_std]/data[:4,ind_std])
 
 # Equivalent normalised fbarref
 fbar_fh2 = find_closest_abscissa(boost_fh2, f_mean_ref, gain[0,:])
@@ -176,7 +176,7 @@ if save_tag:
 # fbar_ref_726 = data[-1,6]*1e3/31/(17**2/32.768)
 # fbar_ref = [fbar_ref_581,fbar_ref_581,fbar_ref_726,fbar_ref_726]
 
-# These values were computed in figure_7.py
+# These values were computed in figure_S10.py
 sigma_dark = np.array([[19.06419074, 18.59970943, 16.18167311, 16.95223562],
        [29.58125051, 29.37583337, 17.28607546, 17.99641753],
        [19.06419074, 18.59970943, 16.18167311, 16.95223562],
