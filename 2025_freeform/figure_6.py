@@ -782,6 +782,8 @@ fbar_ref_581 = moy[-1,0]*1e3/31/(17**2/32.768)
 fbar_ref_726 = moy[-1,2]*1e3/31/(17**2/32.768)
 
 #%% Effective sigma dark
+# It is used in figure_6.py (see variable 'sigma_dark')
+
 ind_expe_list = [0,4,2,1,3] # reorder
 
 sigma_m = np.zeros((len(black_exp), len(lambda_central_list)))    
@@ -801,14 +803,3 @@ for j, jj in enumerate(ind_expe_list):
         
         #
         sigma_m[j, ll] = np.sqrt(np.var(yi, axis=0).mean())
-
-#%%  
-ind_expe_list = [0,4,2,1,3] # reorder
-sigma_m = np.zeros((len(black_exp), 2))
-
-for j, jj in enumerate(ind_expe_list):
-    print(jj)
-    yi = black_exp[jj]
-    for i, lci in enumerate([515,1799]):
-        yi_lc = yi[:, lci]
-        sigma_m[j, i] = np.std(yi_lc)
