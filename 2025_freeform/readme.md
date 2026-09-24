@@ -92,6 +92,6 @@ The directory structure should be as follows:
 ```
 
 ## How to reproduce the results of the paper?
-1. Run `Figure_xx.py` for `xx` in `{2, 4, 6, 7, 8, 9}` to reproduce the corresponding figure in the paper.
+1. Run `Figure_xx.py` for `xx` in `{1, 2, 4, 5, 6, 7, 8}` to reproduce the corresponding figure in the paper.
 
 1. Run `table_1.py` to evaluate numerically the expression of the trace reported in Table 1.
