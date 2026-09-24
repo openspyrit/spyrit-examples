@@ -192,4 +192,3 @@ if save_tag:
     plt.rcParams['text.usetex'] = True
     #plt.rcParams['lines.linewidth'] = 0.5
     plt.savefig(fig_folder/('figure_7.'+ext), transparent=True, dpi=300)
-# %%
