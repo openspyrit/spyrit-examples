@@ -136,7 +136,7 @@ if save_tag:
 import numpy as np
 import matplotlib.pyplot as plt
 
-save_tag = False
+save_tag = True
 
 tot   = 1        # total acquisition time in s
 alpha = 1e7      # intensity in photons/pixel/s or None 

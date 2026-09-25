@@ -3,7 +3,7 @@
 We provide the code to reproduce the results reported in
 
 > N Ducros, J Cohen, L Mahieu-Williame, "Freeform Hadamard imaging: Back to the roots of computational optics," preprint (2025). 
-* [PDF](https://hal.science/hal-xxxxxxx/document)
+* [PDF](https://hal.science/hal-05337760/document)
 
 *Contact:* nicolas.ducros@insa-lyon.fr, CREATIS Laboratory, University of Lyon, France.
 
@@ -92,6 +92,6 @@ The directory structure should be as follows:
 ```
 
 ## How to reproduce the results of the paper?
-1. Run `Figure_xx.py` for `xx` in `{1, 2, 4, 5, 6, 7, 8}` to reproduce the corresponding figure in the paper.
+1. Run `Figure_xx.py` for `xx` in `{1, 2, 5, 6, 7, 8, S9, S10, S14-20, S21}` to reproduce the corresponding figure in the paper.
 
 1. Run `table_1.py` to evaluate numerically the expression of the trace reported in Table 1.

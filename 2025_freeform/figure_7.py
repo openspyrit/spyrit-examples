@@ -36,8 +36,11 @@ def find_closest_abscissa(y, x, y_target):
 
 #%% Simulated/theoretical MSEs
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+import matplotlib.pyplot as plt
+
+# magic command for interactive plots (works in VSCode)
+print('Use the \'%matplotlib qt\' magic command in VSCode to open interactive plots in a new window.')
 
 tot   = 1        # total acquisition time in s
 alpha = 1e7      # intensity in photons/pixel/s or None 

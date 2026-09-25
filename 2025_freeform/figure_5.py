@@ -13,9 +13,12 @@ import numpy as np
 
 from pathlib import Path
 import matplotlib.pyplot as plt
+    
+# magic command for interactive plots (works in VSCode)
+print('Use the \'%matplotlib qt\' magic command in VSCode to open interactive plots in a new window.')
 
 from spyrit.misc.statistics import transform_gray_norm
-from spyrit.misc.disp import add_colorbar, noaxis
+from spyrit.misc.disp import noaxis
 from spyrit.core.meas import HadamSplit2d
 from spyrit.core.noise import Gaussian, Poisson, PoissonGaussian
 
@@ -28,7 +31,8 @@ sigma = 17      # gaussian std
 noise_list = ['G','P','PG']     # Noise model
 i_seed = 0
 
-path_image = Path('../spyrit/tutorial/images/')
+print("Update with the path of your spyrit folder!")
+path_image = Path('../../spyrit/tutorial/images/')
 
 masked_type = 'skew'        #'skew' or 'low'
 N_pixel = 2**12             # only for 'low'
@@ -44,6 +48,12 @@ cbar_pos = 'bottom'     # colorbar position
 if save_tag:
     plt.rcParams['text.usetex'] = True
     plt.rcParams['lines.linewidth'] = 1
+
+
+def add_axis_colorbar(fig, im, axis, where='bottom'):
+    """Attach a colorbar to a specific axis to avoid stateful pyplot side effects."""
+    orientation = 'horizontal' if where == 'bottom' else 'vertical'
+    return fig.colorbar(im, ax=axis, orientation=orientation, pad=0.02, fraction=0.05)
 
 #%%
 def get_indices_lowest_2d(tensor_2d, n):
@@ -178,11 +188,11 @@ f, ax = plt.subplots(5,4, figsize=(7,10))
     
 #%% LOOP OVER NOISE MODELS
 for i_noise, noise in enumerate(noise_list):
-    
+
     print('************')
     print(i_noise, noise)
     print('************')
-    
+
     #--- Gaussian or Poisson-Gausssian noise
     if noise == 'G':
         noise_model = Gaussian(sigma=sigma)
@@ -196,7 +206,8 @@ for i_noise, noise in enumerate(noise_list):
         noise_model = PoissonGaussian(sigma=sigma)
         title = 'Poisson-Gaussian: '
         
-    #%% 2D Hadamard full
+    ########################################
+    #% 2D Hadamard full
     # Available orders: https://oeis.org/A090658
     # Check Table 2 and 3 in Appendix. https://arxiv.org/pdf/2411.18897
     
@@ -246,7 +257,8 @@ for i_noise, noise in enumerate(noise_list):
                           ).cpu().item()
     print(ppp_H2dF)
     
-    #%% Arbitrary shape -- Identity matrix 1D
+    ########################################
+    #% Arbitrary shape -- Identity matrix 1D
     from spyrit.core.meas import FreeformLinear
     
     print('== Raster Scan ==')
@@ -299,7 +311,8 @@ for i_noise, noise in enumerate(noise_list):
                          mask = mask
                          ).cpu().item()
         
-    #%% Arbitrary shape -- Hadamard matrix 1D
+    ########################################
+    #% Arbitrary shape -- Hadamard matrix 1D
     from spyrit.core.torch import walsh_matrix
     from spyrit.core.meas import FreeformLinearSplit
     
@@ -354,7 +367,8 @@ for i_noise, noise in enumerate(noise_list):
                          img_dyn = mean_mask, 
                          mask=mask).cpu().item()
     
-    #%% Arbitrary shape -- S matrix
+    ########################################
+    #% Arbitrary shape -- S matrix
     from spyrit.misc.walsh_hadamard import walsh_S_matrix, ifwalsh_S_torch
     
     print('== S-matrix 1D ==')
@@ -412,7 +426,8 @@ for i_noise, noise in enumerate(noise_list):
                          mask = mask
                          ).cpu().item()
     
-    #%% Masked 2D Hadamard 
+    ########################################
+    #% Masked 2D Hadamard 
     print('== Hadamard 2D masked ==')
     
     # counts
@@ -454,44 +469,46 @@ for i_noise, noise in enumerate(noise_list):
                           mask = mask
                           ).cpu().item() #, img_dyn=1.0, mask=mask
         
-    #%% plot all    
+    ########################################
+    #% plot all
+    # 
+    print(i_noise)
+
     im = ax[0,i_noise+1].imshow(x_H2dF[i_img, 0, :, :].cpu(), cmap="gray")
     ax[0,i_noise+1].set_title(f"{title} \n FH2 ({ppp_H2dF:0.1f} dB)", fontsize=fs)
-    cbar = add_colorbar(im, cbar_pos)
+    cbar = add_axis_colorbar(f, im, ax[0, i_noise+1], cbar_pos)
     cbar.ax.tick_params(labelsize=fs-3)
     
     im = ax[1,i_noise+1].imshow(x_I1d[i_img, 0, :, :].cpu(), cmap="gray")
     ax[1,i_noise+1].set_title(f"RS ({ppp_I1d:0.1f} dB)", fontsize=fs)
-    cbar = add_colorbar(im, cbar_pos)
+    cbar = add_axis_colorbar(f, im, ax[1, i_noise+1], cbar_pos)
     cbar.ax.tick_params(labelsize=fs-3)
     
     im = ax[2,i_noise+1].imshow(x_H2dM[i_img, 0, :, :].cpu(), cmap="gray")
     ax[2,i_noise+1].set_title(f"MH2 ({ppp_H2dM:0.1f} dB)", fontsize=fs)
-    cbar = add_colorbar(im, cbar_pos)
+    cbar = add_axis_colorbar(f, im, ax[2, i_noise+1], cbar_pos)
     cbar.ax.tick_params(labelsize=fs-3)
     
     im = ax[3,i_noise+1].imshow(x_H1d[i_img, 0, :, :].cpu(), cmap="gray")
     ax[3,i_noise+1].set_title(f"H1 ({ppp_H1d:0.1f} dB)", fontsize=fs)
-    cbar = add_colorbar(im, cbar_pos)
+    cbar = add_axis_colorbar(f, im, ax[3, i_noise+1], cbar_pos)
     cbar.ax.tick_params(labelsize=fs-3)
     
     im = ax[4,i_noise+1].imshow(x_S1d[i_img, 0, :, :].cpu(), cmap="gray")
     ax[4,i_noise+1].set_title(f"S1 ({ppp_S1d:0.1f} dB)", fontsize=fs)
-    cbar = add_colorbar(im, cbar_pos)
+    cbar = add_axis_colorbar(f, im, ax[4, i_noise+1], cbar_pos)
     cbar.ax.tick_params(labelsize=fs-3)  
-    
-    #plt.pause(10)
     
 #%% final plot and save
 
 im = ax[0,0].imshow(x[i_img,0,:,:].cpu(), cmap="gray")
 ax[0,0].set_title("Original image", fontsize=fs)
-cbar = add_colorbar(im, cbar_pos)
+cbar = add_axis_colorbar(f, im, ax[0, 0], cbar_pos)
 cbar.ax.tick_params(labelsize=fs-3)
 
 im = ax[1,0].imshow(x_mask[i_img,0,:,:].cpu(), cmap="gray")
 ax[1,0].set_title("Masked image", fontsize=fs)
-cbar = add_colorbar(im, cbar_pos)
+cbar = add_axis_colorbar(f, im, ax[1, 0], cbar_pos)
 cbar.ax.tick_params(labelsize=fs-3)
 
 ax[2,0].set_visible(False)
@@ -507,7 +524,7 @@ noaxis(ax[4])
 plt.tight_layout()
 
 if save_tag:
-    plt.savefig(fig_folder / 'figure_6.pdf', transparent=True, dpi=600)
+    plt.savefig(fig_folder / 'figure_5.pdf', transparent=True, dpi=600)
 
 print(f'Actual boost from split Hadamard: {ppp_H1d-ppp_I1d:0.2f} dB')
 print(f'Actual boost from S-matrix Hadamard: {ppp_S1d-ppp_I1d:0.2f} dB')

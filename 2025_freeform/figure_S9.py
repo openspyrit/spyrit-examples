@@ -89,4 +89,4 @@ plt.axhline(y=0, color='k', linestyle='-')
 if save_tag:
     plt.rcParams['text.usetex'] = True
     #plt.rcParams['lines.linewidth'] = 0.5
-    plt.savefig(fig_folder/'figure_4.pdf', transparent=True, dpi=300)
+    plt.savefig(fig_folder/'figure_S9.pdf', transparent=True, dpi=300)

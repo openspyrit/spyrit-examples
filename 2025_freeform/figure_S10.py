@@ -28,7 +28,7 @@ lw = 2 # line width
 dpi_fig = 300
 
 save_tag = True
-ext = 'png'
+ext = 'pdf'
 plt.rcParams['text.usetex'] = True
 
 #%%
@@ -195,7 +195,7 @@ if plot_tag:
     plt.tight_layout()
 
     if save_tag:
-        plt.savefig(fig_folder / ('figure_8a.' + ext), 
+        plt.savefig(fig_folder / ('figure_S10a.' + ext), 
                     transparent=True,
                     bbox_inches='tight', 
                     dpi=dpi_fig)
@@ -251,7 +251,7 @@ if plot_tag:
     plt.tight_layout()
 
     if save_tag:
-        plt.savefig(fig_folder / ('figure_8b.' + ext), 
+        plt.savefig(fig_folder / ('figure_S10b.' + ext), 
                     transparent=True,
                     bbox_inches='tight', 
                     dpi=dpi_fig)

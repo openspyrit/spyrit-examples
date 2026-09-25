@@ -15,6 +15,8 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 
+# magic command for interactive plots (works in VSCode)
+print('Use the \'%matplotlib qt\' magic command in VSCode to open interactive plots in a new window.')
 
 from scipy.interpolate import make_smoothing_spline
 
@@ -29,7 +31,7 @@ norm = 32768 # time budget in ms
 
 fig_folder = Path('./figures')
 
-save_tag = False
+save_tag = True
 plot_tag = False     #False 
 
 # plt.rcParams['text.usetex'] = True
@@ -755,7 +757,7 @@ for j in range(4):
 plt.tight_layout()
 
 if save_tag:
-    plt.savefig(fig_folder / 'figure_7.pdf', bbox_inches='tight', dpi=dpi_fig)
+    plt.savefig(fig_folder / 'figure_6.pdf', bbox_inches='tight', dpi=dpi_fig)
     
 #%% Compute MSNR
 moy_cor = np.copy(moy)
