@@ -1,20 +1,29 @@
 #%%
 import girder_client
 
-gc = girder_client.GirderClient(apiUrl='https://https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e)')
-                        
-gc.authenticate(username='username', interactive=True)
+
+my_folder = '6ac65d6ff5d51d66558ef673'
+gc = girder_client.GirderClient(apiUrl="https://pilot-warehouse.creatis.insa-lyon.fr/api/v1")
+gc.authenticate(apiKey = '4Qkli33iujtL8s9GV2LggnyZEMoac130Pl2fWTUU')
+
+gc.upload(
+    rf'C:\Users\ceidigh\Documents\2026-05-05_calib_bruit\dark',
+    my_folder,
+)
+
+
+
+# gc.upload(
+#     rf'C:\Users\ceidigh\Documents\2026-05-05_calib_bruit\bright',
+#     my_folder,
+# )
+
+
+# Then make the newly created subfolder public
+# (find the subfolder's ID — it's the child folder named "bright" under my_folder)
+children = list(gc.listFolder(my_folder, parentFolderType='folder'))
+dark_folder = next(f for f in children if f['name'] == 'dark')
+
+gc.put(f"folder/{dark_folder['_id']}", parameters={'public': True})
+
 # %%
-
-
-gc.upload(
-    'C:/Users/ceidigh/Documents/PFE/CalibrationData',  # local folder
-    '69f362d4b1e3942938623fd3',                          # target folder ID in Girder
-    reuse_existing=True   # skip re-uploading files that already exist there
-)
-
-gc.upload(
-    'C:/Users/ceidigh/Documents/2026-05-05_calib_bruit',  # local folder
-    '69f362d4b1e3942938623fd3',                          # target folder ID in Girder
-    reuse_existing=True   # skip re-uploading files that already exist there
-)

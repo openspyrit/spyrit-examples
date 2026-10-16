@@ -5,15 +5,36 @@ import matplotlib.pyplot as plt
 import os
 from tools import binArray
 
+#%% download dark data from PILOT
+from spyrit.misc.load_data import download_girder
+
+# where to save data
+destination = Path("acquisitionData")
+print("Copying folder in:", destination)
+
+# download data from the Pilot warehouse
+# note: this downloads the entire folder (all integration time, camera gain configs) so takes quite a while (hours)
+# to download only one set, change hexid to relevant subfolder 
+
+# alternatively, the precalculated dark images for each camera configuration and integration time are available to 
+# to download from the tomoradio warehouse (see download_data.py)
+
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+download_girder(url_pilot, hex_ids ='6ac796f1f5d51d66559499bf' , local_folder = destination, gc_type="folder",)
+
+
 #%% Choose acquisition params
 # bin dark images to match convention of whatever data they'll be used for
+
 bin_fact = 3  # eg here bin spatiall dim (y) by 3 : 384 -> 128
-G = 18.06 # 12.04 # 6.02 # 0.0
+G = 6.02 # 12.04 # 6.02 # 0.0
 ti = 1.0 # 10.0 # 100.0 #1000.0
+
+
 #%% RUN TO UPDATE THE SAVED DARK IMAGES ARRAY -  BINNING CHOICE ETC
 
 # where raw dark acquisitions are stored
-data_folder = Path(r"C:/Users/ceidigh/Documents/2026-05-05_calib_bruit/dark")
+data_folder = Path("acquisitionData/dark")
 raw_data_folder = (data_folder/ f"ti_{ti}ms"/ ( f"obj_{G}dB_source_No source_" f"Lc_600nm_Gr_2_Walsh_im_1x1_" f"ti_{ti}ms_zoom_x1")/ "raw_data" )
 
 # dimensions - could of course extract to avoid hard coding blah blah blah 
@@ -47,11 +68,11 @@ dark_images.shape
 
 # SAVE DATA
 
-os.makedirs("CalibrationData/dark", exist_ok=True)
-np.save(f"CalibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy", dark_images)
+os.makedirs("calibrationData/dark", exist_ok=True)
+np.save(f"calibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy", dark_images)
 
 #%% LOAD SAVED DARK IMAGES AND CALCULATE DARK MEAN IMAGE AND DARK VARIANCE IMAGE
-dark_images = np.load(f"CalibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy")
+dark_images = np.load(f"calibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy")
 
 mu_dark_image = dark_images.mean(axis=0)
 var_dark_image = dark_images.var(axis=0, ddof=1)
@@ -100,8 +121,10 @@ plt.colorbar(im, ax=axs[2], orientation='horizontal')
 
 # %% SAVE DATA
 import os
-os.makedirs("CalibrationData/dark", exist_ok=True)
-np.save(f"CalibrationData/dark/mu_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", mu_dark_image)
-np.save(f"CalibrationData/dark/var_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", var_dark_image)
-np.save(f"CalibrationData/dark/sigma_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", sigma_dark_image)
+os.makedirs("calibrationData/dark_images", exist_ok=True)
+np.save(f"calibrationData/dark_images/mu_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", mu_dark_image)
+np.save(f"calibrationData/dark_images/var_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", var_dark_image)
+np.save(f"calibrationData/dark_images/sigma_dark_image_binned_x{bin_fact}_{ti}_{G}.npy", sigma_dark_image)
 
+
+# %%

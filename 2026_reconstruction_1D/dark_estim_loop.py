@@ -18,11 +18,11 @@ ti_values = [100.0, 10.0, 1.0]         # integration times (ms)
 # False: reuse the saved binned stack if it already exists
 REBUILD_STACKS = False
 
-# where raw dark acquisitions are stored
-data_folder = Path(r"C:/Users/ceidigh/Documents/2026-05-05_calib_bruit/dark")
+# where raw dark acquisitions are stored - download by running first cell of 'dark_estimation.py'
+data_folder = Path(r"acquisitionData/dark")
 
 # where processed data and figures are saved
-out_folder = Path("CalibrationData")
+out_folder = Path("calibrationData")
 out_folder.mkdir(exist_ok=True)
 
 # dimensions - could of course extract to avoid hard coding blah blah blah

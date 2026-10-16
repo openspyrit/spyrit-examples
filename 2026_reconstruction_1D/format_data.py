@@ -6,8 +6,8 @@ from tools import read_acquisitionData, binArray
 
 #%% load raw data that has been downloaded from PILOT using download_data.py
 
-data_folder = Path("data/opticalTuningCat3")
-#Path("data/lisaCat") #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
+data_folder = Path("data/opticalTuningCat3") 
+# #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
 
 # spectral data
 spectral_data = np.load(data_folder / f"spectral_data.npz", allow_pickle=True)["spectral_data"]
@@ -36,7 +36,8 @@ print(f"Pattern dimensions: {h} x {w}")
 print(f"Number of patterns applied: {P}")
 
 
-#%% format raw data - will need to edit depending on what data was downloaded
+#%% format raw data - edit depending on what data was downloaded (dimensions, binning etc varies)
+ 
 spectral_data = spectral_data.squeeze() #np.moveaxis(spectral_data, 0,1)
 
 
@@ -51,11 +52,11 @@ m_reordered[:,:,ind]  = spectral_data # place rows of m_unsplit following order 
 
 # if already in asceneding order, should be zeros:
 m_reordered - spectral_data
-
-np.save(data_folder / 'formatted_spectral_data.npy', m_reordered)
+np.save(data_folder / 'formatted_spectral_data.npy', m_reordered) # shape N,L,P
 
 # %%
-# need to bin N dimension of m - or crop, depending on data
+#  bin N dimension using binArray, depending on data
+
 m_binned = m_reordered # binArray(m_reordered, 0, 3, 3, np.sum)
 np.save(data_folder/'m_binned.npy', m_binned)
 

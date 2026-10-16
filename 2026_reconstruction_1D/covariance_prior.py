@@ -17,6 +17,25 @@ import spyrit.core.torch as spytorch
 import spyrit.misc.metrics as sm
 
 from spyrit.misc.statistics import data_loaders_imagenet, cov_1, stat_1, stat_2
+from spyrit.misc.load_data import download_girder
+
+# Script to calculate covariance prior using spyrit functions.
+# Alternatively download directly from PILOT:
+
+# where to save data
+destination = Path("data")
+print("Copying folder in:", destination)
+
+# download data from the tomoradio warehouse
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+
+download_girder(url_pilot, hex_ids ='6ac65fd5f5d51d66558f34cf' , local_folder = destination)
+
+
+
+data_root =  Path(r"C:\Users\ceidigh\Documents\PFErough\Obair\ImageNet") # where image net data is stored locally
+stat_root =  Path(r"C:\Users\ceidigh\Documents\PFE\data") # where to save cov matrices to 
+
 
 #%% METHODS FOR CALCULATING 1D Covariance Matrix over ImageNet dataset - adapted from spyrit
 
@@ -238,9 +257,6 @@ def stat_imagenet_1(
     print(f"Computed in {time_elapsed} seconds")
 
 #%%
-
-data_root =  Path(r"C:\Users\ceidigh\Documents\PFErough\Obair\ImageNet") # where image net data is stored locally
-stat_root =  Path(r"C:\Users\ceidigh\Documents\PFE\data") # where to save cov matrices to 
 
 stat_imagenet_1(stat_root = stat_root, data_root = data_root, img_size=128, normalize=False) 
 

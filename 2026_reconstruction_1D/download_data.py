@@ -1,11 +1,51 @@
+#%% Download bright and dark acquisitions to calculate calibration data
 
-#%% Download data from PILOT
+from pathlib import Path
+from spyrit.misc.load_data import download_girder
+
+# note: this downloads the entire folder (all integration time, camera gain configs) so takes quite a while (hours)
+# to download only one set, change hexid to relevant subfolder 
+
+# alternatively, the precalculated dark images for each camera configuration and integration time are available to 
+# to download from the tomoradio warehouse (see next cell)
+
+os.makedirs("acquisitionData", exist_ok=True)
+# where to save data
+destination = Path("acquisitionData")
+print("Copying folder in:", destination)
+
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+download_girder(url_pilot, hex_ids ='6ac7963ff5d51d6655939c22' , local_folder = destination, gc_type="folder",) # bright
+download_girder(url_pilot, hex_ids ='6ac796f1f5d51d66559499bf' , local_folder = destination, gc_type="folder",) # dark
+
+#%% Download pre-calculated noise parameters from tomoradio warehouse
+
+
+os.makedirs("calibrationData", exist_ok=True)
+# where to save data
+destination = Path("calibrationData")
+print("Copying folder in:", destination)
+
+# download pre calculated system parameters data from the PILOT warehouse
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+
+download_girder(url_pilot, hex_ids ='6ac65ecef5d51d66558f145d' , local_folder = destination, gc_type="folder",)
+
+# download pretrained models
+
+os.makedirs("model", exist_ok=True)
+download_girder(url_pilot, hex_ids ='6ac65ecef5d51d66558f145d' , local_folder = Path("model"), gc_type="folder",)
+
+
+#%% Download raw spectral data from PILOT
 
 from pathlib import Path
 from spyrit.misc.load_data import download_girder
 
 # where to save data
-destination = Path("C:/Users/ceidigh/Documents/PFE/")
+os.makedirs("data", exist_ok=True)
+destination = Path("data")
+
 print("Copying folder in:", destination)
 
 # download data from the Pilot warehouse
@@ -13,7 +53,7 @@ url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
 
 datasets = [
     {
-        "subfolder": "data/opticalTuningCat2",
+        "subfolder": "opticalTuningCat2",
         "comment": "SPIHIM/data/setup_v2.02026-06-19_optical_tuning/",
         "files": [
             "6a353465c392eb77b9ec1316",  # obj_cat2_..._zoom_x2/spectral_data.npz
@@ -22,7 +62,7 @@ datasets = [
         ],
     },
     {
-        "subfolder": "data/opticalTuningCat3",
+        "subfolder": "opticalTuningCat3",
         "comment": "SPIHIM/data/setup_v2.02026-06-19_optical_tuning/",
         "files": [
             "6a354d7cc392eb77b9ec162b",  # obj_cat3_..._zoom_x2/spectral_data.npz
@@ -31,7 +71,7 @@ datasets = [
         ],
     },
     {
-        "subfolder": "data/USAF",
+        "subfolder": "USAF",
         "comment": "SPIHIM/data/setup_v2.02025-06-20_lens_tuning",
         "files": [
             "685522df3978e07db274b8a9",  # obj_USAF_..._zoom_x1/spectral_data.npz
@@ -40,7 +80,7 @@ datasets = [
         ],
     },
     {
-        "subfolder": "data/USAF2",
+        "subfolder": "USAF2",
         "comment": "SPIHIM/data/setup_v2.02025-06-20_lens_tuning",
         "files": [
             "6855414a3978e07db274cb0e",  # obj_USAF2_..._zoom_x1/spectral_dat.npz
@@ -58,29 +98,19 @@ for ds in datasets:
         print(f"Unable to download data from the Pilot warehouse ({ds['subfolder']})")
         print(e)
 
-# %% Some data on the PILOT is saved in a different form
+# %% Some spectral data on the PILOT is saved in a different form
 from tools import load_experiment
 import numpy as np
 
 # download spectral data folder from PILOT, saved to the following path
+destination = Path("data")
+download_girder(url_pilot, '6ac66658f5d51d66558fbd43',  local_folder = destination, gc_type="folder" )
+
 # choose data to read in 
-selected_paths = {
-    
-    # "cat": (Path("obj_cat_Lc_18.06dB_source_white_LED_Lc_540nm_Gr_1_Walsh_im_32x32_ti_1.0ms_zoom_x2"), 1),
-    #"cat": (Path("obj_cat_Lc_18.06dB_source_white_LED_Lc_540nm_Gr_2_Walsh_im_128x128_ti_1.0ms_zoom_x2"), 2)
-   # "cat": (Path("obj_cat_Lc_18.06dB_source_white_LED_Lc_540nm_Gr_2_Walsh_im_64x64_ti_1.0ms_zoom_x2"), 2),
-
-    "cat" : (Path("C:/Users/ceidigh/Documents/2026-05-05_calib_bruit/obj_cat_12dB_source_white_LED_Lc_600nm_Gr_2_Walsh_im_128x128_ti_2.0ms_zoom_x1"), 2, "600")
-}
-
-datasets = {
-    name: load_experiment(path, gr=gr, lc=lc)
-    for name, (path, gr,lc) in selected_paths.items()
-}
-
+path = Path("data/obj_cat_12dB_source_white_LED_Lc_600nm_Gr_2_Walsh_im_128x128_ti_2.0ms_zoom_x1")
 
 # extract info - make this more general someday
-data = datasets["cat"]
+data = load_experiment(path, gr=2, lc="600")
 
 # dimensions
 M = data["M"]

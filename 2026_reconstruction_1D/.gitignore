@@ -220,6 +220,7 @@ __marimo__/
 
 # Data
 data
-CalibrationData
+calibrationData
+acquisitionData
 model
 runs

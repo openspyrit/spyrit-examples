@@ -8,8 +8,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #%% Read in formatted data -> i.e unsplit and in shape (NxLxK)
 
-data_folder = Path("data/lisaCat") 
-#Path("data/lisaCat") #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
+data_folder = Path("data/opticalTuningCat3")
+# #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
 
 m = np.load(data_folder/'m_binned.npy')
 N,L,P = m.shape
@@ -25,7 +25,7 @@ m = torch.from_numpy(m).to(torch.float32).to(device)
 print("Read in formatted data from ", data_folder)
 print("Shape of formatted measurements: ", m.shape)
 #%% parameters
-calib_data = Path('C:/Users/ceidigh/Documents/PFE/CalibrationData')
+calib_data = Path('./CalibrationData')
 
 # choose which params to use based on acquisition config & formatting of raw data
 # eg lisaCat was done using 12.04dB camera gain and then binned spatially x3:

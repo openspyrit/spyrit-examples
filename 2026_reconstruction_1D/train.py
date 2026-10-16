@@ -35,8 +35,8 @@ N = 128
 # Noise parameters - as in experimentation
 g =  0.115   # 0.1123
 
-mu = np.load("CalibrationData/dark/mu_dark_image_binned_x3_1.0_12.04.npy")
-var = np.load("CalibrationData/dark/var_dark_image_binned_x3_1.0_12.04.npy")
+mu = np.load("calibrationData/dark_images/mu_dark_image_binned_x3_1.0_12.04.npy")
+var = np.load("calibrationData/dark_images/var_dark_image_binned_x3_1.0_12.04.npy")
 
 # for unet do everything in photons: 
 gamma = 1
@@ -157,7 +157,7 @@ model, train_info = train_model(
 
 from spyrit.core.train import save_net
 
-title = f"TIKOgit status_UNET_{h}x{h}_K=128_alpha{alpha}_20epochs"
+title = f"TIKO_UNET_{h}x{h}_K=128_alpha{alpha}_20epochs"
 
 Path(model_root).mkdir(parents=True, exist_ok=True)
 model_path = model_root / (title + ".pth")
