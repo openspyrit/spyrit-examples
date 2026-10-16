@@ -18,6 +18,9 @@ url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
 download_girder(url_pilot, hex_ids ='6ac7963ff5d51d6655939c22' , local_folder = destination, gc_type="folder",) # bright
 download_girder(url_pilot, hex_ids ='6ac796f1f5d51d66559499bf' , local_folder = destination, gc_type="folder",) # dark
 
+download_girder(url_pilot, hex_ids ='6ad1eba4f5d51d665595dae0' , local_folder = destination, gc_type="folder",) #bright images
+
+
 #%% Download pre-calculated noise parameters from tomoradio warehouse
 
 
@@ -27,15 +30,21 @@ destination = Path("calibrationData")
 print("Copying folder in:", destination)
 
 # download pre calculated system parameters data from the PILOT warehouse
-url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 
-download_girder(url_pilot, hex_ids ='6ac65ecef5d51d66558f145d' , local_folder = destination, gc_type="folder",)
+download_girder(url_pilot, hex_ids ='6ac8c8eedba19bd8c7063274' , local_folder = destination, gc_type="folder",) #dark images
+# download_girder(url_pilot, hex_ids ='6ad1eba4f5d51d665595dae0' , local_folder = destination, gc_type="folder",) #bright images
+download_girder(url_pilot, hex_ids ='6ac8c897dba19bd8c7063264' , local_folder = destination, gc_type="folder",) #gain images
 
 # download pretrained models
+download_girder(url_tomoradio, hex_ids ='6ac8c7c7dba19bd8c7063258' , local_folder = Path(""), gc_type="folder",)
 
-os.makedirs("model", exist_ok=True)
-download_girder(url_pilot, hex_ids ='6ac65ecef5d51d66558f145d' , local_folder = Path("model"), gc_type="folder",)
 
+# download cov matrix
+os.makedirs("data", exist_ok=True)
+destination = Path("data")
+print("Copying folder in:", destination)
+download_girder(url_tomoradio, hex_ids ='6ac8c7fddba19bd8c7063262' , local_folder = destination)
 
 #%% Download raw spectral data from PILOT
 
@@ -43,7 +52,7 @@ from pathlib import Path
 from spyrit.misc.load_data import download_girder
 
 # where to save data
-os.makedirs("data", exist_ok=True)
+
 destination = Path("data")
 
 print("Copying folder in:", destination)
