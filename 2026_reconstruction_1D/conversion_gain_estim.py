@@ -6,24 +6,8 @@ import matplotlib.pyplot as plt
 from tools import binArray
 import os
 
-os.makedirs("acquisitionData", exist_ok=True)
 
 
-#%% download bright data from PILOT
-from spyrit.misc.load_data import download_girder
-
-# note: this downloads the entire folder (all integration time, camera gain configs) so takes quite a while (hours)
-# to download only one set, change hexid to relevant subfolder 
-
-# alternatively, the precalculated dark images for each camera configuration and integration time are available to 
-# to download from the tomoradio warehouse (see download_data.py)
-
-# where to save data
-destination = Path("acquisitionData")
-print("Copying folder in:", destination)
-
-url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
-download_girder(url_pilot, hex_ids ='6ac7963ff5d51d6655939c22' , local_folder = destination, gc_type="folder",)
 
 
 

@@ -48,8 +48,8 @@ N = 128
 # Noise parameters - as in experimentation
 gamma =  0.115   # 0.1123
 
-mu = np.load("data/mu_dark_image_binned_x3.npy")
-var = np.load("data/var_dark_image_binned_x3.npy")
+mu = np.load("calibrationData/dark_images/mu_dark_image_binned_x3.npy")
+var = np.load("calibrationData/dark_images/var_dark_image_binned_x3.npy")
 
 mudark = mu.mean()  # 254.9
 std_mudark = mu.std()
@@ -100,7 +100,7 @@ plt.colorbar()
 
 #%% TIKHONOV
 
-# adding deviations
+# adding deviations t ocheck robustness to error
 # sigma_value = 20
 # sigdarke = sigdark*(1)
 # mudarke = mudark*(1)
@@ -155,11 +155,7 @@ title = f'model/TIKHO_UNET_128x128_K=128_alpha100_20epochs.pth'
 # title = f'model/tikho-net_unet_imagenet_ph_250_exp_N_512_M_128_epo_20_lr_0.001_sss_10_sdr_0.5_bs_20_reg_1e-07.pth'
 # title = f'model/LINES_tikho_unet_128x128_K=128_alpha20_20epochs.pth'
 
-# rerange = Rerange((0, 1), (-1, 1))
-# denoiser = OrderedDict({"rerange": rerange, "denoi": Unet(), "rerange_inv": rerange.inverse()})
-# denoiser = nn.Sequential(denoiser)
 
-# load_net(title, denoiser, device, False)
 
 
 denoiser = torch.nn.Sequential(OrderedDict({"denoi": Unet()}))

@@ -10,7 +10,7 @@ from spyrit.core.recon import OrderedDict, TikhoNet, PinvNet
 from spyrit.core.nnet import Unet
 from spyrit.core.meas import LinearSplit, Linear
 import torch.nn as nn
-from tools import hadamard
+
 
 from pathlib import Path
 
@@ -87,26 +87,27 @@ denoiser = torch.nn.Sequential(OrderedDict({"denoi": Unet()}))
 # choose what type of net - remember to update save file name!!! realistically should be automatic
 
 #model = PinvNet(meas_op, prep=Unsplit(), denoi = denoiser, store_H_pinv = True, device = device)
-#model = TikhoNet(meas_op, prep = prep_op , sigma=Sigma, device = device) 
+
 model = TikhoNet(meas_op, prep = prep_op , sigma=Sigma,  denoi = denoiser, device = device) 
 
 #%% CHECK - ie run without denoiser to check input 
-# model.eval()
-# model = model.to(device)
+model = TikhoNet(meas_op, prep = prep_op , sigma=Sigma, device = device) 
+model.eval()
+model = model.to(device)
 
-# images, labels = next(iter(dataloaders['train']))
-# x = images.to(device)
+images, labels = next(iter(dataloaders['train']))
+x = images.to(device)
 
 
-# with torch.no_grad():
-#     #prep
-#     y = model.acquire(x)
-#     x_hat = model.reconstruct(y/gamma)
-#     x_tilde = (x_hat).detach().cpu().numpy().squeeze() 
-# del model 
+with torch.no_grad():
+    #prep
+    y = model.acquire(x)
+    x_hat = model.reconstruct(y/gamma)
+    x_tilde = (x_hat).detach().cpu().numpy().squeeze() 
+del model 
 
-# plt.imshow(x_tilde[5,:,:])
-# plt.colorbar()
+plt.imshow(x_tilde[5,:,:])
+plt.colorbar()
 #%%
 
 from spyrit.core.train import Weight_Decay_Loss

@@ -22,16 +22,6 @@ from spyrit.misc.load_data import download_girder
 # Script to calculate covariance prior using spyrit functions.
 # Alternatively download directly from PILOT:
 
-# where to save data
-destination = Path("data")
-print("Copying folder in:", destination)
-
-# download data from the tomoradio warehouse
-url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
-
-download_girder(url_pilot, hex_ids ='6ac65fd5f5d51d66558f34cf' , local_folder = destination)
-
-
 
 data_root =  Path(r"C:\Users\ceidigh\Documents\PFErough\Obair\ImageNet") # where image net data is stored locally
 stat_root =  Path(r"C:\Users\ceidigh\Documents\PFE\data") # where to save cov matrices to 

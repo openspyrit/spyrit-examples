@@ -25,13 +25,13 @@ m = torch.from_numpy(m).to(torch.float32).to(device)
 print("Read in formatted data from ", data_folder)
 print("Shape of formatted measurements: ", m.shape)
 #%% parameters
-calib_data = Path('./CalibrationData')
+calib_data = Path('./calibrationData')
 
 # choose which params to use based on acquisition config & formatting of raw data
 # eg lisaCat was done using 12.04dB camera gain and then binned spatially x3:
-gamma = torch.from_numpy(np.load(calib_data / "bright" / "slope_g3_bin_x3_12.04.npy")).to(device)
-mudark_image = torch.from_numpy(np.load(calib_data / "dark" / "mu_dark_image_binned_x3_1.0_12.04.npy")).to(device)
-sigdark_image = torch.from_numpy(np.load(calib_data / "dark" / "sigma_dark_image_binned_x3_1.0_12.04.npy")).to(device)
+gamma = torch.from_numpy(np.load(calib_data / "bright_images" / "slope_g3_bin_x3_12.04.npy")).to(device)
+mudark_image = torch.from_numpy(np.load(calib_data / "dark_images" / "mu_dark_image_binned_x3_1.0_12.04.npy")).to(device)
+sigdark_image = torch.from_numpy(np.load(calib_data / "dark_images" / "sigma_dark_image_binned_x3_1.0_12.04.npy")).to(device)
 
 mudark = mudark_image.mean()
 sigdark =sigdark_image.mean()

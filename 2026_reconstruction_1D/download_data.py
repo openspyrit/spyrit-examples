@@ -37,14 +37,14 @@ download_girder(url_pilot, hex_ids ='6ac8c8eedba19bd8c7063274' , local_folder = 
 download_girder(url_pilot, hex_ids ='6ac8c897dba19bd8c7063264' , local_folder = destination, gc_type="folder",) #gain images
 
 # download pretrained models
-download_girder(url_tomoradio, hex_ids ='6ac8c7c7dba19bd8c7063258' , local_folder = Path(""), gc_type="folder",)
+download_girder(url_pilot, hex_ids ='6ad223bff5d51d665595dba2' , local_folder = Path(""), gc_type="folder",)
 
 
 # download cov matrix
 os.makedirs("data", exist_ok=True)
 destination = Path("data")
 print("Copying folder in:", destination)
-download_girder(url_tomoradio, hex_ids ='6ac8c7fddba19bd8c7063262' , local_folder = destination)
+download_girder(url_pilot, hex_ids ='6ad2242cf5d51d665595dbac' , local_folder = destination)
 
 #%% Download raw spectral data from PILOT
 
@@ -107,6 +107,18 @@ for ds in datasets:
         print(f"Unable to download data from the Pilot warehouse ({ds['subfolder']})")
         print(e)
 
+
+#%% alternatively download pre-formatted data directly from PILOT:
+
+os.makedirs("data", exist_ok=True)
+# where to save data
+destination = Path("data")
+print("Copying folder in:", destination)
+
+url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
+download_girder(url_pilot, hex_ids = '6ad22481f5d51d665595dbad' , local_folder = destination, gc_type="folder",) # cat
+
+
 # %% Some spectral data on the PILOT is saved in a different form
 from tools import load_experiment
 import numpy as np
@@ -116,7 +128,7 @@ destination = Path("data")
 download_girder(url_pilot, '6ac66658f5d51d66558fbd43',  local_folder = destination, gc_type="folder" )
 
 # choose data to read in 
-path = Path("data/obj_cat_12dB_source_white_LED_Lc_600nm_Gr_2_Walsh_im_128x128_ti_2.0ms_zoom_x1")
+path = Path("data/cat")
 
 # extract info - make this more general someday
 data = load_experiment(path, gr=2, lc="600")
