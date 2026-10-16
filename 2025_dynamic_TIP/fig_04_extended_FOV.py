@@ -28,7 +28,7 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('simu/exp_2')
@@ -53,7 +53,7 @@ mode = 'bilinear'
 
 # Download images from Tomoradio's warehouse if needed
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-data_root = Path('../data/data_online/2025_dynamic')   # local path to data
+data_root = data_root / Path('2025_dynamic')   # local path to data
 imgs_path = data_root / Path("images/")
 id_files = [
     "69248e3204d23f6e964b16b7"  # brain_surface_colorized.png

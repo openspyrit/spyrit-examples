@@ -37,7 +37,7 @@ M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 data_root = Path(paths_params.get("data_root"))
@@ -65,7 +65,7 @@ dataloaders = data_loaders_stl10(
     batch_size=batch_size,
     seed=7,
     shuffle=True,
-    download=False,  # switch to True to download the dataset
+    download=True,  # switch to True to download the dataset
 )
 dataloader = dataloaders['val']
 

@@ -23,7 +23,7 @@ from spyrit.misc.load_data import download_girder, generate_synthetic_tumors
 
 
 #%% LOAD IMAGE DATA
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('simu/exp_0')
