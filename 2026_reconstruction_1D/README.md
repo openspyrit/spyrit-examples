@@ -1,4 +1,9 @@
 # PFE Results
+
+* [Reconstruction Algorithms for Fast Hyperspectral Imaging](./2026_reconstruction_1D) MSc report INSA Lyon
+
+> Elena Ó Céidigh Hayes
+
 See below for how to reproduce PFE:
 
 - Noise calibration of v2 Single Pixel Camera from experimental acquisitions
@@ -11,6 +16,8 @@ and section 3 gives an overview of the methods and the results of the noise cali
 
 # How to use scripts
 
+## Demo
+Run `demo.ipynb` to get an overview of process. To adapt reconstruction / recalculate parameters etc, see other scripts, described below.  
 ## Downloading raw data
 Run `download_data.py`to download raw v2 data from PILOT.
 > **Note:** the raw data for some versions (eg lisaCat) are not stored in dictionaries and so the folder had to be downloaded by hand and each file read into a single array, then formatted. See second half of script.
