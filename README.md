@@ -5,6 +5,12 @@
 
 Some of research contributions based on the SPyRiT package:
 
+### 2026
+
+* [Reconstruction Algorithms for Fast Hyperspectral Imaging](./2026_reconstruction_1D) MSc report INSA Lyon
+
+> Elena Ó Céidigh Hayes
+> 
 ### 2025
 
 * [Hyperspectral LSFM](./2025_hLSFM/) (Optics Express, 2025)
