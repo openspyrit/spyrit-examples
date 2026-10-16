@@ -19,7 +19,7 @@ and section 3 gives an overview of the methods and the results of the noise cali
 ## Demo
 Run `demo.ipynb` to get an overview of process. To adapt reconstruction / recalculate parameters etc, see other scripts, described below.  
 ## Downloading raw data
-Run `download_data.py`to download raw v2 data from PILOT.
+Run `download_data.py` to download raw v2 data from PILOT and to download pre calculated alibration data and pretrained denoiser.
 > **Note:** the raw data for some versions (eg lisaCat) are not stored in dictionaries and so the folder had to be downloaded by hand and each file read into a single array, then formatted. See second half of script.
 
 ## Formating Raw Data
@@ -37,7 +37,7 @@ $$
 $$
 \hat{\sigma}_d^2(x,y) = \frac{1}{K-1}\sum_{k=1}^K \big(D_k(x,y) - \hat{\mu}_d(x,y)\big)^2 \approx \text{Var}[\mathbf{D}]
 $$
-> **Note:** the raw dark data must already be stored on your local machine. The dark acquisitions used in this project were saved locally and never uploaded to the PILOT.
+> **Note:** the raw dark data must first be downloaded from the PILOT warehouse by running `download_data.py`, or accessible (here)[https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/6ac7963ff5d51d6655939c21]
 
 
 To reproduce the calculation of the dark noise images and constants for a given acquisition configuration, run `dark_estimation.py`.
@@ -52,7 +52,7 @@ Gain conversion images (gain per pixel) and gain constants (average over pixels 
 
 To calculate the gain images for a given camera configuration, run `conversion_gain_estim.py`.
 
-> **Note:** once again, the raw bright data must already be stored on your local machine.
+> **Note:** once again, the raw bright data must be downloaded by running the relevant section of `download_data.py`, or from (here)[https://pilot-warehouse.creatis.insa-lyon.fr/#collection/6140ba6929e3fc10d47dbe3e/folder/6ac7963ff5d51d6655939c21]
 
 Two methods for calculating a constant gain parameter per camera configuration are implemented compared:
 
@@ -110,7 +110,7 @@ Both methods are implemented in the python script, with adjustable parameters to
 
 ## Image covariance prior
 
-To calculate the 1D covariance prior over the rows of a set of natural images (ImageNet dataset) run `covariance_prior.py`with the desired parameters (image size, normalisation etc). The resulting covariance matrix is saved to a data folder. 
+To calculate the 1D covariance prior over the rows of a set of natural images (ImageNet dataset) run `covariance_prior.py`with the desired parameters (image size, normalisation etc). The resulting covariance matrix is saved to a data folder. Alternatively, a pre-calculated 128x128 covariance matrix can be downloaded from the PILOT warehouse, see `download_data.py`.
 
 ## Reconstruction
 Ruņ `reconstruction.py` to reconstruct data that has been downloaded from PILOT using `download_data.py`and formatted using `format_data.py`. 
@@ -121,7 +121,7 @@ The reconstructed cubes are plotted as the sum over wavelength channels and per 
 
 
 ## Training Denoiser
-To train a UNet() denoiser, run `train.py` with the desired parameters. Trained weights will be saved to a 'model' folder and can then be used during reconstruction. 
+To train a UNet() denoiser, run `train.py` with the desired parameters. Trained weights will be saved to a 'model' folder and can then be used during reconstruction. Alternatively the pre trained model can be downloaded directly, see  `download_data.py`.
 
 
 
