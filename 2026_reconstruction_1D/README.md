@@ -1,128 +1,15 @@
 # PFE Results
-See below for how to reproduce.
-Noise Calibration of v2 Single Pixel Camera, where acquisition is modelled as: 
+See below for how to reproduce PFE:
 
-$$
-\mathbf{Y} \sim \gamma\,\mathcal{P}(\mathbf{A}\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
-$$
+- Noise calibration of v2 Single Pixel Camera from experimental acquisitions
+- Reconstruction (Pseudoinverse, Tikhonov Regularisation & Denoising) on simulated and experimental data
+- Includes scripts to access, download and format raw experimental data to recalculate noise parameters if desired
 
-Where $\mathbf{Y}$ are the raw measurements, $\gamma$, $\mu_d$ and $\sigma_d^2$ are estimated experimentally, $\mathbf{A}$ is the known acquisition matrix (split Hadamard), and $\mathbf{F}$ is the hyperspectral representation of the scene. 
-- $\mathcal{P}$: Poisson distribution (shot noise),
-- $\mathcal{N}$: Gaussian distribution (electronic/read noise, assumed additive and independent of the signal),
-- $\gamma$: overall system gain (counts per electron),
-- $\mu_d$: detector offset (bias level),
-- $\sigma_d^2$: read-noise variance.
-
-The measurement matrix can be split into positive and negative components:
-
-$$
-\mathbf{Y}^+ \sim \gamma\mathcal{P}(\mathbf{H}^+\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
-$$
-
-$$
-\mathbf{Y}^- \sim \gamma\mathcal{P}(\mathbf{H}^-\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
-$$
+The following section outlines how to use each script, section 2 outlines the mathematical model and reconstruction expressions considered, as well as example reconstructions, 
+and section 3 gives an overview of the methods and the results of the noise calibration.
 
 
-$$
-\mathbf{Y}^+ - \mathbf{Y}^- \sim \gamma\text{Skellam}(\mathbf{A}^+\mathbf{F}, \mathbf{A}^-\mathbf{F}) + \mathcal{N}(0, 2\sigma_d^2)
-$$
-
-Subtracting the measurement pairs removes the fixed detector offset: the difference of two independent $\mathcal{N}(\mu_d, \sigma_d^2)$ variables is $\mathcal{N}(0, 2\sigma_d^2)$ — the dark offsets $\mu_d$ cancel and the variances sum. The counting part is Skellam-distributed (the difference of two independent Poisson variables). For the underlying counting process itself — i.e. before the gain $\gamma$ and read-noise term are reintroduced — the mean and variance are
-
-$$
-\mathbb{E}[\mathbf{A}^+\mathbf{F} - \mathbf{A}^-\mathbf{F}] = \mathbf{H}\mathbf{F}
-$$
-
-$$
-\text{Var}(\mathbf{A}^+\mathbf{F} - \mathbf{A}^-\mathbf{F}) = \mathbf{1}_{N_x}^\top \mathbf{F}
-$$
-
-As such, the mean of the differenced measurement recovers the ideal virtual-Hadamard signal, while its noise variance is set by the total (unmodulated) photon flux $\mathbf{1}_{N_x}.$
-
-## Reconstruction
-
-Implementation of Direct reconstruction: 
-
-$$\mathbf{F}_{pinv} = \mathbf{H}^\dagger(\frac{\mathbf{Y}^+-\mathbf{Y}^-}{\gamma})$$
-
-Tikhonov Regularisation 
-
-$$
-$$
-
-and Neural Network Denoising on simulated and experimental data.
-
-Example:
-
-
-
-
-
-
- Noise Estimation
-
-Dark noise images and constants were estimated from a set of K dark acquisitions:
-
-$$
-\hat{\mu}_d(x,y) = \frac{1}{K}\sum_{k=1}^K D_k(x,y) \approx \mathbb{E}[\mathbf{D}]
-$$
-
-$$
-\hat{\sigma}_d^2(x,y) = \frac{1}{K-1}\sum_{k=1}^K \big(D_k(x,y) - \hat{\mu}_d(x,y)\big)^2 \approx \text{Var}[\mathbf{D}]
-$$
-
-Estimated dark offset and noise parameters for various acquisition configurations of the v2 single pixel camera:
-
-**18.06dB**
-
-| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
-|---|---|---|---|
-| 1.0ms | 707.21 ± 28.25 | 46.42 ± 12.33 | 6.76 ± 0.88 |
-| 10.0ms | 717.94 ± 27.91 | 48.15 ± 12.89 | 6.88 ± 0.90 |
-| 100.0ms | 804.88 ± 30.38 | 59.37 ± 18.40 | 7.62 ± 1.17 |
-| 1000.0ms | 2054.86 ± 146.29 | 454.38 ± 63.26 | 21.26 ± 1.51 |
-
-**12.04dB**
-
-| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
-|---|---|---|---|
-| 1.0ms | 243.42 ± 11.94 | 24.30 ± 23.20 | 4.38 ± 2.27 |
-| 10.0ms | 247.03 ± 11.02 | 21.15 ± 21.80 | 4.04 ± 2.19 |
-| 100.0ms | 270.86 ± 12.05 | 24.41 ± 20.63 | 4.53 ± 1.98 |
-
-**6.02dB**
-
-| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
-|---|---|---|---|
-| 1.0ms | 178.21 ± 8.37 | 11.05 ± 12.09 | 3.06 ± 1.30 |
-| 10.0ms | 181.01 ± 8.18 | 10.70 ± 12.55 | 3.00 ± 1.31 |
-| 100.0ms | 207.62 ± 12.01 | 30.64 ± 19.32 | 5.23 ± 1.82 |
-
-**0.0dB**
-
-| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
-|---|---|---|---|
-| 1.0ms | 91.92 ± 5.53 | 15.54 ± 6.32 | 3.85 ± 0.85 |
-| 10.0ms | 96.51 ± 4.86 | 12.44 ± 6.72 | 3.38 ± 1.02 |
-| 100.0ms | 124.17 ± 2.58 | 2.23 ± 2.56 | 1.32 ± 0.71 |
-
-
-## Gain estimation
-2 methods to estimate count/photon conversion gain of camera at various configurations, with the following gain constants estimated:
-
-| Configuration | γ FFP (counts/photon) | γ TE (counts/photon) |
-|---|---|---|
-| 18.06dB | 0.4427 | 0.316 |
-| 12.04dB | 0.135 | 0.115 |
-| 6.02dB | 0.173 | 0.190 |
-| 0dB | 0.181 | 0.117 |
-
-example gain map and gain constant in region of interest for camera gain 18.06dB:
-
-<img width="394" height="198" alt="image" src="https://github.com/user-attachments/assets/0893d04b-7b1d-44f8-9864-35700ce2eab0" />
-
-<img width="551" height="414" alt="image" src="https://github.com/user-attachments/assets/ae57e8a1-6651-4d48-818c-91049e3ad0c8" />
+# How to use scripts
 
 ## Downloading raw data
 Run `download_data.py`to download raw v2 data from PILOT.
@@ -228,3 +115,143 @@ The reconstructed cubes are plotted as the sum over wavelength channels and per 
 
 ## Training Denoiser
 To train a UNet() denoiser, run `train.py` with the desired parameters. Trained weights will be saved to a 'model' folder and can then be used during reconstruction. 
+
+
+
+# Model
+Acquisition is modelled as: 
+
+$$
+\mathbf{Y} \sim \gamma\,\mathcal{P}(\mathbf{A}\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
+$$
+
+Where $\mathbf{Y}$ are the raw measurements, $\gamma$, $\mu_d$ and $\sigma_d^2$ are estimated experimentally, $\mathbf{A}$ is the known acquisition matrix (split Hadamard), and $\mathbf{F}$ is the hyperspectral representation of the scene. 
+- $\mathcal{P}$: Poisson distribution (shot noise),
+- $\mathcal{N}$: Gaussian distribution (electronic/read noise, assumed additive and independent of the signal),
+- $\gamma$: overall system gain (counts per electron),
+- $\mu_d$: detector offset (bias level),
+- $\sigma_d^2$: read-noise variance.
+
+The measurement matrix can be split into positive and negative components:
+
+$$
+\mathbf{Y}^+ \sim \gamma\mathcal{P}(\mathbf{H}^+\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
+$$
+
+$$
+\mathbf{Y}^- \sim \gamma\mathcal{P}(\mathbf{H}^-\mathbf{F}) + \mathcal{N}(\mu_d, \sigma_d^2)
+$$
+
+
+$$
+\mathbf{Y}^+ - \mathbf{Y}^- \sim \gamma\text{Skellam}(\mathbf{A}^+\mathbf{F}, \mathbf{A}^-\mathbf{F}) + \mathcal{N}(0, 2\sigma_d^2)
+$$
+
+Subtracting the measurement pairs removes the fixed detector offset: the difference of two independent $\mathcal{N}(\mu_d, \sigma_d^2)$ variables is $\mathcal{N}(0, 2\sigma_d^2)$ — the dark offsets $\mu_d$ cancel and the variances sum. The counting part is Skellam-distributed (the difference of two independent Poisson variables). For the underlying counting process itself — i.e. before the gain $\gamma$ and read-noise term are reintroduced — the mean and variance are
+
+$$
+\mathbb{E}[\mathbf{A}^+\mathbf{F} - \mathbf{A}^-\mathbf{F}] = \mathbf{H}\mathbf{F}
+$$
+
+$$
+\text{Var}(\mathbf{A}^+\mathbf{F} - \mathbf{A}^-\mathbf{F}) = \mathbf{1}_{N_x}^\top \mathbf{F}
+$$
+
+As such, the mean of the differenced measurement recovers the ideal virtual-Hadamard signal, while its noise variance is set by the total (unmodulated) photon flux $\mathbf{1}_{N_x}.$
+
+## Reconstruction
+
+Implementation of Direct reconstruction:
+
+$$\mathbf{F}_{pinv} = \mathbf{H}^\dagger\left(\frac{\mathbf{Y}^+-\mathbf{Y}^-}{\gamma}\right)$$
+
+Tikhonov Regularisation
+
+$$
+\hat{\mathbf{F}}_{tik} = \Sigma\mathbf{H}^\top(\mathbf{H}\Sigma\mathbf{H}^\top + \Gamma)^{-1}\frac{\mathbf{Y}^+-\mathbf{Y}^-}{\gamma\alpha(\lambda)}
+$$
+
+and Neural Network Denoising on simulated and experimental data.
+
+To further reduce noise in the reconstructed hypercube, a pretrained U-Net $\mathcal{G}_\theta$ can be applied to the Tikhonov reconstruction:
+
+$$
+\tilde{\mathbf{F}} = \mathcal{G}_\theta(\hat{\mathbf{F}}_{tik})
+$$
+
+Where $\mathcal{G}$ is the pretrained model, in this case a Unet(), and $\theta$ is the learned weights. The network is trained on simulated data.
+
+Example:
+
+
+<img width="650" height="460" alt="image" src="https://github.com/user-attachments/assets/bccdbb45-2f77-4553-a2b8-fc9c44182c74" />
+
+<img width="650" height="460" alt="image" src="https://github.com/user-attachments/assets/f3976618-d716-4fd6-8776-2a3e22c5a2dd" />
+
+<img width="650" height="460" alt="image" src="https://github.com/user-attachments/assets/5d0e3144-291f-4151-929f-f707506a1592" />
+
+
+
+# Noise Estimation
+
+Dark noise images and constants used in the reconstruction process were estimated from a set of K dark acquisitions:
+
+$$
+\hat{\mu}_d(x,y) = \frac{1}{K}\sum_{k=1}^K D_k(x,y) \approx \mathbb{E}[\mathbf{D}]
+$$
+
+$$
+\hat{\sigma}_d^2(x,y) = \frac{1}{K-1}\sum_{k=1}^K \big(D_k(x,y) - \hat{\mu}_d(x,y)\big)^2 \approx \text{Var}[\mathbf{D}]
+$$
+
+Estimated dark offset and noise parameters for various acquisition configurations of the v2 single pixel camera:
+
+**18.06dB**
+
+| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
+|---|---|---|---|
+| 1.0ms | 707.21 ± 28.25 | 46.42 ± 12.33 | 6.76 ± 0.88 |
+| 10.0ms | 717.94 ± 27.91 | 48.15 ± 12.89 | 6.88 ± 0.90 |
+| 100.0ms | 804.88 ± 30.38 | 59.37 ± 18.40 | 7.62 ± 1.17 |
+| 1000.0ms | 2054.86 ± 146.29 | 454.38 ± 63.26 | 21.26 ± 1.51 |
+
+**12.04dB**
+
+| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
+|---|---|---|---|
+| 1.0ms | 243.42 ± 11.94 | 24.30 ± 23.20 | 4.38 ± 2.27 |
+| 10.0ms | 247.03 ± 11.02 | 21.15 ± 21.80 | 4.04 ± 2.19 |
+| 100.0ms | 270.86 ± 12.05 | 24.41 ± 20.63 | 4.53 ± 1.98 |
+
+**6.02dB**
+
+| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
+|---|---|---|---|
+| 1.0ms | 178.21 ± 8.37 | 11.05 ± 12.09 | 3.06 ± 1.30 |
+| 10.0ms | 181.01 ± 8.18 | 10.70 ± 12.55 | 3.00 ± 1.31 |
+| 100.0ms | 207.62 ± 12.01 | 30.64 ± 19.32 | 5.23 ± 1.82 |
+
+**0.0dB**
+
+| | $\bar\mu_d$ | $\bar\sigma_d^2$ | $\bar\sigma_d$ |
+|---|---|---|---|
+| 1.0ms | 91.92 ± 5.53 | 15.54 ± 6.32 | 3.85 ± 0.85 |
+| 10.0ms | 96.51 ± 4.86 | 12.44 ± 6.72 | 3.38 ± 1.02 |
+| 100.0ms | 124.17 ± 2.58 | 2.23 ± 2.56 | 1.32 ± 0.71 |
+
+
+## Gain estimation
+2 methods to estimate count/photon conversion gain of camera at various configurations, with the following gain constants estimated:
+
+| Configuration | γ FFP (counts/photon) | γ TE (counts/photon) |
+|---|---|---|
+| 18.06dB | 0.4427 | 0.316 |
+| 12.04dB | 0.135 | 0.115 |
+| 6.02dB | 0.173 | 0.190 |
+| 0dB | 0.181 | 0.117 |
+
+example gain map and gain constant in region of interest for camera gain 18.06dB:
+
+<img width="394" height="198" alt="image" src="https://github.com/user-attachments/assets/0893d04b-7b1d-44f8-9864-35700ce2eab0" />
+
+<img width="551" height="414" alt="image" src="https://github.com/user-attachments/assets/ae57e8a1-6651-4d48-818c-91049e3ad0c8" />
