@@ -1,6 +1,6 @@
 # PFE Results
 
-* [Reconstruction Algorithms for Fast Hyperspectral Imaging](./2026_reconstruction_1D) MSc report INSA Lyon
+* *Reconstruction Algorithms for Fast Hyperspectral Imaging*, MSc report INSA Lyon [PDF](https://hal.science/view/index/docid/5803251)
 
 > Elena Ó Céidigh Hayes
 
