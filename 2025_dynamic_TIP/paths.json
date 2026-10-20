@@ -1,0 +1,5 @@
+{
+    "save_fig": false,
+    "results_root": "./results/",
+    "data_root": "./data/"
+}

@@ -5,6 +5,11 @@
 
 Some of research contributions based on the SPyRiT package:
 
+### 2026
+* [Motion-compensated single-pixel imaging](./2025_dynamic_TIP/) (IEEE TIP, 2026)
+
+> T. Maitre, E. Bretin, L. Mahieu-Williame, R. Phan, M. Sdika, N. Ducros, "Dual-arm motion-compensated single-pixel imaging". IEEE Transactions on Image Processing, 35, 9730-9743 (2026). [DOI](https://dx.doi.org/10.1109/TIP.2026.3730764), [Main PDF](https://hal.science/hal-05068181/document), [Supplementary PDF](https://hal.science/hal-05068181/preview/supplementary_v3.pdf).
+
 ### 2025
 
 * [Hyperspectral LSFM](./2025_hLSFM/) (Optics Express, 2025)
