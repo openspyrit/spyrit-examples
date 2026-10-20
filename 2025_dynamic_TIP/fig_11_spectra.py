@@ -18,7 +18,7 @@ from spyrit.misc.load_data import read_acquisition, download_girder
 
 
 # %% Set params and download data if needed
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('expe')
@@ -48,7 +48,7 @@ n_acq = 64
 data_folder = Path('obj_cat_bicolor_no_motion_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1')
 data_file_prefix = 'obj_cat_bicolor_no_motion_source_white_LED_Walsh_im_64x64_ti_4ms_zoom_x1'
 
-read_homography = True
+read_homography = False
 save_homography = False
 
 snapshot = True  # with new acquisitions
@@ -248,7 +248,7 @@ x_stat_ff_np = torch2numpy(torch.rot90(x_stat_ff, k=2, dims=(-2, -1)))
 
 
 # %% DEFORMATION FILES
-deform_root = Path('../omigod_res/color_cat')
+deform_root = Path(paths_params.get("data_root")) / Path('omigod_res/color_cat')
 
 deform_folder = data_folder
 deform_prefix = 'rot'

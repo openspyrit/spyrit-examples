@@ -53,16 +53,19 @@ conda activate dynamic
 ```shell
 pip install ipykernel
 pip install opencv-python
+pip install git+https://github.com/openspyrit/spas.git
+pip install nibabel
 ```
 
 Code was tested using spyrit 3.1.1. For more detail, see `environment.yaml`
 
 ## Reproducibility of the results
 
-Run `fig_XX.py` to reproduce the results associated to the Fig. XX of the paper 
+Run `fig_XX.py` to reproduce the results associated to the Fig. XX of the paper.
 
 > All script should be run from the `2025_dynamic_TIP` folder
 
+> Some of the scripts should be run in increasing order to generate intermediate results.
 
 ## Contact
 - For reproducibility issues, feel free to open an issue in our GitHub repository.

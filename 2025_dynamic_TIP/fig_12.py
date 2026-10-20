@@ -18,7 +18,7 @@ from spyrit.misc.disp import get_frame, save_motion_video, save_field_video
 
 
 # %% Set params and download data if needed
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('expe')
@@ -151,7 +151,7 @@ w = recalibrate(w.unsqueeze(0), (n, n), zoom_homography_inv, amp_max=0)
 
 
 # %% DEFORMATION FILES
-deform_root = Path('../omigod_res/extendedFOV2')
+deform_root = Path('./omigod_res/extendedFOV2')
 
 deform_folder = data_folder
 deform_prefix = 'star'
