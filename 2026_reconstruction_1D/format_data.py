@@ -6,7 +6,7 @@ from tools import read_acquisitionData, binArray
 
 #%% load raw data that has been downloaded from PILOT using download_data.py
 
-data_folder = Path("data/cat") 
+data_folder = Path("data/opticalTuningCat3")
 # #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
 
 # spectral data

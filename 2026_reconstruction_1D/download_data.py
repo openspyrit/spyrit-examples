@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from spyrit.misc.load_data import download_girder
+import os
 
 # note: this downloads the entire folder (all integration time, camera gain configs) so takes quite a while (hours)
 # to download only one set, change hexid to relevant subfolder 
@@ -119,36 +120,36 @@ url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
 download_girder(url_pilot, hex_ids = '6ad22481f5d51d665595dbad' , local_folder = destination, gc_type="folder",) # cat
 
 
-# %% Some spectral data on the PILOT is saved in a different form
-from tools import load_experiment
-import numpy as np
+# # %% Some spectral data on the PILOT is saved in a different form
+# from tools import load_experiment
+# import numpy as np
 
-# download spectral data folder from PILOT, saved to the following path
-destination = Path("data")
-download_girder(url_pilot, '6ac66658f5d51d66558fbd43',  local_folder = destination, gc_type="folder" )
+# # download spectral data folder from PILOT, saved to the following path
+# destination = Path("data")
+# download_girder(url_pilot, '6ac66658f5d51d66558fbd43',  local_folder = destination, gc_type="folder" )
 
-# choose data to read in 
-path = Path("data/cat")
+# # choose data to read in 
+# path = Path("data/cat")
 
-# extract info - make this more general someday
-data = load_experiment(path, gr=2, lc="600")
+# # extract info - make this more general someday
+# data = load_experiment(path, gr=2, lc="600")
 
-# dimensions
-M = data["M"]
-N = data["N"]
-L = data["L"]
+# # dimensions
+# M = data["M"]
+# N = data["N"]
+# L = data["L"]
 
-patterns = data["patterns"]
-wavelengths = data["wavelengths"]
-Lc = data["Lc"]
+# patterns = data["patterns"]
+# wavelengths = data["wavelengths"]
+# Lc = data["Lc"]
 
-# measurements
-raw_data = data["raw_data"]  # shape (N,L,P) unbinned
-spectral_data_all = data["spectral_data_all"] # shape (N,L,P) binned
-spatial_data = data["spatial_data"]
+# # measurements
+# raw_data = data["raw_data"]  # shape (N,L,P) unbinned
+# spectral_data_all = data["spectral_data_all"] # shape (N,L,P) binned
+# spatial_data = data["spatial_data"]
 
-import os
-os.makedirs("data/cat", exist_ok=True)
-np.save("data/cat/m_binned.npy", spectral_data_all)
+# import os
+# os.makedirs("data/cat", exist_ok=True)
+# np.save("data/cat/m_binned.npy", spectral_data_all)
 
 # %%

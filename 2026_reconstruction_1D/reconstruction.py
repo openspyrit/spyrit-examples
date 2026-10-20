@@ -5,8 +5,10 @@ from pathlib import Path
 from tools import binArray
 import torch 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+import os
+#%% Read in formatted data -> i.e unsplit and in shape (NxLxK) - ie run download_data and format_data first
 
-#%% Read in formatted data -> i.e unsplit and in shape (NxLxK)
+
 
 data_folder = Path("data/opticalTuningCat3")
 # #Path("data/USAF2") #Path("data/USAF") # Path("data/opticalTuningCat3") # Path("data/opticalTuningCat2")
