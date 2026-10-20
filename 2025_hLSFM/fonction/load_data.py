@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from matrix_tools import bining_colonne, bining_line
-
+from spyrit.misc.disp import add_colorbar
 
 def Files_names(Path,name_type):
     files = glob.glob(Path+name_type)
@@ -34,6 +34,18 @@ def Select_data(Dir,Run):
 def change_set_acqui(*args):
     n = len(set_acqui.value)
     run.options = [x[0][n:] for x in os.walk(set_acqui.value)][1:]
+
+
+def save_arrays(base_path, arrays: dict):
+    for name, arr in arrays.items():
+        np.save(base_path / name, arr)
+
+
+def plot_imshow(ax, data, title):
+    ax.set_title(title)
+    im = ax.imshow(data, cmap='gray')
+    add_colorbar(im, 'bottom')
+    ax.get_xaxis().set_visible(False)
 
 
 
@@ -159,7 +171,7 @@ def load_pattern(Dir, Run, c_bin, r_start=1000, r_end=1048):
         
         print(Path_files+list_files[i]) 
         
-        tmp = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
+        tmp = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i])))) 
         pat[i,:] = np.sum(tmp[r_start:r_end,:],0)
 
     pat = bining_colonne(pat, c_bin)
@@ -184,8 +196,8 @@ def load_data_pos_neg(Dir, Run, l_start, l_end, l_bin, lambda_bin):
     for i in range(0,2*Nh,2):      
         print(Path_files+list_files[i])
         print(Path_files+list_files[i+1])       
-        Data_pos[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
-        Data_neg[:,i//2] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
+        Data_pos[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
+        Data_neg[:,i//2] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i+1]))))
     
     # Crop raw data
     # We only have 2048 lines on the imaging camera we remove 56 lines 
@@ -225,7 +237,7 @@ def load_data(Dir, Run, l_start, l_end, l_bin, lambda_bin):
     
     for i in range(0,Nh):      
         print(Path_files+list_files[i])     
-        Data[:,i] = np.float_(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
+        Data[:,i] = np.float64(np.rot90(np.array(Image.open(Path_files+list_files[i]))))
     
     # Crop raw data
     # We only have 2048 lines on the imaging camera we remove 56 lines 
