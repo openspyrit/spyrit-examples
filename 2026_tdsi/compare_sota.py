@@ -377,7 +377,7 @@ figs_spec = plot_spectra_compare(
     reference=HS_ref, spectrum=spectrum,
     ref_label='Reference', title_fmt='Position (%s)',
     legend_outside=False, legend_loc='best',
-    show_residuals=False, same_y_scale=True, win_size=80,
+    same_y_scale=True, win_size=80,
     save_fig=save_fig, path_fig=path_fig)
 plt.show()
 
