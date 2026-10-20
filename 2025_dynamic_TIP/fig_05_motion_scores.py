@@ -27,7 +27,7 @@ batch_size = 16  # each batch was subjected to one deformation
 
 
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-local_folder = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('raw_fig_05')  # replace with your path
+local_folder = Path('./raw_fig_05')  # replace with your path
 id_files = [
     "690b5f7304d23f6e964b1434",  # motion_params.json
     "690b5f7304d23f6e964b1437"   # scores.json
@@ -107,7 +107,7 @@ print("Median amplitude (closest) -> index:", idx_med, "value:", amp_array[idx_m
 
 
 # %% plot scores % motion amplitude
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 error_bars = False
 save_fig = paths_params.get("save_fig")

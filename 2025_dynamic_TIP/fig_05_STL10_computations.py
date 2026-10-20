@@ -31,7 +31,7 @@ import spyrit.misc.metrics as score
 
 
 #%% LOAD IMAGE DATA
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('simu/exp_0')

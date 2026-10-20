@@ -100,7 +100,7 @@ Ord = torch.from_numpy(Ord_acq)
 
 # %% Get a precomputed elastic deformation from Tomoradio warehouse
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
+path_deform = Path('./deformations_elastic')  # replace with your path
 id_files = [
     "693ae1b94c0b0d3d4bc700c3",  # def_field_index_219_comp_10.npz
     "693ae1b04c0b0d3d4bc700b7"   # amplitudes_index_200_250.npy

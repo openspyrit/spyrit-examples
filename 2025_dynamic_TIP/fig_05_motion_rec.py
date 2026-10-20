@@ -29,7 +29,7 @@ from spyrit.misc.load_data import download_girder
 
 
 #%% LOAD IMAGE DATA
-paths_params = json.load(open("spyrit-examples/2025_dynamic_TIP/paths.json"))
+paths_params = json.load(open("paths.json"))
 
 save_fig = paths_params.get("save_fig")
 results_root = Path(paths_params.get("results_root")) / Path('simu/exp_3/motion')
@@ -44,7 +44,7 @@ M = meas_size ** 2 // und  # number of (pos,neg) measurements
 img_shape = (img_size, img_size)
 meas_shape = (meas_size, meas_size)
 
-data_root = '../data/data_online/' 
+data_root = './data/' 
 imgs_path = os.path.join(data_root, "stl-10_binary/")
 
 amp_max = (img_shape[0] - meas_shape[0]) // 2
@@ -102,7 +102,7 @@ Ord = torch.from_numpy(Ord_acq)
 
 # %% Get three precomputed elastic deformations from Tomoradio warehouse
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
-path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
+path_deform = Path('./deformations_elastic')  # replace with your path
 id_files = [
     "693ae1b64c0b0d3d4bc700c0",  # def_field_index_72_comp_10.npz
     "693ae1b34c0b0d3d4bc700bd",  # def_field_index_56_comp_10.npz
@@ -131,7 +131,7 @@ ssim_array = np.zeros((len(deform_idxs), 4), dtype=np.float32)
 
 with torch.no_grad():
     # load direct deform and inverse deform that were used in the paper's experiments
-    path_deform = Path.cwd() / Path('spyrit-examples/2025_dynamic_TIP/') / Path('deformations_elastic')  # replace with your path
+    path_deform = Path('./deformations_elastic')  # replace with your path
 
     scale_factor = (torch.tensor(img_shape) - 1).to(device=device)
     comp_factor = 10
