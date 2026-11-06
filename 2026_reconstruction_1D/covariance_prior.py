@@ -18,13 +18,18 @@ import spyrit.misc.metrics as sm
 
 from spyrit.misc.statistics import data_loaders_imagenet, cov_1, stat_1, stat_2
 from spyrit.misc.load_data import download_girder
+import os
+#%%
+# Script to calculate covariance prior using spyrit functions - ImageNet data (used to calculate covariance prior) must be stored locally
 
-# Script to calculate covariance prior using spyrit functions.
 # Alternatively download directly from PILOT:
+url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
+download_girder(url_tomoradio, hex_ids ='6aecbfd3dba19bd8c7063545' , local_folder = Path(""), gc_type="folder",) # 128x128 covariance matrix
 
-
+#%%
 data_root =  Path(r"C:\Users\ceidigh\Documents\PFErough\Obair\ImageNet") # where image net data is stored locally
-stat_root =  Path(r"C:\Users\ceidigh\Documents\PFE\data") # where to save cov matrices to 
+os.makedirs("covariance", exist_ok=True)
+stat_root =  Path("./covariance") # where to save cov matrices to 
 
 
 #%% METHODS FOR CALCULATING 1D Covariance Matrix over ImageNet dataset - adapted from spyrit

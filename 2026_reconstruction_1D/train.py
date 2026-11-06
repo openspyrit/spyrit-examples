@@ -50,7 +50,7 @@ mu_dark_image = torch.normal( mean=mudark, std=std_mudark, size=(N,1)).to(device
 sig_dark_image = torch.normal( mean=sigdark, std=std_sigdark, size=(N,1)).to(device).expand(-1, K*2)   # don't change size of first dimension, expand (repeat) P times
 
 # load Sigma
-image_cov = np.load('data/Cov_1_128x128.npy')
+image_cov = np.load('covariance/Cov_1_128x128.npy')
 Sigma = torch.from_numpy(image_cov).to(device)
 #%% Obtain STL10 images
 

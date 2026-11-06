@@ -90,7 +90,7 @@ cov_meas = cov_meas / norm**2
 Gamma = torch.diag_embed(cov_meas)
 
 # load Gamma
-image_cov = np.load('data/Cov_1_128x128.npy')
+image_cov = np.load('covariance/Cov_1_128x128.npy')
 Sigma = torch.from_numpy(image_cov).to(device)
 
 # load net

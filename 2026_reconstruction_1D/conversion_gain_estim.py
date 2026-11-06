@@ -7,10 +7,6 @@ from tools import binArray
 import os
 
 
-
-
-
-
 #%% params
 bin_fact = 3
 G = 0 # 12.04 # 6.02 # 0
@@ -19,7 +15,7 @@ G = 0 # 12.04 # 6.02 # 0
 ti = 1.0 # 10.0 # 100.0 #1000.0
 
 
-# Acquired bright images - local 
+# Acquired bright images - download from PILOT warehouse, see download_data.py
 data_folder = Path(r"acquisitionData/bright")
 intensities = ["ND0", "ND1", "ND2"] #, "ND3", "ND4"] # depending on which camera gain - all five only applied to 18.06 and 12.04
 
@@ -30,9 +26,9 @@ y1, y2 = 221, 271
 N, L = 384, 608
 n_images  = 1000
 
-# either downloaded from tomoradio warehouse or calculated by running dark_estimation.py / dark_estim_loop.py
-mu_dark = np.load(f"calibrationData/dark/mu_dark_image_binned_x{bin_fact}_{ti}_{G}.npy")  # shape (128, 608)
-var_dark = np.load(f"calibrationData/dark/var_dark_image_binned_x{bin_fact}_{ti}_{G}.npy") # shape (128, 608)
+# either downloaded from tomoradio warehouse (see download_data.py) or calculated by running dark_estimation.py / dark_estim_loop.py
+mu_dark = np.load(f"calibrationData/dark_images/mu_dark_image_binned_x{bin_fact}_{ti}_{G}.npy")  # shape (128, 608)
+var_dark = np.load(f"calibrationData/dark_images/var_dark_image_binned_x{bin_fact}_{ti}_{G}.npy") # shape (128, 608)
 mu_dark_ROI = mu_dark[x1:x2, y1:y2]   # crop
 
 # %% FFP METHOD
@@ -85,16 +81,17 @@ var_g1 = variances_g1[0:1,:].mean(0)
 
 
 # save all the bright images
-np.save(f'calibrationData/bright/all_bright_images_bin_x{bin_fact}_{G}.npy', all_bright_images)
+os.makedirs("calibrationData/bright_images", exist_ok=True)
+np.save(f'calibrationData/bright_images/all_bright_images_bin_x{bin_fact}_{G}.npy', all_bright_images)
 
 # save the average mu & sigma value, per ND, accross all 500 pairs
-np.save(f'calibrationData/bright/mu_g1_bin_x{bin_fact}_{G}.npy', signals_g1.mean(0))
-np.save(f'calibrationData/bright/var_g1_bin_x{bin_fact}_{G}.npy', variances_g1.mean(0))
+np.save(f'calibrationData/bright_images/mu_g1_bin_x{bin_fact}_{G}.npy', signals_g1.mean(0))
+np.save(f'calibrationData/bright_images/var_g1_bin_x{bin_fact}_{G}.npy', variances_g1.mean(0))
 
 # %% TEMPORAL ESTIMATOR
 
 # load all images - prepocessed in previous 
-all_ims = np.load(f"calibrationData/bright/all_bright_images_bin_x{bin_fact}_{G}.npy") - mu_dark[None, None, :, :]
+all_ims = np.load(f"calibrationData/bright_images/all_bright_images_bin_x{bin_fact}_{G}.npy") - mu_dark[None, None, :, :]
 
 # calculate and store average mu and variance images
 sum_frames = all_ims.sum(0)
@@ -102,14 +99,14 @@ sum_ROI = sum_frames[:, x1:x2, y1:y2]
 signals_g2 = (sum_ROI / 1000).mean((1,2))
 variances_g2 = (all_ims[:, :, x1:x2, y1:y2].var(axis=0, ddof=1)- var_dark[x1:x2,y1:y2]).mean((1,2)) 
 
-np.save(f'calibrationData/bright/mu_g2_bin_x{bin_fact}_{G}.npy', signals_g2)
-np.save(f'calibrationData/bright/var_g2_bin_x{bin_fact}_{G}.npy', variances_g2)
+np.save(f'calibrationData/bright_images/mu_g2_bin_x{bin_fact}_{G}.npy', signals_g2)
+np.save(f'calibrationData/bright_images/var_g2_bin_x{bin_fact}_{G}.npy', variances_g2)
 
 #%% GAIN PER PIXEL WITH TEMPORAL ESTIMATOR
 
 # average bright mu and var images, one per intensity 
-mu_bright_image = np.load(f"calibrationData/bright/all_bright_images_bin_x{bin_fact}_{G}.npy").mean(0) - mu_dark
-var_bright_image = np.load(f"calibrationData/bright/all_bright_images_bin_x{bin_fact}_{G}.npy").var(axis=0,ddof=1) - var_dark
+mu_bright_image = np.load(f"calibrationData/bright_images/all_bright_images_bin_x{bin_fact}_{G}.npy").mean(0) - mu_dark
+var_bright_image = np.load(f"calibrationData/bright_images/all_bright_images_bin_x{bin_fact}_{G}.npy").var(axis=0,ddof=1) - var_dark
 
 x = mu_bright_image              # (5,128,608)
 y = var_bright_image
@@ -215,9 +212,9 @@ plt.tight_layout()
 plt.show()
 
 # %% SAVE GAIN ESTIMATIONS
-np.save(f"calibrationData/bright/slope_g1_bin_x{bin_fact}_{G}.npy", slope_g1)
-np.save(f"calibrationData/bright/slope_g2_bin_x{bin_fact}_{G}.npy", slope_g2)
-np.save(f"calibrationData/bright/slope_g3_bin_x{bin_fact}_{G}.npy", gain_image[x1:x2, y1:y2].mean())
+np.save(f"calibrationData/bright_images/slope_g1_bin_x{bin_fact}_{G}.npy", slope_g1)
+np.save(f"calibrationData/bright_images/slope_g2_bin_x{bin_fact}_{G}.npy", slope_g2)
+np.save(f"calibrationData/bright_images/slope_g3_bin_x{bin_fact}_{G}.npy", gain_image[x1:x2, y1:y2].mean())
 np.save(f"calibrationData/gain_images/gain_image_bin_x{bin_fact}_{G}.npy", gain_image)
 
 # %%
@@ -226,7 +223,7 @@ np.save(f"calibrationData/gain_images/gain_image_bin_x{bin_fact}_{G}.npy", gain_
 ND = 3
 bin_fact = 3
 G = 6.02
-dark_images = np.load(f"calibrationData/bright/all_bright_images_bin_x{bin_fact}_{G}.npy")
+dark_images = np.load(f"calibrationData/bright_images/all_bright_images_bin_x{bin_fact}_{G}.npy")
 
 mu_dark_image = dark_images.mean(axis=0)[ND,:,:]
 var_dark_image = dark_images.var(axis=0, ddof=1)[ND,:,:]

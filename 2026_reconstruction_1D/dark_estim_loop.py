@@ -22,7 +22,7 @@ REBUILD_STACKS = False
 data_folder = Path(r"acquisitionData/dark")
 
 # where processed data and figures are saved
-out_folder = Path("calibrationData")
+out_folder = Path("calibrationData/dark_images")
 out_folder.mkdir(exist_ok=True)
 
 # dimensions - could of course extract to avoid hard coding blah blah blah

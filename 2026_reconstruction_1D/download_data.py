@@ -1,17 +1,20 @@
-#%% Download bright and dark acquisitions to calculate calibration data
 
+#%% 
 from pathlib import Path
 from spyrit.misc.load_data import download_girder
 import os
 
+#%% DOWNLOAD BRIGHT AND DARK ACQUISITIONS to calculate model parameters
+
 # note: this downloads the entire folder (all integration time, camera gain configs) so takes quite a while (hours)
-# to download only one set, change hexid to relevant subfolder 
+# to download only one set, change hexid to relevant subfolder (Check PILOT)
 
 # alternatively, the precalculated dark images for each camera configuration and integration time are available to 
-# to download from the tomoradio warehouse (see next cell)
+# to download directly from the tomoradio warehouse (see next cell)
 
-os.makedirs("acquisitionData", exist_ok=True)
+
 # where to save data
+os.makedirs("acquisitionData", exist_ok=True)
 destination = Path("acquisitionData")
 print("Copying folder in:", destination)
 
@@ -19,33 +22,21 @@ url_pilot = "https://pilot-warehouse.creatis.insa-lyon.fr/api/v1"
 download_girder(url_pilot, hex_ids ='6ac7963ff5d51d6655939c22' , local_folder = destination, gc_type="folder",) # bright
 download_girder(url_pilot, hex_ids ='6ac796f1f5d51d66559499bf' , local_folder = destination, gc_type="folder",) # dark
 
-download_girder(url_pilot, hex_ids ='6ad1eba4f5d51d665595dae0' , local_folder = destination, gc_type="folder",) #bright images
 
 
-#%% Download pre-calculated noise parameters from tomoradio warehouse
+#%% DOWNLOAD PRE-CALCULATED PARAMETERS from tomoradio warehouse
 
-
-os.makedirs("calibrationData", exist_ok=True)
 # where to save data
+os.makedirs("calibrationData", exist_ok=True)
 destination = Path("calibrationData")
 print("Copying folder in:", destination)
 
 # download pre calculated system parameters data from the PILOT warehouse
 url_tomoradio = "https://tomoradio-warehouse.creatis.insa-lyon.fr/api/v1"
 
-download_girder(url_pilot, hex_ids ='6ac8c8eedba19bd8c7063274' , local_folder = destination, gc_type="folder",) #dark images
-# download_girder(url_pilot, hex_ids ='6ad1eba4f5d51d665595dae0' , local_folder = destination, gc_type="folder",) #bright images
-download_girder(url_pilot, hex_ids ='6ac8c897dba19bd8c7063264' , local_folder = destination, gc_type="folder",) #gain images
-
-# download pretrained models
-download_girder(url_pilot, hex_ids ='6ad223bff5d51d665595dba2' , local_folder = Path(""), gc_type="folder",)
-
-
-# download cov matrix
-os.makedirs("data", exist_ok=True)
-destination = Path("data")
-print("Copying folder in:", destination)
-download_girder(url_pilot, hex_ids ='6ad2242cf5d51d665595dbac' , local_folder = destination)
+download_girder(url_tomoradio, hex_ids ='6aecbe64dba19bd8c70634d7' , local_folder = Path(""), gc_type="folder",) # calibrationData folder
+download_girder(url_tomoradio, hex_ids ='6aecbfd3dba19bd8c7063545' , local_folder = Path(""), gc_type="folder",) # 128x128 covariance matrix
+download_girder(url_tomoradio, hex_ids ='6aecbfd9dba19bd8c7063546' , local_folder = Path(""), gc_type="folder",) # pretrained model
 
 #%% Download raw spectral data from PILOT
 
@@ -53,9 +44,8 @@ from pathlib import Path
 from spyrit.misc.load_data import download_girder
 
 # where to save data
-
+os.makedirs("data", exist_ok=True)
 destination = Path("data")
-
 print("Copying folder in:", destination)
 
 # download data from the Pilot warehouse

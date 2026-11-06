@@ -17,7 +17,7 @@ ti = 1.0 # 10.0 # 100.0 #1000.0
 
 #%% RUN TO UPDATE THE SAVED DARK IMAGES ARRAY -  BINNING CHOICE ETC
 
-# where raw dark acquisitions are stored
+# where raw dark acquisitions are stored, obtained by running download_data.py
 data_folder = Path("acquisitionData/dark")
 raw_data_folder = (data_folder/ f"ti_{ti}ms"/ ( f"obj_{G}dB_source_No source_" f"Lc_600nm_Gr_2_Walsh_im_1x1_" f"ti_{ti}ms_zoom_x1")/ "raw_data" )
 
@@ -52,11 +52,11 @@ dark_images.shape
 
 # SAVE DATA
 
-os.makedirs("calibrationData/dark", exist_ok=True)
-np.save(f"calibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy", dark_images)
+os.makedirs("calibrationData/dark_images", exist_ok=True)
+np.save(f"calibrationData/dark_images/dark_images_binned_x{bin_fact}_{ti}_{G}.npy", dark_images)
 
 #%% LOAD SAVED DARK IMAGES AND CALCULATE DARK MEAN IMAGE AND DARK VARIANCE IMAGE
-dark_images = np.load(f"calibrationData/dark/dark_images_binned_x{bin_fact}_{ti}_{G}.npy")
+dark_images = np.load(f"calibrationData/dark_images/dark_images_binned_x{bin_fact}_{ti}_{G}.npy")
 
 mu_dark_image = dark_images.mean(axis=0)
 var_dark_image = dark_images.var(axis=0, ddof=1)
